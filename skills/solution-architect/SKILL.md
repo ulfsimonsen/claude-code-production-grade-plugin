@@ -5,9 +5,30 @@ description: Use when designing system architecture for SaaS products, microserv
 
 # Solution Architect
 
+## Protocols
+
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
 ## Overview
 
 Full architecture pipeline: from business requirements to a scaffolded, production-ready codebase. Generates architecture deliverables at the project root (`api/`, `schemas/`, `docs/architecture/`, project scaffold) with workspace artifacts in `Claude-Production-Grade-Suite/solution-architect/`.
+
+## Config Paths
+
+Read `.production-grade.yaml` at startup. Use these overrides if defined:
+- `paths.api_contracts` — default: `api/`
+- `paths.adrs` — default: `docs/architecture/architecture-decision-records/`
+- `paths.architecture_docs` — default: `docs/architecture/`
+- `paths.erd` — default: `schemas/erd.md`
+- `paths.migrations` — default: `schemas/migrations/`
+- `paths.tech_stack` — default: `docs/architecture/tech-stack.md`
+
+Deliverables go to the **project root** (`api/`, `schemas/`, `docs/architecture/`). Workspace artifacts go to `Claude-Production-Grade-Suite/solution-architect/`.
 
 ## When to Use
 
@@ -17,44 +38,6 @@ Full architecture pipeline: from business requirements to a scaffolded, producti
 - Creating API contracts and data models
 - Scaffolding multi-cloud, production-grade projects
 - Architecture review or modernization of existing systems
-
-## User Experience Protocol
-
-**CRITICAL: Follow these rules for ALL user interactions.**
-
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
-
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
-
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
-
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
-
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
-
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
-
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
-
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
 
 ## Process Flow
 
@@ -88,14 +71,14 @@ digraph sa {
 Use AskUserQuestion to gather (batch into 2-3 calls max):
 
 1. **Product scope** — What does the product do? Who are the users? B2B/B2C/internal?
-2. **Scale targets** — Expected users, requests/sec, data volume (start small → grow?)
+2. **Scale targets** — Expected users, requests/sec, data volume (start small -> grow?)
 3. **Key constraints** — Budget, team size, compliance (SOC2, HIPAA, GDPR), existing infra
 4. **Integration points** — Third-party services, existing systems, SSO/auth requirements
 5. **Deployment model** — Multi-tenant vs single-tenant, multi-region, cloud preference
 
 ## Phase 2: Architecture Design
 
-Generate architecture documents in `docs/architecture/`:
+Generate architecture documents in `docs/architecture/` (or `paths.architecture_docs` from config):
 
 ### architecture-decision-records/
 One ADR per major decision using this template:
@@ -135,7 +118,7 @@ Apply and document these production patterns:
 
 ## Phase 3: Tech Stack Selection
 
-Generate `docs/architecture/tech-stack.md`:
+Generate `docs/architecture/tech-stack.md` (or `paths.tech_stack` from config):
 
 | Layer | Selection | Rationale |
 |-------|-----------|-----------|
@@ -154,7 +137,7 @@ Selection criteria: production maturity, multi-cloud portability, team expertise
 
 ## Phase 4: API Contract Design
 
-Generate `api/` at the project root:
+Generate API contracts at `api/` (or `paths.api_contracts` from config) at the project root:
 
 - **OpenAPI 3.1 specs** for REST APIs — complete with request/response schemas, auth, error codes
 - **gRPC proto files** if inter-service communication is gRPC
@@ -170,10 +153,10 @@ Standards enforced:
 
 ## Phase 5: Data Model Design
 
-Generate `schemas/` at the project root:
+Generate data models at `schemas/` at the project root:
 
-- **ERD diagrams** in Mermaid
-- **SQL migration files** (numbered, idempotent)
+- **ERD diagrams** in Mermaid (at `paths.erd` from config, default `schemas/erd.md`)
+- **SQL migration files** (numbered, idempotent) (at `paths.migrations` from config, default `schemas/migrations/`)
 - **NoSQL collection schemas** (if applicable)
 - **Data flow diagrams** — showing how data moves between services
 - **Audit trail schema** — who changed what, when

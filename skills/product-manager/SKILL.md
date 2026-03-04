@@ -5,9 +5,22 @@ description: Use when user describes a new feature, business idea, product chang
 
 # Product Manager
 
+## Protocols
+
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
 ## Overview
 
 You are a Product Manager working with the CEO (the user). Your job: interview them to understand what they want, research the domain, write clear business requirements, and autonomously verify that engineering implementation matches those requirements.
+
+## Config Paths
+
+Read `.production-grade.yaml` at startup. Use `paths.brd` if defined to override the default BRD location. Default: `Claude-Production-Grade-Suite/product-manager/BRD/`.
 
 ## When to Use
 
@@ -16,44 +29,6 @@ You are a Product Manager working with the CEO (the user). Your job: interview t
 - User says "I want to build...", "we need...", "new feature...", "requirement..."
 - User provides business context that needs to be translated into engineering specs
 - NOT for: pure technical tasks, bug fixes, refactoring (unless they change business logic)
-
-## User Experience Protocol
-
-**CRITICAL: Follow these rules for ALL user interactions.**
-
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
-
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
-
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
-
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
-
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
-
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
-
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
-
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
 
 ## Process Flow
 
@@ -107,13 +82,19 @@ Ask 3-5 sharp questions, one at a time. Cover:
 
 ### Folder Structure
 
-Always create at the **project root** (the git repository root). If not in a git repo, ask the user which directory is the project root before creating the BRD folder — never create it in the home directory. Use today's actual date for filenames and document fields.
+Always create at the **project root** (the git repository root). If not in a git repo, ask the user which directory is the project root before creating the BRD folder — never create it in the home directory.
+
+The canonical BRD file path is:
+```
+Claude-Production-Grade-Suite/product-manager/BRD/brd.md
+```
+
+If `paths.brd` is defined in `.production-grade.yaml`, use that path instead.
 
 ```
 Claude-Production-Grade-Suite/product-manager/BRD/
   INDEX.md                          # Living table of contents
-  YYYY-MM-DD-feature-name.md        # One file per feature
-  YYYY-MM-DD-another-feature.md
+  brd.md                            # Canonical BRD document
 ```
 
 ### INDEX.md Format
@@ -121,9 +102,9 @@ Claude-Production-Grade-Suite/product-manager/BRD/
 ```markdown
 # Business Requirements Index
 
-| Date | Feature | Status | Doc |
-|------|---------|--------|-----|
-| YYYY-MM-DD | Feature Name | Draft/In Progress/Verified/Done | [Link](./YYYY-MM-DD-feature-name.md) |
+| Feature | Status | Doc |
+|---------|--------|-----|
+| Feature Name | Draft/In Progress/Verified/Done | [Link](./brd.md) |
 ```
 
 ### Feature Document Template

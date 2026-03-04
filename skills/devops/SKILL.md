@@ -5,9 +5,26 @@ description: Use when setting up CI/CD pipelines, infrastructure as code, contai
 
 # DevOps
 
+## Protocols
+
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
 ## Overview
 
 Full DevOps pipeline generator: from infrastructure design to production-ready deployment with monitoring and security. Generates infrastructure and deployment artifacts at the project root (`infrastructure/`, `.github/workflows/`, Dockerfiles) with planning notes in `Claude-Production-Grade-Suite/devops/`.
+
+## Config Paths
+
+Read `.production-grade.yaml` at startup. Use these overrides if defined:
+- `paths.terraform` — default: `infrastructure/terraform/`
+- `paths.kubernetes` — default: `infrastructure/kubernetes/`
+- `paths.ci_cd` — default: `.github/workflows/`
+- `paths.monitoring` — default: `infrastructure/monitoring/`
 
 ## When to Use
 
@@ -18,44 +35,6 @@ Full DevOps pipeline generator: from infrastructure design to production-ready d
 - Implementing security scanning and secrets management
 - Multi-cloud or hybrid-cloud deployment planning
 - Production readiness review and hardening
-
-## User Experience Protocol
-
-**CRITICAL: Follow these rules for ALL user interactions.**
-
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
-
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
-
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
-
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
-
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
-
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
-
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
-
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
 
 ## Process Flow
 
@@ -97,7 +76,7 @@ Use AskUserQuestion to gather (batch into 2-3 calls max):
 
 ## Phase 2: Infrastructure as Code (Terraform)
 
-Generate `infrastructure/terraform/`:
+Generate `infrastructure/terraform/` (or `paths.terraform` from config):
 
 ### Module Structure
 ```
@@ -150,7 +129,7 @@ Generate provider blocks and modules for each target cloud:
 
 ## Phase 3: CI/CD Pipelines
 
-Generate CI/CD pipelines at `.github/workflows/` (GitHub Actions files) and `scripts/` (shell scripts):
+Generate CI/CD pipelines at `.github/workflows/` (or `paths.ci_cd` from config) and `scripts/`:
 
 ### Pipeline Templates
 ```
@@ -193,7 +172,7 @@ scripts/
 ### Deployment Strategies
 Generate configs for the selected strategy:
 - **Blue-Green** — Zero-downtime with instant rollback (default for stateless)
-- **Canary** — Gradual traffic shift (10% → 25% → 50% → 100%) with automated rollback
+- **Canary** — Gradual traffic shift (10% -> 25% -> 50% -> 100%) with automated rollback
 - **Rolling** — For stateful services with ordered updates
 
 ## Phase 4: Container Orchestration
@@ -211,7 +190,7 @@ docker-compose.test.yml         # Integration test environment (project root)
 ```
 
 Dockerfile standards:
-- Multi-stage builds (builder → runtime)
+- Multi-stage builds (builder -> runtime)
 - Non-root user (`USER appuser`)
 - Minimal base images (distroless/alpine)
 - Layer caching optimization (dependencies before source)
@@ -220,6 +199,8 @@ Dockerfile standards:
 - `.dockerignore` excluding `.git`, `node_modules`, `__pycache__`, etc.
 
 ### Kubernetes
+Generate Kubernetes manifests at `infrastructure/kubernetes/` (or `paths.kubernetes` from config):
+
 ```
 infrastructure/kubernetes/
 ├── base/
@@ -256,7 +237,7 @@ K8s standards:
 
 ## Phase 5: Monitoring & Observability
 
-Generate `infrastructure/monitoring/`:
+Generate `infrastructure/monitoring/` (or `paths.monitoring` from config):
 
 ```
 monitoring/
@@ -280,18 +261,15 @@ monitoring/
 │   └── log-format.md           # Structured logging standard
 ├── tracing/
 │   └── otel-collector.yaml     # OpenTelemetry Collector config
-├── alerting/
-│   ├── pagerduty.yml
-│   ├── slack.yml
-│   └── escalation-policy.md
-├── slo/
-│   └── slo-definitions.yaml    # SLI/SLO/SLA definitions
-└── runbooks/
-    ├── high-error-rate.md
-    ├── high-latency.md
-    ├── disk-full.md
-    └── pod-crashloop.md
+└── alerting/
+    ├── pagerduty.yml
+    ├── slack.yml
+    └── escalation-policy.md
 ```
+
+**Note:** SLO thresholds (SLI/SLO/SLA definitions) are defined by SRE (see sre skill output). DevOps provides the monitoring infrastructure; SRE defines the service level objectives.
+
+**Note:** Operational runbooks are written by SRE. See SRE output at `docs/runbooks/`. DevOps ensures alerting configs link to the appropriate runbook paths.
 
 ### Four Golden Signals (Required Dashboards)
 1. **Latency** — p50, p90, p99 by endpoint, alerting on p99 breach
@@ -303,8 +281,8 @@ monitoring/
 - **Structured logging** — JSON format, mandatory fields: `timestamp`, `level`, `service`, `trace_id`, `message`
 - **Distributed tracing** — OpenTelemetry SDK, W3C Trace Context propagation
 - **Metrics** — RED method (Rate, Errors, Duration) for services, USE method (Utilization, Saturation, Errors) for infrastructure
-- **SLO-based alerting** — Alert on error budget burn rate, not raw thresholds
-- **Runbooks** — Every alert links to a runbook with diagnosis steps
+- **SLO-based alerting** — Alert on error budget burn rate, not raw thresholds (SLO definitions provided by SRE)
+- **Runbook links** — Every alert links to a runbook (runbooks maintained by SRE at `docs/runbooks/`)
 
 ## Phase 6: Security
 
@@ -382,9 +360,7 @@ infrastructure/
 │   ├── grafana/
 │   ├── logging/
 │   ├── tracing/
-│   ├── alerting/
-│   ├── slo/
-│   └── runbooks/
+│   └── alerting/
 └── security/
     ├── scanning/
     ├── secrets/
@@ -429,8 +405,10 @@ Claude-Production-Grade-Suite/devops/
 | Same Terraform state for all envs | Separate state per environment, shared modules |
 | Secrets in environment variables | Use cloud Secrets Manager + External Secrets Operator |
 | No rollback strategy | Blue-green or canary with automated rollback triggers |
-| Monitoring without alerting | Every dashboard metric needs an alert threshold and runbook |
+| Monitoring without alerting | Every dashboard metric needs an alert threshold and runbook link |
 | Over-permissive IAM | Start with zero permissions, add as needed, review quarterly |
 | Skipping staging | Staging must mirror prod topology, use same IaC modules |
 | Docker images as root | Always `USER nonroot`, read-only filesystem where possible |
-| Alert fatigue | SLO-based alerting, aggregate similar alerts, escalation tiers |
+| Alert fatigue | SLO-based alerting (SLOs from SRE), aggregate similar alerts, escalation tiers |
+| Generating SLO definitions | SLOs are the SRE's responsibility — DevOps provides monitoring infra only |
+| Writing operational runbooks | Runbooks belong to SRE at docs/runbooks/ — DevOps links alerts to runbook paths |

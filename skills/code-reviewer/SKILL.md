@@ -1,59 +1,38 @@
-# Code Reviewer Skill
-
-## Skill Definition
-
-```yaml
+---
 name: code-reviewer
 description: >
   Use when you need to review all generated code for architecture conformance,
-  code quality, security vulnerabilities, performance issues, and test adequacy.
+  code quality, performance issues, and test adequacy.
   Reads services/, libs/, frontend/, tests/, and compares against
   docs/architecture/ designs, ADRs, and api/ contracts. Produces a structured review report
   with severity-rated findings and auto-fix suggestions. All output is written to
   Claude-Production-Grade-Suite/code-reviewer/ in the project root. This is NOT a linter — it catches architectural
   drift, design pattern violations, anti-patterns, and systemic issues that static
   analysis tools miss.
-```
-
 ---
 
-## User Experience Protocol
+# Code Reviewer Skill
 
-**CRITICAL: Follow these rules for ALL user interactions.**
+## Protocols
 
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
 
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
+## Config Paths
 
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
+Read `.production-grade.yaml` at startup. Use path overrides if defined for `paths.services`, `paths.frontend`, `paths.tests`, `paths.architecture_docs`, `paths.api_contracts`.
 
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
+## Read-Only Policy
 
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
+Produces findings and patch suggestions only. Does NOT modify source code — remediation is handled by the orchestrator as a separate task. All output is written exclusively to `Claude-Production-Grade-Suite/code-reviewer/`.
 
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
+## Security Scope
 
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
+Security analysis: see security-engineer findings. Code reviewer does NOT perform OWASP or security review.
 
 ## Context & Position in Pipeline
 
@@ -66,8 +45,6 @@ This skill runs as a **quality gate** AFTER implementation (`services/`, `libs/`
 - **`tests/`**, **`Claude-Production-Grade-Suite/qa-engineer/test-plan.md`** — Test suites, coverage thresholds, test plan, fixtures
 - **BRD / PRD** — Business requirements, acceptance criteria, NFRs
 
-The Code Reviewer does NOT modify source code. It produces findings, metrics, and suggested fixes in `Claude-Production-Grade-Suite/code-reviewer/`. Engineers then apply fixes based on the review.
-
 ---
 
 ## Output Structure
@@ -79,7 +56,7 @@ Claude-Production-Grade-Suite/code-reviewer/
 ├── review-report.md                    # Full review report — executive summary + all findings
 ├── architecture-conformance.md         # ADR compliance check — decision-by-decision audit
 ├── findings/
-│   ├── critical.md                     # Findings that block deployment (security holes, data loss risks)
+│   ├── critical.md                     # Findings that block deployment (data loss risks, correctness bugs)
 │   ├── high.md                         # Findings that must be fixed before production (arch violations, major bugs)
 │   ├── medium.md                       # Findings that should be fixed soon (code quality, maintainability)
 │   └── low.md                          # Findings that are advisory (style, minor optimizations)
@@ -100,7 +77,7 @@ Every finding MUST be assigned exactly one severity level. Use these definitions
 
 | Severity | Definition | Action Required | Examples |
 |----------|-----------|----------------|---------|
-| **Critical** | Exploitable vulnerability, data loss risk, or correctness bug that will cause production incidents | Must fix before any deployment | SQL injection, missing auth check on admin endpoint, race condition causing double charges, unencrypted PII storage |
+| **Critical** | Data loss risk or correctness bug that will cause production incidents | Must fix before any deployment | Race condition causing double charges, unencrypted PII storage, missing auth check on admin endpoint |
 | **High** | Architectural violation, significant design flaw, or reliability risk that will cause problems at scale | Must fix before production release | Violates ADR decision, synchronous call in async pipeline, missing circuit breaker on external dependency, N+1 query on high-traffic endpoint |
 | **Medium** | Code quality issue that increases maintenance cost, makes debugging harder, or indicates emerging tech debt | Should fix within current sprint | SOLID violation, duplicated business logic across services, poor error messages, missing structured logging |
 | **Low** | Style issue, minor optimization, or improvement that would make code marginally better | Fix when convenient; consider adding to backlog | Inconsistent naming convention, unused import, suboptimal but correct algorithm, missing JSDoc on public API |
@@ -176,69 +153,7 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 ---
 
-### Phase 3 — Security Review
-
-**Goal:** Identify security vulnerabilities in the codebase. Focus on issues that automated scanners miss: logic flaws, authorization gaps, and data exposure risks.
-
-**Inputs to read:**
-- `services/`, `libs/` all backend source files (especially auth middleware, API handlers, data access)
-- `frontend/` all frontend source files (especially auth flows, API calls, local storage usage)
-- `docs/architecture/` security requirements and auth architecture
-
-**Review against OWASP Top 10 (2021):**
-
-1. **A01 — Broken Access Control**
-   - Every endpoint must enforce authorization. Flag endpoints missing auth middleware.
-   - Check for IDOR: can user A access user B's resources by changing an ID in the URL?
-   - Verify RBAC/ABAC enforcement matches the design. Flag missing role checks.
-   - Check for privilege escalation: can a regular user hit admin endpoints?
-   - Verify CORS configuration is restrictive, not `Access-Control-Allow-Origin: *` in production config.
-
-2. **A02 — Cryptographic Failures**
-   - PII and sensitive data must be encrypted at rest and in transit.
-   - Flag hardcoded secrets, API keys, or credentials anywhere in the codebase.
-   - Verify password hashing uses bcrypt/scrypt/argon2 with appropriate cost factors — not MD5/SHA1.
-   - Check TLS configuration for API clients calling external services.
-
-3. **A03 — Injection**
-   - SQL injection: verify all database queries use parameterized queries or ORM query builders — never string concatenation.
-   - NoSQL injection: verify MongoDB/DynamoDB queries do not accept raw user input in operators.
-   - Command injection: verify no `exec()`, `eval()`, or shell command construction with user input.
-   - XSS: verify frontend sanitizes user-generated content. Flag `dangerouslySetInnerHTML` or `v-html` without sanitization.
-   - Template injection: verify server-side templates do not render raw user input.
-
-4. **A04 — Insecure Design**
-   - Flag missing rate limiting on auth endpoints (login, password reset, OTP verification).
-   - Flag missing account lockout after failed login attempts.
-   - Flag business logic flaws: can a user skip steps in a multi-step process? Can they submit negative quantities?
-
-5. **A05 — Security Misconfiguration**
-   - Flag debug mode enabled in production configs.
-   - Flag verbose error messages that expose stack traces, file paths, or internal details to API consumers.
-   - Flag default credentials in configuration files.
-   - Verify security headers: Content-Security-Policy, X-Frame-Options, Strict-Transport-Security.
-
-6. **A07 — Identification and Authentication Failures**
-   - Verify JWT validation checks signature, expiration, issuer, and audience.
-   - Flag JWT tokens stored in localStorage (vulnerable to XSS) — prefer httpOnly cookies.
-   - Verify session invalidation on logout and password change.
-   - Verify password policies are enforced server-side, not just client-side.
-
-7. **A08 — Software and Data Integrity Failures**
-   - Verify webhook endpoints validate signatures/HMAC from the sending service.
-   - Flag deserialization of untrusted data without validation.
-   - Verify CI/CD pipeline integrity (dependency pinning, lock files committed).
-
-8. **A09 — Security Logging and Monitoring Failures**
-   - Verify authentication events (login, logout, failed attempts) are logged.
-   - Verify authorization failures are logged with request context.
-   - Flag sensitive data in logs (passwords, tokens, credit card numbers, SSNs).
-
-**Output:** Write security findings to `Claude-Production-Grade-Suite/code-reviewer/findings/` by severity (most security issues should be Critical or High).
-
----
-
-### Phase 4 — Performance Review
+### Phase 3 — Performance Review
 
 **Goal:** Identify performance bottlenecks, inefficient patterns, and missing optimizations in the codebase.
 
@@ -270,7 +185,7 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 ---
 
-### Phase 5 — Test Quality Review
+### Phase 4 — Test Quality Review
 
 **Goal:** Evaluate the test suites in `tests/` for coverage quality, assertion strength, and test design.
 
@@ -296,19 +211,19 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 ---
 
-### Phase 6 — Review Report
+### Phase 5 — Review Report
 
 **Goal:** Compile all findings into a structured, actionable review report. Generate auto-fix suggestions for issues where the fix is unambiguous.
 
 **Inputs:**
-- All findings from Phases 1-5
-- All metrics from Phases 2-4
+- All findings from Phases 1-4
+- All metrics from Phases 2-3
 
 **Actions:**
 
 1. Write `Claude-Production-Grade-Suite/code-reviewer/review-report.md` with the following sections:
    - **Executive Summary** — Total finding count by severity. Overall assessment (Pass / Pass with Conditions / Fail). Top 3 most critical issues.
-   - **Findings by Category** — Architecture, Code Quality, Security, Performance, Test Quality. Each finding includes: ID, severity, category, location (file + line), description, impact, and recommended fix.
+   - **Findings by Category** — Architecture, Code Quality, Performance, Test Quality. Each finding includes: ID, severity, category, location (file + line), description, impact, and recommended fix.
    - **Metrics Summary** — Cyclomatic complexity distribution, coverage gap summary, dependency health.
    - **Recommendations** — Prioritized list of actions. What to fix now, what to fix next sprint, what to add to tech debt backlog.
    - **Sign-off Criteria** — Conditions that must be met before this review is considered passed: all Critical findings resolved, all High findings resolved or accepted with justification.
@@ -324,7 +239,7 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
    ### [FINDING-ID] Short description
 
    **Severity:** Critical | High | Medium | Low
-   **Category:** Architecture | Code Quality | Security | Performance | Test Quality
+   **Category:** Architecture | Code Quality | Performance | Test Quality
    **Location:** `path/to/file.ts:42`
 
    **Description:**
@@ -346,7 +261,6 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
    - Missing null checks
    - Missing auth middleware
    - Missing input validation
-   - SQL injection from string concatenation to parameterized query
    - Missing error handling
    - Unused imports
    - Missing index definitions
@@ -372,18 +286,19 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 |---|---------|-------------|-------------------|
 | 1 | Reporting linter-level issues (missing semicolons, trailing whitespace) as review findings | Wastes reviewer credibility on noise; these should be caught by automated linting in CI | Focus on structural, architectural, and logical issues that linters and formatters cannot catch |
 | 2 | Flagging code without reading the ADR that justified it | The "violation" may be an intentional, documented trade-off | Always cross-reference `docs/architecture/` ADRs before flagging an architectural concern |
-| 3 | Marking every finding as Critical | Severity inflation makes the report useless — developers ignore it entirely | Use Critical only for exploitable vulnerabilities and data loss risks. Most issues are Medium |
+| 3 | Marking every finding as Critical | Severity inflation makes the report useless — developers ignore it entirely | Use Critical only for data loss risks and correctness bugs. Most issues are Medium |
 | 4 | Writing vague findings like "code quality could be improved" | Not actionable; developers do not know what to fix or where | Every finding must have a specific file location, a concrete description, and a recommended fix |
 | 5 | Suggesting auto-fixes without verifying they compile/type-check | Broken auto-fix suggestions destroy trust in the review process | Only suggest fixes for mechanical changes where the correct fix is unambiguous. Include enough context for the fix to be applied directly |
 | 6 | Reviewing generated code (migrations, protobuf stubs, OpenAPI clients) as handwritten code | Generated code has different quality standards; flagging it creates noise | Identify generated files by convention (file headers, directory names) and skip them or apply relaxed rules |
-| 7 | Ignoring `frontend/` entirely or applying only backend review criteria | Frontend has its own class of issues (render performance, accessibility, bundle size) that backend checklists miss | Apply frontend-specific review criteria from Phase 2 and Phase 4 to all `frontend/` code |
+| 7 | Ignoring `frontend/` entirely or applying only backend review criteria | Frontend has its own class of issues (render performance, accessibility, bundle size) that backend checklists miss | Apply frontend-specific review criteria from Phase 2 and Phase 3 to all `frontend/` code |
 | 8 | Not reading the test files before reviewing test quality | Cannot identify coverage gaps, assertion quality issues, or missing edge cases without reading the actual tests | Read both the source file and its corresponding test file together to identify gaps |
 | 9 | Producing a review report longer than 50 pages | No one reads it. Critical findings get lost in the noise | Keep the executive summary to 1 page. Use the findings files for detail. Prioritize ruthlessly |
 | 10 | Modifying files in `services/`, `frontend/`, or `tests/` | The reviewer must not change source code — only document findings and suggest fixes | Write all output exclusively to Claude-Production-Grade-Suite/code-reviewer/. Suggested code changes go in auto-fixes/ as patch files |
 | 11 | Reporting the same root-cause issue multiple times as separate findings | Inflates finding count; developers fix the pattern once, not N times | Group related symptoms under one finding. Reference all affected locations but assign one severity and one fix |
 | 12 | Skipping performance review for "simple CRUD apps" | Even simple apps have N+1 queries, missing pagination, and unbounded selects that cause outages at scale | Every project gets a performance review. Adjust depth based on traffic expectations, but never skip it |
-| 13 | Not providing impact statements for findings | Developers cannot prioritize fixes without understanding consequences | Every finding must explain what happens if the issue is not fixed: data loss, security breach, outage, slow degradation |
+| 13 | Not providing impact statements for findings | Developers cannot prioritize fixes without understanding consequences | Every finding must explain what happens if the issue is not fixed: data loss, outage, slow degradation |
 | 14 | Reviewing code in isolation without understanding the business context | Flags technically correct code as problematic because the business rule was not understood | Read the BRD/PRD acceptance criteria before starting the review to understand why the code exists |
+| 15 | Performing OWASP or security vulnerability analysis | Security review is the sole responsibility of the security-engineer skill | Defer all security findings to the security-engineer. Focus on architecture, code quality, performance, and test quality |
 
 ---
 
@@ -393,7 +308,6 @@ Before marking the skill as complete, verify:
 
 - [ ] `architecture-conformance.md` audits every ADR in `docs/architecture/` with a conformance status
 - [ ] Every finding has: ID, severity, category, file location, description, impact, and recommendation
-- [ ] Security review covers all OWASP Top 10 categories relevant to the codebase
 - [ ] Performance review checks for N+1 queries, missing indexes, unbounded queries, and caching gaps
 - [ ] Test quality review cross-references the `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` traceability matrix for coverage gaps
 - [ ] `review-report.md` has an executive summary with total finding counts and overall assessment
@@ -401,6 +315,7 @@ Before marking the skill as complete, verify:
 - [ ] `metrics/complexity.json` has per-function cyclomatic complexity scores
 - [ ] `metrics/coverage-gaps.json` identifies untested files, functions, and branches
 - [ ] `metrics/dependency-analysis.json` maps service dependencies and flags circular dependencies
-- [ ] Auto-fixes exist for all mechanical issues (missing null checks, missing auth, injection fixes)
+- [ ] Auto-fixes exist for all mechanical issues (missing null checks, missing auth, etc.)
 - [ ] No files were created or modified outside of Claude-Production-Grade-Suite/code-reviewer/
 - [ ] The report is actionable — a developer can read a finding and know exactly what to fix and where
+- [ ] No OWASP or security review was performed — security analysis is deferred to security-engineer

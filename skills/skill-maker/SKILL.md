@@ -5,9 +5,22 @@ description: Use when user wants to create a new skill, plugin, or Claude Code e
 
 # Skill Maker
 
+## Protocols
+
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
 ## Overview
 
 End-to-end skill and plugin creation pipeline. Interviews the user on what the skill should do, writes the SKILL.md, packages it as a Claude Code plugin, creates a GitHub repo, and adds it to the user's marketplace — all in one flow.
+
+## Config Paths
+
+Read `.production-grade.yaml` at startup if available. Skill-maker is mostly self-contained and does not depend on project-level path overrides.
 
 ## When to Use
 
@@ -15,44 +28,6 @@ End-to-end skill and plugin creation pipeline. Interviews the user on what the s
 - User describes a reusable workflow that should be a skill
 - User says "make a skill", "build a plugin", "I need a skill for..."
 - NOT for: editing existing skills (just edit the file directly)
-
-## User Experience Protocol
-
-**CRITICAL: Follow these rules for ALL user interactions.**
-
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
-
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
-
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
-
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
-
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
-
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
-
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
-
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
 
 ## Process Flow
 
@@ -119,7 +94,7 @@ Small inline dot flowchart for non-obvious decisions.
 Steps, patterns, or reference material.
 
 ## Common Mistakes
-Table of mistake → fix pairs.
+Table of mistake -> fix pairs.
 ```
 
 **Quality rules:**

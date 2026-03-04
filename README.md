@@ -2,23 +2,25 @@
 
 **Turn an idea into a production-ready SaaS with a single prompt.** This plugin transforms Claude Code into a complete software development pipeline — from requirements analysis to production deployment. You sit in the CEO/CTO seat, Claude handles the rest.
 
-> **v2.0** — All 13 skills bundled. No additional installs needed.
+> **v3.0** — All 13 skills bundled. 7 parallel execution points. Config layer for existing projects. Conflict resolution between skills. Native Teams/TaskList orchestration.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [What's New in v3.0](#whats-new-in-v30)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Pipeline Phases](#pipeline-phases)
 - [13 Bundled Skills](#13-bundled-skills)
+- [Configuration](#configuration)
+- [Using with Existing Projects](#using-with-existing-projects)
 - [Workspace Architecture](#workspace-architecture)
-- [Detailed Workflow](#detailed-workflow)
+- [Conflict Resolution](#conflict-resolution)
 - [Approval Gates](#approval-gates)
 - [Partial Execution](#partial-execution)
 - [Examples](#examples)
-- [Configuration](#configuration)
 - [FAQ](#faq)
 - [License](#license)
 
@@ -38,10 +40,35 @@ DEFINE → BUILD → HARDEN → SHIP → SUSTAIN
 |---------|-------------|
 | **Fully Autonomous** | Only 3 approval gates (BRD, Architecture, Production Readiness) |
 | **13 Expert Skills** | Each skill is a specialized "expert" agent |
-| **Zero Config** | Install once, all skills ready to go |
+| **7 Parallel Points** | Backend + frontend, containerization, QA + security + review, IaC + remediation, SRE + data science, docs + skills |
+| **Config Layer** | `.production-grade.yaml` adapts to existing project structures |
+| **Conflict Resolution** | Authority hierarchy prevents overlapping skill outputs |
+| **Zero Config** | Works out of the box; config is optional for customization |
 | **Real Code** | No stubs, no TODOs — production-ready code that builds and runs |
 | **Self-Debugging** | Auto-detects errors, fixes, and retries up to 3 times |
-| **Production Standards** | Clean architecture, OWASP, STRIDE, CI/CD, monitoring |
+
+---
+
+## What's New in v3.0
+
+| Area | v2.0 | v3.0 |
+|------|------|------|
+| Parallelism | 2 points (backend+frontend, security+review) | 7 points across all phases |
+| Orchestration | Hand-rolled `pipeline-state.json` | Native Claude Code Teams/TaskList |
+| Config | None — hardcoded paths | `.production-grade.yaml` with path/preference overrides |
+| Skill loading | Full skill loaded (~1000+ lines) | Router + on-demand phase files (~100-150 lines loaded) |
+| Conflicts | Undefined — skills could overlap | Authority hierarchy with dedup rules |
+| UX Protocol | Duplicated in all 13 skills (~7,800 tokens) | Single source of truth (~600 tokens) |
+| Input validation | None — skills assumed inputs existed | Graceful degradation (Critical/Degraded/Optional) |
+| Large skills | Monolithic SKILL.md files | Split into router + phase files (6 skills split) |
+
+### Token Savings
+
+| Area | Before | After | Savings |
+|------|--------|-------|---------|
+| UX Protocol duplication | ~7,800 tokens | ~600 tokens | 92% |
+| Large skill loading | ~25,000 tokens | ~3,000-5,000 tokens | 80% |
+| Full pipeline | ~100,000 tokens | ~30,000-40,000 tokens | 65% |
 
 ---
 
@@ -67,21 +94,16 @@ claude --plugin-dir /path/to/claude-code-production-grade-plugin
 - **Docker & Docker Compose** (for local dev environment)
 - **Git** (for source control)
 
-> The pipeline will auto-setup everything else it needs inside Docker.
-
 ---
 
 ## Usage
 
 ### Trigger Phrases
 
-Say any of the following to activate the pipeline:
-
 ```
 "Build a production-grade SaaS for [idea]"
 "Full production pipeline for this project"
 "Production ready setup"
-"Run the complete pipeline"
 "Build me a platform for [description]"
 ```
 
@@ -92,362 +114,285 @@ You: Build a production-grade SaaS for restaurant management
      with online ordering, table reservations, and staff scheduling.
 ```
 
-The pipeline will automatically:
-1. Interview you (3-5 multiple choice questions)
-2. Research domain & competitors
-3. Write a Business Requirements Document (BRD)
-4. **Gate 1: You approve the BRD**
-5. Design architecture, API contracts, data models
-6. **Gate 2: You approve the Architecture**
-7. Implement backend + frontend code
-8. Write & run tests (unit, integration, e2e)
-9. Security audit (STRIDE + OWASP)
-10. Automated code review
-11. Setup Terraform, CI/CD, Docker, K8s
-12. SRE production readiness check
-13. **Gate 3: You approve Production Readiness**
-14. Generate documentation
-15. Create custom skills for the project
+The pipeline will:
+1. Research domain & interview you (3-5 multiple choice questions)
+2. Write a Business Requirements Document (BRD)
+3. **Gate 1: You approve the BRD**
+4. Design architecture, API contracts, data models
+5. **Gate 2: You approve the Architecture**
+6. Implement backend + frontend in parallel
+7. Containerize (starts when backend done)
+8. QA + Security audit + Code review in parallel
+9. IaC + Remediation in parallel
+10. SRE readiness + Data scientist (conditional) in parallel
+11. **Gate 3: You approve Production Readiness**
+12. Documentation + Custom skills in parallel
+13. Compound learning capture
 
 ### Interaction Model
 
-You **don't need to type anything** — just use arrow keys and Enter to select options. Every question is multiple choice with a "Chat about this" option at the bottom for free-form input.
+You **don't need to type anything** — just use arrow keys and Enter to select options. Every question is multiple choice with a "Chat about this" option for free-form input.
 
 ---
 
 ## Pipeline Phases
 
+### Task Dependency Graph
+
 ```
-DEFINE          BUILD              HARDEN             SHIP            SUSTAIN
-  |               |                  |                  |               |
-  v               v                  v                  v               v
-Product       Software           QA Engineer        DevOps            SRE
-Manager       Engineer           Security Eng       (CI/CD,IaC)      (Reliability)
-(BRD/PRD)     (Services)         Code Reviewer
-              Frontend Eng
-Solution      (UI/UX)
-Architect     Data Scientist
-(Design)      (AI/ML)            Technical Writer
-                                 (Docs)
+T1: product-manager (BRD)
+    ↓ [GATE 1]
+T2: solution-architect (Architecture)
+    ↓ [GATE 2]
+T3a: software-engineer (Backend) ─────┐
+T3b: frontend-engineer (Frontend) ────┘ ← PARALLEL #1
+    ↓ (T4 starts when T3a done)
+T4: devops (Containerization) ─────────── PARALLEL #2
+    ↓ (all BUILD done)
+T5: qa-engineer (Testing) ────────────┐
+T6a: security-engineer (Audit) ───────┤ ← PARALLEL #3
+T6b: code-reviewer (Quality) ─────────┘ ← PARALLEL #4
+    ↓
+T7: devops (IaC + CI/CD) ────────────┐
+T8: Remediation (HARDEN fixes) ──────┘ ← PARALLEL #5
+    ↓
+T9: sre (Production Readiness) ──────┐
+T10: data-scientist (conditional) ───┘ ← PARALLEL #6
+    ↓ [GATE 3]
+T11: technical-writer (Docs) ────────┐
+T12: skill-maker (Custom Skills) ────┘ ← PARALLEL #7
+    ↓
+T13: Compound Learning + Assembly
 ```
 
-### Phase Details
+### Phase Summary
 
-| Phase | Name | Description | User Input? |
-|-------|------|-------------|-------------|
-| 1 | **DEFINE - Product Manager** | Interview CEO, research domain, write BRD/PRD | Gate 1: Approve BRD |
-| 2 | **DEFINE - Solution Architect** | System design, tech stack, API contracts, data models, scaffold | Gate 2: Approve Architecture |
-| 3a | **BUILD - Software Engineer** | Backend: services, handlers, repositories, middleware | Autonomous |
-| 3b | **BUILD - Frontend Engineer** | UI: design system, components, pages, API clients (if needed) | Autonomous |
-| 4 | **BUILD - QA Engineer** | Unit, integration, e2e, performance tests + self-healing | Autonomous |
-| 5a | **HARDEN - Security Engineer** | STRIDE threat modeling, OWASP audit, compliance check | Autonomous |
-| 5b | **HARDEN - Code Reviewer** | Architecture conformance, code quality, auto-fix | Autonomous |
-| 6 | **SHIP - DevOps** | Terraform, CI/CD, Docker/K8s, monitoring, security scanning | Autonomous |
-| 7 | **SHIP - SRE** | Production readiness, chaos engineering, incident management | Gate 3: Approve Readiness |
-| 7b | **SHIP - Data Scientist** | AI/ML/LLM optimization (auto-activates when AI usage detected) | Conditional |
-| 8 | **SUSTAIN - Technical Writer** | API reference, dev guides, Docusaurus site | Autonomous |
-| 9 | **SUSTAIN - Skill Maker** | Create custom skills for the project | Autonomous |
-
-> **Parallelization:** Phases 3a+3b run in parallel. Phases 5a+5b run in parallel.
+| Phase | Tasks | Parallel | User Input |
+|-------|-------|----------|------------|
+| **DEFINE** | T1 (PM), T2 (Architect) | Sequential | Gate 1, Gate 2 |
+| **BUILD** | T3a (Backend), T3b (Frontend), T4 (Containers) | #1, #2 | Autonomous |
+| **HARDEN** | T5 (QA), T6a (Security), T6b (Review) | #3, #4 | Autonomous |
+| **SHIP** | T7 (IaC), T8 (Remediation), T9 (SRE), T10 (Data Sci) | #5, #6 | Gate 3 |
+| **SUSTAIN** | T11 (Docs), T12 (Skills), T13 (Learning) | #7 | Autonomous |
 
 ---
 
 ## 13 Bundled Skills
 
-### 1. `production-grade` — Master Orchestrator
-- Coordinates the entire end-to-end pipeline
-- Manages state, context bridging between skills
-- Adaptive: auto-adjusts plan based on each phase's results
-- 3 approval gates with multiple-choice UX
+| # | Skill | Phase | Role |
+|---|-------|-------|------|
+| 1 | `production-grade` | Orchestrator | Coordinates entire pipeline via Teams/TaskList |
+| 2 | `product-manager` | DEFINE | CEO interview, domain research, BRD with user stories |
+| 3 | `solution-architect` | DEFINE | ADRs, tech stack, API contracts, data models, scaffold |
+| 4 | `software-engineer` | BUILD | Clean architecture backend: handlers → services → repositories |
+| 5 | `frontend-engineer` | BUILD | Design system, components, pages, API clients, a11y |
+| 6 | `qa-engineer` | HARDEN | Integration, e2e, performance tests, self-healing protocol |
+| 7 | `security-engineer` | HARDEN | STRIDE + OWASP (sole authority), PII, dependency scan |
+| 8 | `code-reviewer` | HARDEN | Architecture conformance, quality, performance (no security) |
+| 9 | `devops` | BUILD/SHIP | Docker, Terraform, CI/CD, monitoring (no SLOs) |
+| 10 | `sre` | SHIP | SLOs (sole authority), chaos engineering, runbooks, capacity |
+| 11 | `data-scientist` | SHIP | LLM optimization, A/B testing, data pipelines, cost modeling |
+| 12 | `technical-writer` | SUSTAIN | API reference, dev guides, Docusaurus scaffold |
+| 13 | `skill-maker` | SUSTAIN | 3-5 project-specific custom skills |
 
-### 2. `product-manager` — Business Requirements
-- Interviews CEO/CTO (3-5 focused questions)
-- Researches domain via web search
-- Writes BRD with user stories, acceptance criteria, business rules
-- Self-verifies implementation matches BRD after code is complete
+### Split Skills (Router + Phases)
 
-### 3. `solution-architect` — System Design
-- Architecture Decision Records (ADRs)
-- C4 diagrams (context, container, sequence)
-- Tech stack selection with rationale
-- OpenAPI 3.1, gRPC proto, AsyncAPI specs
-- ERD, SQL migrations, data flow diagrams
-- Project scaffold with health checks, logging, graceful shutdown
+Six large skills are split into a thin router SKILL.md (~100-150 lines) + on-demand phase files for token efficiency:
 
-### 4. `software-engineer` — Backend Implementation
-- Clean architecture: handlers → services → repositories
-- Dependency injection, DTO mapping, domain models
-- Multi-tenancy, RBAC, audit trail
-- Payment integration (Stripe/Paddle abstraction)
-- Feature flags, caching, rate limiting
-- Local dev environment (Docker Compose + seed data)
+| Skill | Phases |
+|-------|--------|
+| `software-engineer` | 5 phases: context analysis, service implementation, cross-cutting, integration, local dev |
+| `frontend-engineer` | 5 phases: analysis, design system, components, pages/routes, testing/a11y |
+| `security-engineer` | 6 phases: threat modeling, code audit, auth review, data security, supply chain, remediation |
+| `sre` | 5 phases: readiness review, SLO definition, chaos engineering, incident management, capacity planning |
+| `data-scientist` | 6 phases: system audit, LLM optimization, experiment framework, data pipeline, ML infrastructure, cost modeling |
+| `technical-writer` | 4 phases: content audit, API reference, developer guides, Docusaurus scaffold |
 
-### 5. `frontend-engineer` — UI/UX
-- Design system with tokens, components, patterns
-- Next.js / Vue / Svelte support
-- API client generation from OpenAPI specs
-- Accessibility (WCAG 2.1 AA)
-- Storybook documentation
+---
 
-### 6. `data-scientist` — AI/ML/LLM Optimization
-- Prompt engineering & token optimization
-- LLM caching strategies
-- A/B testing framework
-- Cost modeling & analytics pipeline
-- Auto-activates when AI/ML usage is detected in code
+## Configuration
 
-### 7. `qa-engineer` — Testing
-- Unit, integration, contract, e2e, performance tests
-- Self-healing test protocol: distinguishes test bugs from implementation bugs
-- Coverage reports
-- Auto-retry & debug failed tests
+### `.production-grade.yaml`
 
-### 8. `security-engineer` — Security Audit
-- STRIDE threat modeling
-- OWASP Top 10 code audit
-- PII inventory & encryption review
-- Dependency vulnerability analysis
-- Penetration test plans
-- Compliance (GDPR, SOC2, HIPAA)
+Create this file at your project root to customize paths, preferences, and features:
 
-### 9. `code-reviewer` — Quality Gate
-- Architecture conformance check
-- Code quality metrics
-- Performance review
-- Auto-fix for critical & high severity issues
-- Findings report by severity
+```yaml
+version: "3.0"
 
-### 10. `devops` — Infrastructure & Deployment
-- Terraform IaC (AWS / GCP / Azure)
-- CI/CD pipelines (GitHub Actions)
-- Docker multi-stage builds
-- Kubernetes manifests
-- Monitoring: Prometheus, Grafana dashboards
-- Security scanning in pipeline
+project:
+  name: "my-project"
+  language: "typescript"       # typescript | go | python | rust | java
+  framework: "nestjs"          # nestjs | express | fastapi | gin | actix | spring
+  cloud: "aws"                 # aws | gcp | azure
+  architecture: "microservices" # monolith | modular-monolith | microservices
 
-### 11. `sre` — Site Reliability Engineering
-- Production readiness checklist
-- SLO/SLI definitions
-- Chaos engineering scenarios
-- Capacity planning
-- Incident management & runbooks
-- On-call rotation setup
+paths:
+  api_contracts: "api/openapi/*.yaml"
+  architecture_docs: "docs/architecture/"
+  adrs: "docs/architecture/architecture-decision-records/"
+  services: "services/"
+  frontend: "frontend/"
+  tests: "tests/"
+  terraform: "infrastructure/terraform/"
+  ci_cd: ".github/workflows/"
+  docs: "docs/"
+  runbooks: "docs/runbooks/"
+  workspace: "Claude-Production-Grade-Suite/"
 
-### 12. `technical-writer` — Documentation
-- API reference (auto-generated)
-- Developer guides
-- Operational docs & runbooks
-- Docusaurus site scaffold
-- Architecture decision documentation
+preferences:
+  test_framework: "jest"       # jest | vitest | pytest | go-test
+  orm: "prisma"                # prisma | drizzle | typeorm | sqlalchemy
+  ci_provider: "github-actions"
+  package_manager: "npm"       # npm | pnpm | yarn | bun
+  frontend_framework: "nextjs" # nextjs | nuxt | sveltekit | remix
 
-### 13. `skill-maker` — Meta Skill Creator
-- Analyzes project patterns
-- Creates 3-5 custom skills specific to the project
-- Packages & publishes to marketplace
-- Auto-generates SKILL.md, plugin.json
+features:
+  frontend: true               # false for API-only projects
+  ai_ml: false                 # auto-detected from imports
+  multi_tenancy: true
+  documentation_site: true
+  event_driven: true           # async messaging support
+```
+
+If no config file exists, the orchestrator auto-detects settings from your project structure and offers to generate one.
+
+---
+
+## Using with Existing Projects
+
+The plugin adapts to your existing project structure via `.production-grade.yaml`:
+
+1. **Create config** — Copy the template and customize `paths.*` to match your layout
+2. **Run specific phases** — Use partial execution: `"Just harden"` to run security + review on existing code
+3. **Graceful degradation** — Missing inputs are classified:
+   - **Critical**: Skill stops, asks where the input is
+   - **Degraded**: Skill continues with partial output, marks gaps
+   - **Optional**: Skill skips silently
+
+### Common scenarios:
+
+```
+# Audit security on existing codebase
+"Run security-engineer on this project"
+
+# Add infrastructure to existing app
+"Just ship — add Terraform, CI/CD, and Docker"
+
+# Generate documentation for existing code
+"Just document this project"
+```
 
 ---
 
 ## Workspace Architecture
 
-The plugin enforces a clean separation between **project deliverables** (at the project root) and **agent workspace artifacts** (in the suite folder).
-
 ### Project Root (Deliverables)
 
-All production code, infrastructure, docs, and tests live at the project root:
+All production code lives at the project root:
 
 ```
 project/
-├── services/                    # Backend service implementations
-│   └── <service-name>/
-│       ├── src/
-│       ├── tests/
-│       ├── Dockerfile
-│       └── Makefile
-├── libs/shared/                 # Shared types, utils, clients
-├── frontend/                    # Frontend application (if applicable)
-│   ├── app/
-│   ├── tests/
-│   ├── storybook/
-│   └── package.json
-├── api/                         # API contracts
-│   ├── openapi/*.yaml
-│   ├── grpc/*.proto
-│   └── asyncapi/*.yaml
-├── schemas/                     # Data models
-│   ├── erd.md
-│   ├── migrations/*.sql
-│   └── data-flow.md
+├── services/                    # Backend services
+├── libs/shared/                 # Shared libraries
+├── frontend/                    # Frontend application
+├── api/                         # API contracts (OpenAPI, gRPC, AsyncAPI)
+├── schemas/                     # Data models (ERD, migrations)
 ├── tests/                       # Cross-service tests
-│   ├── integration/
-│   ├── e2e/
-│   └── performance/
-├── infrastructure/              # IaC and deployment
-│   ├── terraform/
-│   ├── kubernetes/
-│   └── monitoring/
-├── docs/                        # Project documentation
-│   ├── architecture/
-│   │   ├── architecture-decision-records/
-│   │   ├── system-diagrams/
-│   │   └── tech-stack.md
-│   ├── runbooks/
-│   ├── api/
-│   └── guides/
-├── scripts/                     # Build, deploy, seed scripts
+├── infrastructure/              # Terraform, K8s manifests
+├── docs/                        # Documentation + runbooks
 ├── .github/workflows/           # CI/CD pipelines
 ├── docker-compose.yml
 ├── Makefile
+├── .production-grade.yaml       # Plugin config (optional)
 └── README.md
 ```
 
-### Agent Workspace (Working Artifacts Only)
-
-The `Claude-Production-Grade-Suite/` folder contains **only** agent workspace artifacts — plans, notes, findings, analysis. **No production code lives here.**
+### Agent Workspace (Working Artifacts)
 
 ```
 Claude-Production-Grade-Suite/
-├── .orchestrator/               # Pipeline state & logs
-│   ├── pipeline-state.json
-│   ├── decisions-log.md
-│   ├── execution-plan.md
-│   └── agent-activity.log
-├── product-manager/             # BRD, research notes
-├── solution-architect/          # Design analysis, working notes
-├── software-engineer/           # Implementation plans, progress
-├── frontend-engineer/           # UI analysis, component inventory
-├── qa-engineer/                 # Test plans, coverage reports
-├── security-engineer/           # Threat models, audit findings
-├── code-reviewer/               # Review findings, metrics
-├── devops/                      # Deployment planning notes
-├── sre/                         # Readiness assessments
-├── data-scientist/              # ML analysis notes
-├── technical-writer/            # Writing notes
-└── skill-maker/                 # Custom skill drafts
+├── .protocols/              # Shared protocols (bootstrap)
+├── .orchestrator/           # Pipeline state via TaskList
+├── product-manager/         # BRD, research notes
+├── solution-architect/      # Architecture analysis
+├── software-engineer/       # Implementation plans
+├── frontend-engineer/       # UI analysis
+├── qa-engineer/             # Test plans, coverage
+├── security-engineer/       # Threat models, audit findings
+├── code-reviewer/           # Review findings, metrics
+├── devops/                  # Infrastructure planning
+├── sre/                     # Readiness assessments
+├── data-scientist/          # ML analysis
+├── technical-writer/        # Writing notes
+└── skill-maker/             # Custom skill drafts
 ```
 
 ---
 
-## Detailed Workflow
+## Conflict Resolution
 
-### 1. Initialization
-```
-User: "Build me a SaaS for X"
-  ↓
-Orchestrator creates workspace + researches domain
-  ↓
-Displays Execution Plan (active phases, parallelization)
-  ↓
-Automatically starts Phase 1 (NO "should I proceed?" prompts)
-```
+When skills produce overlapping outputs, the authority hierarchy determines which takes precedence:
 
-### 2. Context Bridging
+| Domain | Sole Authority | Others Must NOT |
+|--------|---------------|-----------------|
+| OWASP, STRIDE, PII, encryption | **security-engineer** | code-reviewer must not do security review |
+| SLO, error budgets, runbooks | **sre** | devops must not define SLOs |
+| Code quality, arch conformance | **code-reviewer** | — |
+| Infrastructure, CI/CD | **devops** | sre reviews but doesn't provision |
+| Requirements (WHAT) | **product-manager** | — |
+| Architecture (HOW) | **solution-architect** | — |
 
-Each phase reads the output of previous phases — no re-asking of already-answered questions:
+### Remediation Feedback Loop
 
-| Phase | Reads From | Writes To (Project Root) | Writes To (Workspace) |
-|-------|------------|--------------------------|----------------------|
-| Product Manager | User interview | — | `product-manager/` |
-| Solution Architect | `product-manager/BRD/` | `docs/architecture/`, `api/`, `schemas/` | `solution-architect/` |
-| Software Engineer | `docs/architecture/`, `api/`, `schemas/` | `services/`, `libs/`, `docker-compose.yml` | `software-engineer/` |
-| Frontend Engineer | `api/`, `product-manager/BRD/` | `frontend/` | `frontend-engineer/` |
-| QA Engineer | `services/`, `frontend/`, `docs/architecture/` | `tests/` | `qa-engineer/` |
-| Security Engineer | All project root code | Security fixes in-place | `security-engineer/` |
-| Code Reviewer | All project root code + tests | Auto-fixes in-place | `code-reviewer/` |
-| DevOps | `docs/architecture/`, `services/` | `infrastructure/`, `.github/workflows/` | `devops/` |
-| SRE | `infrastructure/`, `docs/architecture/` | `docs/runbooks/` | `sre/` |
-| Data Scientist | `services/`, `docs/architecture/` | Optimizations in-place | `data-scientist/` |
-| Technical Writer | **ALL** project root | `docs/` | `technical-writer/` |
-| Skill Maker | **ALL** project root | Custom skill plugins | `skill-maker/` |
-
-### 3. Adaptive Orchestration
-
-The orchestrator is **intelligent** and auto-adjusts based on context:
-
-| Scenario | Action |
-|----------|--------|
-| User says "no frontend" | Skip Phase 3b, simplify DevOps |
-| Architect chooses monolith | Drop K8s, simplify CI/CD |
-| Code uses LLM APIs | Auto-enable Phase 7b (Data Scientist) |
-| Security finds critical vuln | Pause → call Software Engineer to fix → resume |
-| Tests fail > 20% | Flag for user review |
-| User says "skip testing" | Warn, continue if user insists |
-
-### 4. Self-Debugging Protocol
-
-Every agent follows this protocol:
-1. Write code → **build and test** (`make build`, `docker build`)
-2. On error → read error → analyze root cause → fix → retry
-3. After 3 failures → stop and report details to user
-4. **Never** leave broken code and move on
+1. HARDEN skills find Critical/High issues
+2. Orchestrator creates remediation tasks assigned to BUILD agents
+3. BUILD agents fix the code
+4. HARDEN re-scans affected files
+5. After 2 cycles without resolution → escalate to user
 
 ---
 
 ## Approval Gates
 
-The plugin pauses only **3 times** to ask you:
+The plugin pauses only **3 times**:
 
-### Gate 1: BRD Approval (after Phase 1)
+### Gate 1: BRD Approval
 ```
-┌─────────────────────────────────────────────┐
-│ Gate 1: BRD                                 │
-│                                             │
-│ BRD complete: 12 user stories,              │
-│ 8 acceptance criteria. Approve?             │
-│                                             │
-│ > Approve — start architecture (Recommended)│
-│   Show me the BRD details                   │
-│   I have changes                            │
-│   Chat about this                           │
-└─────────────────────────────────────────────┘
+> Approve — start architecture (Recommended)
+  Show me the BRD details
+  I have changes
+  Chat about this
 ```
 
-### Gate 2: Architecture Approval (after Phase 2)
+### Gate 2: Architecture Approval
 ```
-┌─────────────────────────────────────────────┐
-│ Gate 2: Architecture                        │
-│                                             │
-│ Architecture complete: [tech stack].        │
-│ Approve to start building?                  │
-│                                             │
-│ > Approve — start building (Recommended)    │
-│   Show architecture details                 │
-│   I have concerns                           │
-│   Chat about this                           │
-└─────────────────────────────────────────────┘
+> Approve — start building (Recommended)
+  Show architecture details
+  I have concerns
+  Chat about this
 ```
 
-### Gate 3: Production Readiness (after Phase 7)
+### Gate 3: Production Readiness
 ```
-┌─────────────────────────────────────────────┐
-│ Gate 3: Ship                                │
-│                                             │
-│ All phases complete. Ship it?               │
-│                                             │
-│ > Ship it — production ready (Recommended)  │
-│   Show full report                          │
-│   Fix issues first                          │
-│   Chat about this                           │
-└─────────────────────────────────────────────┘
+> Ship it — production ready (Recommended)
+  Show full report
+  Fix issues first
+  Chat about this
 ```
-
-> All interactions between gates are **autonomous** — the pipeline makes decisions and reports.
 
 ---
 
 ## Partial Execution
 
-You don't have to run the full pipeline. Run individual sections:
-
-| Command | Phases Run |
-|---------|------------|
-| `"Just define"` | Product Manager → Solution Architect |
-| `"Just build"` | Software Engineer → QA (requires architecture) |
-| `"Just harden"` | Security Engineer → Code Reviewer (requires code) |
-| `"Just ship"` | DevOps → SRE (requires code) |
-| `"Just document"` | Technical Writer (requires output from prior phases) |
-| `"Skip frontend"` | Skip Phase 3b |
-| `"Start from architecture"` | Skip Product Manager, start Phase 2 |
+| Command | Tasks Run |
+|---------|----------|
+| `"Just define"` | T1, T2 (PM + Architect) |
+| `"Just build"` | T3a, T3b, T4 (requires architecture) |
+| `"Just harden"` | T5, T6a, T6b (requires implementation) |
+| `"Just ship"` | T7-T10 (requires HARDEN output) |
+| `"Just document"` | T11 only |
+| `"Skip frontend"` | Omit T3b |
+| `"Start from architecture"` | Skip T1, start at T2 |
 
 ---
 
@@ -459,117 +404,41 @@ Build a production-grade SaaS for multi-vendor e-commerce
 with seller dashboards, buyer marketplace, and payment processing.
 ```
 
-### Project Management Tool
-```
-Build me a production-ready project management platform
-like Linear, with sprint planning, issue tracking, and team collaboration.
-```
-
 ### AI Content Platform
 ```
 Full production pipeline for an AI content generation platform
 with prompt management, usage metering, and team workspaces.
 ```
-> *Phase 7b (Data Scientist) will auto-activate for AI/LLM optimization*
+> *Data Scientist (T10) auto-activates for LLM optimization*
 
 ### API-Only Backend
 ```
 Build a production-grade REST API for a fintech lending platform.
 No frontend needed. Focus on security and compliance.
 ```
-> *Phase 3b (Frontend) is automatically skipped*
-
----
-
-## Configuration
-
-### Plugin Metadata
-
-```json
-{
-  "name": "production-grade",
-  "version": "2.0.0",
-  "author": "nagisanzenin",
-  "license": "MIT"
-}
-```
-
-### Custom Tech Stack
-
-You can specify your preferred tech stack when triggering:
-
-```
-Build a production-grade SaaS for X using:
-- TypeScript + NestJS backend
-- Next.js frontend
-- PostgreSQL + Redis
-- Deploy on AWS
-```
-
-The Solution Architect will respect your preferences in the ADRs.
-
-### Cloud Support
-
-| Cloud | Terraform | CI/CD | Containers | Monitoring |
-|-------|-----------|-------|------------|------------|
-| **AWS** | ECS/EKS, RDS, SQS/SNS | GitHub Actions | Docker, K8s | CloudWatch |
-| **GCP** | GKE/Cloud Run, Cloud SQL | GitHub Actions | Docker, K8s | Cloud Monitoring |
-| **Azure** | AKS, Azure SQL, Service Bus | GitHub Actions | Docker, K8s | Azure Monitor |
-| **Multi-cloud** | Provider-agnostic modules | GitHub Actions | Docker, K8s | Multi-provider |
+> *Frontend (T3b) automatically skipped*
 
 ---
 
 ## FAQ
 
-### Q: Does the plugin actually write working code?
-**A:** Yes. Every agent follows the protocol: write code → build → debug → fix. No stubs or TODOs in production code. Builds must pass, tests must be green.
+**Q: Does the plugin write working code?**
+Yes. Every agent: write → build → test → debug → fix. No stubs or TODOs.
 
-### Q: How long does the full pipeline take?
-**A:** Depends on project complexity. A simple SaaS (5-10 endpoints) takes roughly 30-60 minutes. Complex platforms may take 2-4 hours.
+**Q: Can I use it on existing projects?**
+Yes. Create `.production-grade.yaml` to map your paths, then run specific phases.
 
-### Q: Can I stop mid-way and resume later?
-**A:** Pipeline state is saved in `.orchestrator/pipeline-state.json`. However, resuming mid-pipeline depends on the Claude Code session context.
+**Q: What languages are supported?**
+TypeScript/Node.js, Go, Python, Rust, Java/Kotlin. Specify in config or let the architect choose.
 
-### Q: What languages are supported?
-**A:** TypeScript/Node.js, Go, Python, Rust, Java/Kotlin. The Solution Architect selects based on requirements, or you can specify your preference.
+**Q: How does state persist?**
+v3.0 uses Claude Code's native TaskList instead of custom JSON files. Pipeline state derives from task statuses.
 
-### Q: Is Docker required?
-**A:** Recommended for running the local dev environment and verifying builds. Some phases (DevOps, QA integration tests) require Docker.
+**Q: Is Docker required?**
+Recommended for local dev and build verification. Some phases require it.
 
-### Q: Will the plugin overwrite existing code?
-**A:** No. All deliverables are written to clearly-defined directories at the project root. The `Claude-Production-Grade-Suite/` folder contains only workspace artifacts.
-
-### Q: How do I add custom skills for my project?
-**A:** Phase 9 (Skill Maker) automatically analyzes the project and creates 3-5 custom skills. Or trigger `skill-maker` separately: `"Make a skill for [description]"`.
-
----
-
-## Architecture Highlights
-
-### Clean Architecture (Software Engineer)
-```
-Handler (thin) → Service (business logic) → Repository (data access)
-     ↓                    ↓                        ↓
-  Validate          Apply rules              Query DB
-  Delegate          Emit events              Cache aside
-  Respond           Return Result            Tenant scoped
-```
-
-### Security Layers (Security Engineer)
-- **STRIDE** threat modeling for each component
-- **OWASP Top 10** code-level audit
-- Auto-fix critical/high vulnerabilities
-- PII inventory + encryption strategy
-- Dependency vulnerability analysis
-
-### Production Standards (SRE + DevOps)
-- Health checks (`/healthz`, `/readyz`)
-- Structured JSON logging with trace IDs
-- Graceful shutdown handling
-- Circuit breaker + retry patterns
-- Rate limiting (global + per-tenant)
-- Feature flags abstraction
-- Multi-tenancy at data layer
+**Q: Will it overwrite existing code?**
+No. Deliverables go to defined directories. The workspace folder contains only agent artifacts.
 
 ---
 
@@ -577,31 +446,12 @@ Handler (thin) → Service (business logic) → Repository (data access)
 
 1. Fork the repo
 2. Create a branch: `git checkout -b feature/your-feature`
-3. Commit: `git commit -m "Add your feature"`
-4. Push: `git push origin feature/your-feature`
-5. Open a Pull Request
+3. Commit changes
+4. Open a Pull Request
 
 ### Adding a New Skill
 
-Create a folder at `skills/your-skill-name/` with a `SKILL.md` file:
-
-```markdown
----
-name: your-skill-name
-description: When to trigger this skill...
----
-
-# Your Skill Name
-
-## Overview
-...
-
-## When to Use
-...
-
-## Process Flow
-...
-```
+Create `skills/your-skill-name/SKILL.md` with `---` frontmatter. For large skills, use the router + phases pattern.
 
 ---
 
@@ -612,5 +462,5 @@ MIT — See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <strong>From idea to production-ready SaaS. One prompt. 13 expert AI agents.</strong>
+  <strong>From idea to production-ready SaaS. One prompt. 13 expert AI agents. 7 parallel execution points.</strong>
 </p>

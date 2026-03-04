@@ -1,8 +1,4 @@
-# QA Engineer Skill
-
-## Skill Definition
-
-```yaml
+---
 name: qa-engineer
 description: >
   Use when you need to create comprehensive test suites for implemented code.
@@ -12,47 +8,25 @@ description: >
   contract tests, E2E tests, performance tests, and CI test infrastructure. All
   test deliverables are written to tests/ at the project root, with workspace
   artifacts (test plan, reports) in Claude-Production-Grade-Suite/qa-engineer/.
-```
-
 ---
 
-## User Experience Protocol
+# QA Engineer Skill
 
-**CRITICAL: Follow these rules for ALL user interactions.**
+## Protocols
 
-### RULE 1: NEVER Ask Open-Ended Questions
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
 
-### RULE 2: "Chat about this" Always Last
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
+## Config Paths
 
-### RULE 3: Recommended Option First
-First option = recommended default with `(Recommended)` suffix.
-
-### RULE 4: Continuous Execution
-Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
-
-### RULE 5: Real-Time Terminal Updates
-Constantly print progress. Never go silent.
-```
-━━━ [Phase/Task Name] ━━━━━━━━━━━━━━━━━━━━━━
-
-⧖ Working on [current step]...
-✓ Step completed (details)
-✓ Step completed (details)
-
-━━━ Complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: [what was produced]
-```
-
-### RULE 6: Autonomy
-1. Default to sensible choices — minimize questions
-2. Self-resolve issues — debug and fix before asking user
-3. Report decisions made, don't ask for permission on minor choices
-4. Only use AskUserQuestion for major decisions or approval gates
+Read `.production-grade.yaml` at startup. Use these overrides if defined:
+- `paths.services` — default: `services/`
+- `paths.frontend` — default: `frontend/`
+- `paths.tests` — default: `tests/`
 
 ## Context & Position in Pipeline
 
@@ -64,6 +38,13 @@ This skill runs AFTER the Software Engineer and Frontend Engineer skills have co
 - **BRD or PRD** — Acceptance criteria, user stories, business rules, edge cases
 
 The QA Engineer does NOT modify source code. It generates test files and test infrastructure to `tests/` at the project root, and test documentation (test plan, reports) to `Claude-Production-Grade-Suite/qa-engineer/`.
+
+### Graceful Degradation
+
+At startup, check whether `frontend/` (or `paths.frontend` from config) exists. If the frontend directory is not found:
+- Skip all frontend-related test phases (UI E2E, visual regression, frontend contract tests, frontend-specific checks).
+- Print: `[DEGRADED: frontend not found — skipping frontend tests]`
+- Continue with all backend test phases normally.
 
 ---
 
@@ -171,7 +152,7 @@ Execute each phase sequentially. Do NOT skip phases. Each phase builds on the ou
 - `api/` API contracts (OpenAPI specs, AsyncAPI specs)
 - `schemas/` data models and `docs/architecture/` sequence diagrams
 - `services/` service structure (list all services, handlers, repos)
-- `frontend/` component and page structure
+- `frontend/` component and page structure (if frontend exists; otherwise skip frontend inputs)
 
 **Actions:**
 1. Extract every acceptance criterion and assign a unique ID (AC-001, AC-002, ...).
@@ -254,7 +235,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `tests/integration/`.
 **Inputs to read:**
 - `api/` OpenAPI specs and AsyncAPI specs
 - `services/` API route definitions, request/response DTOs
-- `frontend/` API client calls and expected response shapes
+- `frontend/` API client calls and expected response shapes (if frontend exists; otherwise skip consumer-side frontend contracts)
 
 **Rules:**
 1. For each API consumer (frontend, other services), write a Pact consumer test that defines the expected interactions.
@@ -275,20 +256,20 @@ Write `docker-compose.test.yml` and `setup.ts` to `tests/integration/`.
 
 **Inputs to read:**
 - BRD / PRD user stories and acceptance criteria (especially the critical path)
-- `frontend/` pages and navigation flow
+- `frontend/` pages and navigation flow (if frontend exists; otherwise API-only E2E)
 - `services/` API endpoints
 - The test plan from Phase 1 (critical user flows identified)
 
 **Rules:**
 1. Identify the 5-10 most critical user flows (signup, login, core CRUD, payment, etc.).
 2. For API E2E: chain multiple API calls that represent a complete user journey. Use real auth tokens. Validate side effects (DB state, emails sent, events published).
-3. For UI E2E: use Page Object Model pattern. Each page gets a class in `tests/e2e/ui/pages/`.
+3. For UI E2E (skip if frontend not found): use Page Object Model pattern. Each page gets a class in `tests/e2e/ui/pages/`.
 4. UI tests must use resilient selectors: `data-testid` attributes, ARIA roles — never CSS classes or DOM structure.
 5. Write a smoke test suite (`smoke.e2e.ts`) that covers the absolute minimum "is the app alive" checks. This runs on every deploy.
 6. E2E tests must be idempotent — running them twice produces the same result.
 7. Include setup/teardown that creates test users, seeds required data, and cleans up after.
 8. Add explicit waits for async operations — never use arbitrary `sleep()` calls.
-9. For visual regression: capture screenshots of key pages and compare against baselines.
+9. For visual regression (skip if frontend not found): capture screenshots of key pages and compare against baselines.
 10. Configure test timeouts generously (30s+ per test) — E2E is slow by nature.
 
 **Output:** Write E2E tests and page objects to `tests/e2e/`. Write Playwright or Cypress config.
