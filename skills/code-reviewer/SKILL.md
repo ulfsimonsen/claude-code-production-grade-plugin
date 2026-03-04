@@ -7,8 +7,8 @@ name: code-reviewer
 description: >
   Use when you need to review all generated code for architecture conformance,
   code quality, security vulnerabilities, performance issues, and test adequacy.
-  Reads Claude-Production-Grade-Suite/software-engineer/, Claude-Production-Grade-Suite/frontend-engineer/, Claude-Production-Grade-Suite/qa-engineer/, and compares against
-  Claude-Production-Grade-Suite/solution-architect/ designs and ADRs. Produces a structured review report
+  Reads services/, libs/, frontend/, tests/, and compares against
+  docs/architecture/ designs, ADRs, and api/ contracts. Produces a structured review report
   with severity-rated findings and auto-fix suggestions. All output is written to
   Claude-Production-Grade-Suite/code-reviewer/ in the project root. This is NOT a linter — it catches architectural
   drift, design pattern violations, anti-patterns, and systemic issues that static
@@ -57,16 +57,16 @@ Summary: [what was produced]
 
 ## Context & Position in Pipeline
 
-This skill runs as a **quality gate** AFTER implementation (Claude-Production-Grade-Suite/software-engineer/), frontend (Claude-Production-Grade-Suite/frontend-engineer/), and testing (Claude-Production-Grade-Suite/qa-engineer/) are complete. It is the final validation step before code is considered ready for deployment pipeline configuration.
+This skill runs as a **quality gate** AFTER implementation (`services/`, `libs/`), frontend (`frontend/`), and testing (`tests/`) are complete. It is the final validation step before code is considered ready for deployment pipeline configuration.
 
 **Inputs:**
-- **Claude-Production-Grade-Suite/solution-architect/** — ADRs, API contracts (OpenAPI/AsyncAPI), data models, sequence diagrams, architectural decisions, technology choices
-- **Claude-Production-Grade-Suite/software-engineer/** — Backend services, handlers, repositories, domain models, middleware, infrastructure code
-- **Claude-Production-Grade-Suite/frontend-engineer/** — UI components, pages, hooks, state management, API clients, routing
-- **Claude-Production-Grade-Suite/qa-engineer/** — Test suites, coverage thresholds, test plan, fixtures
+- **`docs/architecture/`**, **`api/`** — ADRs, API contracts (OpenAPI/AsyncAPI), data models, sequence diagrams, architectural decisions, technology choices
+- **`services/`**, **`libs/`** — Backend services, handlers, repositories, domain models, middleware, infrastructure code
+- **`frontend/`** — UI components, pages, hooks, state management, API clients, routing
+- **`tests/`**, **`Claude-Production-Grade-Suite/qa-engineer/test-plan.md`** — Test suites, coverage thresholds, test plan, fixtures
 - **BRD / PRD** — Business requirements, acceptance criteria, NFRs
 
-The Code Reviewer does NOT modify source code in other suites. It produces findings, metrics, and suggested fixes in `Claude-Production-Grade-Suite/code-reviewer/`. Engineers then apply fixes based on the review.
+The Code Reviewer does NOT modify source code. It produces findings, metrics, and suggested fixes in `Claude-Production-Grade-Suite/code-reviewer/`. Engineers then apply fixes based on the review.
 
 ---
 
@@ -115,15 +115,15 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 ### Phase 1 — Architecture Conformance
 
-**Goal:** Verify that the implementation faithfully follows the architectural decisions documented in Claude-Production-Grade-Suite/solution-architect/. Flag every deviation.
+**Goal:** Verify that the implementation faithfully follows the architectural decisions documented in `docs/architecture/`. Flag every deviation.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/solution-architect/ ADRs (every Architecture Decision Record)
-- Claude-Production-Grade-Suite/solution-architect/ system architecture diagrams, service boundaries, communication patterns
-- Claude-Production-Grade-Suite/solution-architect/ API contracts (OpenAPI/AsyncAPI)
-- Claude-Production-Grade-Suite/solution-architect/ data models and database design
-- Claude-Production-Grade-Suite/software-engineer/ full source tree
-- Claude-Production-Grade-Suite/frontend-engineer/ full source tree
+- `docs/architecture/` ADRs (every Architecture Decision Record)
+- `docs/architecture/` system architecture diagrams, service boundaries, communication patterns
+- `api/` API contracts (OpenAPI/AsyncAPI)
+- `schemas/` data models and database design
+- `services/`, `libs/` full backend source tree
+- `frontend/` full frontend source tree
 
 **Review checklist:**
 1. **Service boundaries** — Does each service own exactly the domain it was designed to own? Are there cross-boundary data accesses that bypass APIs?
@@ -136,7 +136,7 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 8. **Configuration management** — Are secrets managed as designed (env vars, vault, SSM)? Are there hardcoded values that should be configurable?
 
 **Output:** Write `Claude-Production-Grade-Suite/code-reviewer/architecture-conformance.md` with:
-- A table listing every ADR and its conformance status (Conformant / Partial / Violated)
+- A table listing every ADR from `docs/architecture/` and its conformance status (Conformant / Partial / Violated)
 - For each violation: the ADR reference, what was specified, what was implemented, severity, and recommended fix
 - For partial conformance: what is correct and what deviates
 
@@ -147,8 +147,8 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 **Goal:** Evaluate code against software engineering best practices. Identify structural issues that static analysis tools typically miss.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/software-engineer/ all source files
-- Claude-Production-Grade-Suite/frontend-engineer/ all source files
+- `services/`, `libs/` all backend source files
+- `frontend/` all frontend source files
 
 **Review checklist:**
 
@@ -181,9 +181,9 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 **Goal:** Identify security vulnerabilities in the codebase. Focus on issues that automated scanners miss: logic flaws, authorization gaps, and data exposure risks.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/software-engineer/ all source files (especially auth middleware, API handlers, data access)
-- Claude-Production-Grade-Suite/frontend-engineer/ all source files (especially auth flows, API calls, local storage usage)
-- Claude-Production-Grade-Suite/solution-architect/ security requirements and auth architecture
+- `services/`, `libs/` all backend source files (especially auth middleware, API handlers, data access)
+- `frontend/` all frontend source files (especially auth flows, API calls, local storage usage)
+- `docs/architecture/` security requirements and auth architecture
 
 **Review against OWASP Top 10 (2021):**
 
@@ -243,9 +243,9 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 **Goal:** Identify performance bottlenecks, inefficient patterns, and missing optimizations in the codebase.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/software-engineer/ all source files (especially data access, API handlers, middleware)
-- Claude-Production-Grade-Suite/frontend-engineer/ all source files (especially data fetching, rendering, bundle composition)
-- Claude-Production-Grade-Suite/solution-architect/ NFRs (latency targets, throughput requirements)
+- `services/`, `libs/` all backend source files (especially data access, API handlers, middleware)
+- `frontend/` all frontend source files (especially data fetching, rendering, bundle composition)
+- `docs/architecture/` NFRs (latency targets, throughput requirements)
 
 **Review checklist:**
 
@@ -272,13 +272,13 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 ### Phase 5 — Test Quality Review
 
-**Goal:** Evaluate the test suites in Claude-Production-Grade-Suite/qa-engineer/ for coverage quality, assertion strength, and test design.
+**Goal:** Evaluate the test suites in `tests/` for coverage quality, assertion strength, and test design.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/qa-engineer/ all test files
-- Claude-Production-Grade-Suite/qa-engineer/test-plan.md traceability matrix
-- Claude-Production-Grade-Suite/qa-engineer/coverage/thresholds.json
-- Claude-Production-Grade-Suite/software-engineer/ source files (to identify untested paths)
+- `tests/` all test files
+- `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` traceability matrix
+- `Claude-Production-Grade-Suite/qa-engineer/coverage/thresholds.json`
+- `services/`, `libs/` source files (to identify untested paths)
 
 **Review checklist:**
 1. **Coverage gaps** — Identify source files with no corresponding test file. Identify public functions with no test. Identify error handling branches with no test.
@@ -371,15 +371,15 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 | # | Mistake | Why It Fails | What to Do Instead |
 |---|---------|-------------|-------------------|
 | 1 | Reporting linter-level issues (missing semicolons, trailing whitespace) as review findings | Wastes reviewer credibility on noise; these should be caught by automated linting in CI | Focus on structural, architectural, and logical issues that linters and formatters cannot catch |
-| 2 | Flagging code without reading the ADR that justified it | The "violation" may be an intentional, documented trade-off | Always cross-reference Claude-Production-Grade-Suite/solution-architect/ ADRs before flagging an architectural concern |
+| 2 | Flagging code without reading the ADR that justified it | The "violation" may be an intentional, documented trade-off | Always cross-reference `docs/architecture/` ADRs before flagging an architectural concern |
 | 3 | Marking every finding as Critical | Severity inflation makes the report useless — developers ignore it entirely | Use Critical only for exploitable vulnerabilities and data loss risks. Most issues are Medium |
 | 4 | Writing vague findings like "code quality could be improved" | Not actionable; developers do not know what to fix or where | Every finding must have a specific file location, a concrete description, and a recommended fix |
 | 5 | Suggesting auto-fixes without verifying they compile/type-check | Broken auto-fix suggestions destroy trust in the review process | Only suggest fixes for mechanical changes where the correct fix is unambiguous. Include enough context for the fix to be applied directly |
 | 6 | Reviewing generated code (migrations, protobuf stubs, OpenAPI clients) as handwritten code | Generated code has different quality standards; flagging it creates noise | Identify generated files by convention (file headers, directory names) and skip them or apply relaxed rules |
-| 7 | Ignoring the Claude-Production-Grade-Suite/frontend-engineer/ entirely or applying only backend review criteria | Frontend has its own class of issues (render performance, accessibility, bundle size) that backend checklists miss | Apply frontend-specific review criteria from Phase 2 and Phase 4 to all Claude-Production-Grade-Suite/frontend-engineer/ code |
+| 7 | Ignoring `frontend/` entirely or applying only backend review criteria | Frontend has its own class of issues (render performance, accessibility, bundle size) that backend checklists miss | Apply frontend-specific review criteria from Phase 2 and Phase 4 to all `frontend/` code |
 | 8 | Not reading the test files before reviewing test quality | Cannot identify coverage gaps, assertion quality issues, or missing edge cases without reading the actual tests | Read both the source file and its corresponding test file together to identify gaps |
 | 9 | Producing a review report longer than 50 pages | No one reads it. Critical findings get lost in the noise | Keep the executive summary to 1 page. Use the findings files for detail. Prioritize ruthlessly |
-| 10 | Modifying files in Claude-Production-Grade-Suite/software-engineer/, Claude-Production-Grade-Suite/frontend-engineer/, or Claude-Production-Grade-Suite/qa-engineer/ | The reviewer must not change source code — only document findings and suggest fixes | Write all output exclusively to Claude-Production-Grade-Suite/code-reviewer/. Suggested code changes go in auto-fixes/ as patch files |
+| 10 | Modifying files in `services/`, `frontend/`, or `tests/` | The reviewer must not change source code — only document findings and suggest fixes | Write all output exclusively to Claude-Production-Grade-Suite/code-reviewer/. Suggested code changes go in auto-fixes/ as patch files |
 | 11 | Reporting the same root-cause issue multiple times as separate findings | Inflates finding count; developers fix the pattern once, not N times | Group related symptoms under one finding. Reference all affected locations but assign one severity and one fix |
 | 12 | Skipping performance review for "simple CRUD apps" | Even simple apps have N+1 queries, missing pagination, and unbounded selects that cause outages at scale | Every project gets a performance review. Adjust depth based on traffic expectations, but never skip it |
 | 13 | Not providing impact statements for findings | Developers cannot prioritize fixes without understanding consequences | Every finding must explain what happens if the issue is not fixed: data loss, security breach, outage, slow degradation |
@@ -391,11 +391,11 @@ Execute each phase sequentially. Every phase produces specific output files. Do 
 
 Before marking the skill as complete, verify:
 
-- [ ] `architecture-conformance.md` audits every ADR in Claude-Production-Grade-Suite/solution-architect/ with a conformance status
+- [ ] `architecture-conformance.md` audits every ADR in `docs/architecture/` with a conformance status
 - [ ] Every finding has: ID, severity, category, file location, description, impact, and recommendation
 - [ ] Security review covers all OWASP Top 10 categories relevant to the codebase
 - [ ] Performance review checks for N+1 queries, missing indexes, unbounded queries, and caching gaps
-- [ ] Test quality review cross-references the Claude-Production-Grade-Suite/qa-engineer/ test plan traceability matrix for coverage gaps
+- [ ] Test quality review cross-references the `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` traceability matrix for coverage gaps
 - [ ] `review-report.md` has an executive summary with total finding counts and overall assessment
 - [ ] Findings are correctly distributed across `critical.md`, `high.md`, `medium.md`, and `low.md`
 - [ ] `metrics/complexity.json` has per-function cyclomatic complexity scores

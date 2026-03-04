@@ -1,17 +1,17 @@
 ---
 name: software-engineer
-description: Use when implementing business logic, service handlers, data access layers, or turning architecture scaffolds into working code. Triggers on "implement the services", "write the business logic", "build the handlers", "implement the API", "code the backend", "implement from architecture", "write the services", or when a Claude-Production-Grade-Suite/solution-architect/ exists and the next step is actual code implementation.
+description: Use when implementing business logic, service handlers, data access layers, or turning architecture scaffolds into working code. Triggers on "implement the services", "write the business logic", "build the handlers", "implement the API", "code the backend", "implement from architecture", "write the services", or when architecture outputs exist (api/, schemas/, docs/architecture/) and the next step is actual code implementation.
 ---
 
 # Software Engineer
 
 ## Overview
 
-Production-grade service implementation engine: reads the Solution Architect's output (`Claude-Production-Grade-Suite/solution-architect/`) and generates fully working service code with business logic, API handlers, data access layers, middleware, and integration patterns. Generates an `Claude-Production-Grade-Suite/software-engineer/` folder in the project root containing production-ready service implementations following clean architecture, dependency injection, repository pattern, and cloud-native best practices.
+Production-grade service implementation engine: reads the Solution Architect's output (`api/`, `schemas/`, `docs/architecture/`) and generates fully working service code with business logic, API handlers, data access layers, middleware, and integration patterns. Generates production-ready service implementations at the project root (`services/`, `libs/`, `scripts/`, etc.) with workspace artifacts in `Claude-Production-Grade-Suite/software-engineer/`. Follows clean architecture, dependency injection, repository pattern, and cloud-native best practices.
 
 ## When to Use
 
-- Implementing services after a Solution Architect has produced `Claude-Production-Grade-Suite/solution-architect/`
+- Implementing services after a Solution Architect has produced architecture outputs (`api/`, `schemas/`, `docs/architecture/`)
 - Writing API handlers, business logic, and data access layers from API contracts
 - Building middleware (auth, logging, rate limiting, caching)
 - Creating service-to-service communication and integration layers
@@ -61,13 +61,14 @@ Summary: [what was produced]
 
 ```
 Product Manager          Solution Architect          Software Engineer          QA Engineer
-    (BRD/PRD)     -->    (Claude-Production-Grade-Suite/solution-architect/)  -->  (Claude-Production-Grade-Suite/software-engineer/)  -->  (Tests/QA)
-                         API contracts, schemas,          Working services,             Test suites,
-                         ADRs, scaffold                   business logic,               coverage,
-                                                          data access                   validation
+    (BRD/PRD)     -->    (api/, schemas/,         -->  (services/, libs/,    -->  (tests/)
+                          docs/architecture/)           scripts/)
+                         API contracts, schemas,         Working services,           Test suites,
+                         ADRs, scaffold                  business logic,             coverage,
+                                                         data access                 validation
 ```
 
-This skill reads from `Claude-Production-Grade-Suite/solution-architect/` and produces `Claude-Production-Grade-Suite/software-engineer/`. It does NOT redesign the architecture or change API contracts — it implements them faithfully.
+This skill reads from `api/`, `schemas/`, and `docs/architecture/` and produces deliverables at project root (`services/`, `libs/`, `scripts/`, etc.) with workspace artifacts in `Claude-Production-Grade-Suite/software-engineer/`. It does NOT redesign the architecture or change API contracts — it implements them faithfully.
 
 ## Process Flow
 
@@ -102,20 +103,20 @@ digraph se {
 
 ## Phase 1: Context Analysis
 
-Read ALL of these from `Claude-Production-Grade-Suite/solution-architect/` before writing any code:
+Read ALL of these from the project root before writing any code:
 
 ### 1.1 — Mandatory Inputs (Fail if Missing)
 
 | Input | Path | What to Extract |
 |-------|------|-----------------|
-| Tech stack | `docs/tech-stack.md` | Language, framework, database, cache, message broker |
+| Tech stack | `docs/architecture/tech-stack.md` | Language, framework, database, cache, message broker |
 | API contracts | `api/openapi/*.yaml` | Endpoints, request/response schemas, auth requirements |
 | gRPC contracts | `api/grpc/*.proto` | Service definitions, message types |
 | Async contracts | `api/asyncapi/*.yaml` | Event schemas, channels, message formats |
 | Data models | `schemas/erd.md` | Entity relationships, field types, constraints |
 | Migrations | `schemas/migrations/*.sql` | Table structures, indexes, constraints |
-| ADRs | `docs/architecture-decision-records/` | Architecture pattern, communication patterns, data strategy, auth, multi-tenancy |
-| Scaffold structure | `scaffold/services/` | Service names, directory layout, existing boilerplate |
+| ADRs | `docs/architecture/architecture-decision-records/` | Architecture pattern, communication patterns, data strategy, auth, multi-tenancy |
+| Scaffold structure | `services/` | Service names, directory layout, existing boilerplate |
 
 ### 1.2 — Extract Implementation Decisions
 
@@ -164,7 +165,7 @@ Implement each service identified in Phase 1, one at a time, in dependency order
 
 ### 2.1 — Service Structure
 
-Each service in `Claude-Production-Grade-Suite/software-engineer/services/<service-name>/` follows clean architecture:
+Each service in `services/<service-name>/` follows clean architecture:
 
 ```
 services/<service-name>/
@@ -378,7 +379,7 @@ Config must validate at startup and fail fast with clear error messages if requi
 
 ## Phase 3: Cross-Cutting Concerns
 
-Implement shared middleware and infrastructure code in `Claude-Production-Grade-Suite/software-engineer/libs/shared/` and wire into each service.
+Implement shared middleware and infrastructure code in `libs/shared/` and wire into each service.
 
 ### 3.1 — Authentication Middleware
 
@@ -633,7 +634,7 @@ Event envelope standard:
 For each third-party integration identified in the architecture:
 
 ```
-Claude-Production-Grade-Suite/software-engineer/libs/shared/clients/
+libs/shared/clients/
 ├── stripe/
 │   ├── client.ts           # Stripe SDK wrapper with retry/circuit breaker
 │   ├── types.ts            # Mapped types (internal domain <-> Stripe types)
@@ -656,7 +657,7 @@ Every external client must:
 
 ### 4.3 — Database Migration Runner
 
-Implement a migration runner that executes the SQL migrations from `Claude-Production-Grade-Suite/solution-architect/schemas/migrations/`:
+Implement a migration runner that executes the SQL migrations from `schemas/migrations/`:
 
 ```
 migrate up    — Run all pending migrations in order
@@ -678,7 +679,7 @@ Generate everything needed to run the full stack locally.
 
 ### 5.1 — Docker Compose
 
-Generate `Claude-Production-Grade-Suite/software-engineer/docker-compose.dev.yml`:
+Generate `docker-compose.dev.yml` at the project root:
 
 ```yaml
 # Includes:
@@ -700,7 +701,7 @@ Requirements:
 
 ### 5.2 — Seed Data
 
-Generate `Claude-Production-Grade-Suite/software-engineer/scripts/seed-data.sh`:
+Generate `scripts/seed-data.sh` at the project root:
 
 ```bash
 #!/bin/bash
@@ -723,7 +724,7 @@ Requirements:
 
 ### 5.3 — Dev Setup Script
 
-Generate `Claude-Production-Grade-Suite/software-engineer/scripts/dev-setup.sh`:
+Generate `scripts/dev-setup.sh` at the project root:
 
 ```bash
 #!/bin/bash
@@ -743,7 +744,7 @@ Generate `Claude-Production-Grade-Suite/software-engineer/scripts/dev-setup.sh`:
 
 ### 5.4 — Makefile
 
-Generate `Claude-Production-Grade-Suite/software-engineer/Makefile` (root-level):
+Generate `Makefile` at the project root:
 
 ```makefile
 # Available commands:
@@ -772,11 +773,12 @@ Per-service Makefiles at `services/<name>/Makefile`:
 # make migrate — Run this service's migrations
 ```
 
-## Suite Output Structure
+## Output Structure
+
+### Project Root Output (Deliverables)
 
 ```
-Claude-Production-Grade-Suite/software-engineer/
-├── services/
+services/
 │   └── <service-name>/
 │       ├── src/
 │       │   ├── handlers/           # API route handlers
@@ -811,8 +813,9 @@ Claude-Production-Grade-Suite/software-engineer/
 │       │   ├── integration/
 │       │   │   └── repositories/
 │       │   └── fixtures/
+│       ├── Dockerfile
 │       └── Makefile
-├── libs/
+libs/
 │   └── shared/
 │       ├── types/                  # Shared TypeScript types / proto-generated types
 │       ├── errors/                 # Domain error definitions
@@ -826,13 +829,24 @@ Claude-Production-Grade-Suite/software-engineer/
 │       ├── feature-flags/          # Feature flag abstraction + backends
 │       ├── observability/          # Tracing, metrics, logging setup
 │       └── testing/                # Test helpers, factories, mocks
-├── scripts/
+scripts/
 │   ├── seed-data.sh               # Idempotent seed data loader
 │   ├── dev-setup.sh               # One-command dev environment setup
 │   └── migrate.sh                 # Migration runner wrapper
-├── docker-compose.dev.yml         # Full local dev stack
-├── .env.example                   # Template for local env vars
-└── Makefile                       # Root-level dev commands
+docker-compose.dev.yml             # Full local dev stack
+.env.example                       # Template for local env vars
+Makefile                           # Root-level dev commands
+```
+
+### Workspace Output (`Claude-Production-Grade-Suite/software-engineer/`)
+
+```
+Claude-Production-Grade-Suite/software-engineer/
+├── implementation-plan.md
+├── progress.md
+└── logs/
+    ├── build.log
+    └── debug.log
 ```
 
 ## Cloud-Specific Implementation Patterns
@@ -912,20 +926,20 @@ Before marking a service as complete, verify:
 | Config validation | Service fails fast on startup if required env vars missing |
 | Graceful shutdown | SIGTERM triggers connection draining, in-flight request completion |
 
-## Context Bridging from SolutionArchitect-Suite
+## Context Bridging from Solution Architect
 
-| Architect Output | Software Engineer Reads | Software Engineer Produces |
-|-----------------|------------------------|---------------------------|
-| `api/openapi/*.yaml` | Endpoint definitions, schemas | Handlers, DTOs, route registration |
-| `api/grpc/*.proto` | Service definitions, messages | gRPC server implementations, generated types |
-| `api/asyncapi/*.yaml` | Event schemas, channels | Event producers, consumers, handlers |
-| `schemas/migrations/*.sql` | Table structures | Entity models, repository queries |
-| `schemas/erd.md` | Relationships, constraints | Mapper logic, validation rules |
-| `docs/tech-stack.md` | Language, framework, libraries | Correct imports, idiomatic code |
-| `docs/architecture-decision-records/` | Patterns, trade-offs | Pattern-compliant implementation |
-| `scaffold/services/` | Service names, structure | Flesh out each service directory |
+| Architect Output (Project Root) | Software Engineer Reads | Software Engineer Produces (Project Root) |
+|--------------------------------|------------------------|------------------------------------------|
+| `api/openapi/*.yaml` | Endpoint definitions, schemas | Handlers, DTOs, route registration in `services/` |
+| `api/grpc/*.proto` | Service definitions, messages | gRPC server implementations in `services/` |
+| `api/asyncapi/*.yaml` | Event schemas, channels | Event producers, consumers in `services/` |
+| `schemas/migrations/*.sql` | Table structures | Entity models, repository queries in `services/` |
+| `schemas/erd.md` | Relationships, constraints | Mapper logic, validation rules in `services/` |
+| `docs/architecture/tech-stack.md` | Language, framework, libraries | Correct imports, idiomatic code |
+| `docs/architecture/architecture-decision-records/` | Patterns, trade-offs | Pattern-compliant implementation |
+| `services/` (scaffolded) | Service names, structure | Flesh out each service directory |
 
-**Do NOT modify files in `Claude-Production-Grade-Suite/solution-architect/`.** If an API contract needs changes, flag it to the user — do not unilaterally alter the architect's decisions.
+**Do NOT modify architecture files** (`api/`, `schemas/`, `docs/architecture/`). If an API contract needs changes, flag it to the user — do not unilaterally alter the architect's decisions.
 
 ## Payment System Integration
 

@@ -78,12 +78,12 @@ This skill handles **application-level security**. It is distinct from DevOps se
 
 Read and analyze these artifacts from prior pipeline phases before beginning:
 
-- **Implementation code** — Service source code, controllers, middleware, data access layers
-- **Architecture docs** — `Claude-Production-Grade-Suite/solution-architect/docs/` (ADRs, system diagrams, data flow)
-- **API specs** — `Claude-Production-Grade-Suite/solution-architect/api/` (OpenAPI, gRPC proto, AsyncAPI)
-- **Data schemas** — `Claude-Production-Grade-Suite/solution-architect/schemas/` (ERD, migrations, data flow)
-- **Infrastructure configs** — `Claude-Production-Grade-Suite/devops/` (Terraform, K8s manifests, CI/CD pipelines)
-- **Test suites** — Existing unit/integration tests for coverage gap analysis
+- **Implementation code** — `services/`, `frontend/` — Service source code, controllers, middleware, data access layers
+- **Architecture docs** — `docs/architecture/` (ADRs, system diagrams, data flow)
+- **API specs** — `api/` (OpenAPI, gRPC proto, AsyncAPI)
+- **Data schemas** — `schemas/` (ERD, migrations, data flow)
+- **Infrastructure configs** — `infrastructure/` (Terraform, K8s manifests), `.github/workflows/` (CI/CD pipelines)
+- **Test suites** — `tests/` — Existing unit/integration tests for coverage gap analysis
 - **Dependency manifests** — `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`, etc.
 
 If any inputs are missing, note the gap in your analysis and flag it as an incomplete audit area.
@@ -727,6 +727,8 @@ Recommended remediation timeline:
 ```
 
 ## Suite Output Structure
+
+All security analysis outputs (threat models, audit reports, remediation plans) are workspace artifacts and stay in `Claude-Production-Grade-Suite/security-engineer/`. Security fixes are applied directly to project code at `services/`, `frontend/`, etc.
 
 ```
 Claude-Production-Grade-Suite/security-engineer/

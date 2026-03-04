@@ -7,7 +7,7 @@ description: Use when setting up CI/CD pipelines, infrastructure as code, contai
 
 ## Overview
 
-Full DevOps pipeline generator: from infrastructure design to production-ready deployment with monitoring and security. Generates a `Claude-Production-Grade-Suite/devops/` folder in the project root containing Terraform modules, CI/CD pipelines, container configs, monitoring dashboards, and security policies for AWS, GCP, and Azure.
+Full DevOps pipeline generator: from infrastructure design to production-ready deployment with monitoring and security. Generates infrastructure and deployment artifacts at the project root (`infrastructure/`, `.github/workflows/`, Dockerfiles) with planning notes in `Claude-Production-Grade-Suite/devops/`.
 
 ## When to Use
 
@@ -97,7 +97,7 @@ Use AskUserQuestion to gather (batch into 2-3 calls max):
 
 ## Phase 2: Infrastructure as Code (Terraform)
 
-Generate `Claude-Production-Grade-Suite/devops/terraform/`:
+Generate `infrastructure/terraform/`:
 
 ### Module Structure
 ```
@@ -150,24 +150,24 @@ Generate provider blocks and modules for each target cloud:
 
 ## Phase 3: CI/CD Pipelines
 
-Generate `Claude-Production-Grade-Suite/devops/ci-cd/`:
+Generate CI/CD pipelines at `.github/workflows/` (GitHub Actions files) and `scripts/` (shell scripts):
 
 ### Pipeline Templates
 ```
-ci-cd/
-├── github-actions/
-│   ├── ci.yml              # Build, test, lint, security scan
-│   ├── cd-staging.yml      # Deploy to staging on merge to main
-│   ├── cd-production.yml   # Deploy to prod on release tag
-│   ├── pr-checks.yml       # PR validation (tests, lint, preview)
-│   └── scheduled.yml       # Nightly builds, dependency updates
-├── gitlab-ci/              # (if requested)
-│   └── .gitlab-ci.yml
-└── scripts/
-    ├── build.sh
-    ├── deploy.sh
-    ├── rollback.sh
-    └── smoke-test.sh
+.github/workflows/
+├── ci.yml              # Build, test, lint, security scan
+├── cd-staging.yml      # Deploy to staging on merge to main
+├── cd-production.yml   # Deploy to prod on release tag
+├── pr-checks.yml       # PR validation (tests, lint, preview)
+└── scheduled.yml       # Nightly builds, dependency updates
+
+.gitlab-ci.yml              # (if requested, at project root)
+
+scripts/
+├── build.sh
+├── deploy.sh
+├── rollback.sh
+└── smoke-test.sh
 ```
 
 ### CI Pipeline Stages
@@ -198,16 +198,16 @@ Generate configs for the selected strategy:
 
 ## Phase 4: Container Orchestration
 
-Generate `Claude-Production-Grade-Suite/devops/containers/`:
+Generate container artifacts at project root and `infrastructure/`:
 
 ### Docker
 ```
-containers/
-├── dockerfiles/
-│   └── <service>.Dockerfile    # Per-service, multi-stage
-├── docker-compose.yml          # Local development
-├── docker-compose.test.yml     # Integration test environment
-└── .dockerignore
+services/<service-name>/
+└── Dockerfile                  # Per-service, multi-stage (co-located with service code)
+
+docker-compose.yml              # Local development (project root)
+docker-compose.test.yml         # Integration test environment (project root)
+.dockerignore                   # (project root)
 ```
 
 Dockerfile standards:
@@ -221,27 +221,27 @@ Dockerfile standards:
 
 ### Kubernetes
 ```
-containers/
-├── k8s/
-│   ├── base/
-│   │   ├── namespace.yaml
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   │   ├── ingress.yaml
-│   │   ├── hpa.yaml
-│   │   ├── pdb.yaml
-│   │   └── networkpolicy.yaml
-│   ├── overlays/
-│   │   ├── dev/
-│   │   ├── staging/
-│   │   └── prod/
-│   └── kustomization.yaml
-└── helm/                       # (if requested)
-    └── <service>/
-        ├── Chart.yaml
-        ├── values.yaml
-        ├── values-prod.yaml
-        └── templates/
+infrastructure/kubernetes/
+├── base/
+│   ├── namespace.yaml
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   ├── hpa.yaml
+│   ├── pdb.yaml
+│   └── networkpolicy.yaml
+├── overlays/
+│   ├── dev/
+│   ├── staging/
+│   └── prod/
+└── kustomization.yaml
+
+infrastructure/helm/                       # (if requested)
+└── <service>/
+    ├── Chart.yaml
+    ├── values.yaml
+    ├── values-prod.yaml
+    └── templates/
 ```
 
 K8s standards:
@@ -256,7 +256,7 @@ K8s standards:
 
 ## Phase 5: Monitoring & Observability
 
-Generate `Claude-Production-Grade-Suite/devops/monitoring/`:
+Generate `infrastructure/monitoring/`:
 
 ```
 monitoring/
@@ -308,7 +308,7 @@ monitoring/
 
 ## Phase 6: Security
 
-Generate `Claude-Production-Grade-Suite/devops/security/`:
+Generate `infrastructure/security/`:
 
 ```
 security/
@@ -352,10 +352,12 @@ security/
 - Container image CVEs (Trivy severity: CRITICAL)
 - SAST findings (Semgrep severity: ERROR)
 
-## Suite Output Structure
+## Output Structure
+
+### Project Root Output (Deliverables)
 
 ```
-Claude-Production-Grade-Suite/devops/
+infrastructure/
 ├── terraform/
 │   ├── modules/
 │   │   ├── networking/
@@ -371,18 +373,10 @@ Claude-Production-Grade-Suite/devops/
 │   │   ├── staging/
 │   │   └── prod/
 │   └── global/
-├── ci-cd/
-│   ├── github-actions/
-│   ├── scripts/
-│   └── gitlab-ci/          # (optional)
-├── containers/
-│   ├── dockerfiles/
-│   ├── k8s/
-│   │   ├── base/
-│   │   └── overlays/
-│   ├── helm/               # (optional)
-│   ├── docker-compose.yml
-│   └── docker-compose.test.yml
+├── kubernetes/
+│   ├── base/
+│   └── overlays/
+├── helm/               # (optional)
 ├── monitoring/
 │   ├── prometheus/
 │   ├── grafana/
@@ -398,6 +392,34 @@ Claude-Production-Grade-Suite/devops/
     ├── iam/
     ├── compliance/
     └── incident-response/
+
+.github/workflows/
+├── ci.yml
+├── cd-staging.yml
+├── cd-production.yml
+├── pr-checks.yml
+└── scheduled.yml
+
+scripts/
+├── build.sh
+├── deploy.sh
+├── rollback.sh
+└── smoke-test.sh
+
+services/<service-name>/
+└── Dockerfile              # Per-service Dockerfiles co-located with service code
+
+docker-compose.yml          # Project root
+docker-compose.test.yml     # Project root
+```
+
+### Workspace Output (Planning & Assessment)
+
+```
+Claude-Production-Grade-Suite/devops/
+├── deployment-plan.md          # Deployment planning notes
+├── infrastructure-assessment.md # Infrastructure assessment documents
+└── decisions.md                # DevOps decision log
 ```
 
 ## Common Mistakes

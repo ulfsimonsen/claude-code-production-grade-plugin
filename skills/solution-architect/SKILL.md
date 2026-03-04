@@ -7,7 +7,7 @@ description: Use when designing system architecture for SaaS products, microserv
 
 ## Overview
 
-Full architecture pipeline: from business requirements to a scaffolded, production-ready codebase. Generates a `Claude-Production-Grade-Suite/solution-architect/` folder in the project root containing architecture decisions, system diagrams, API contracts, data models, and project scaffolding.
+Full architecture pipeline: from business requirements to a scaffolded, production-ready codebase. Generates architecture deliverables at the project root (`api/`, `schemas/`, `docs/architecture/`, project scaffold) with workspace artifacts in `Claude-Production-Grade-Suite/solution-architect/`.
 
 ## When to Use
 
@@ -95,7 +95,7 @@ Use AskUserQuestion to gather (batch into 2-3 calls max):
 
 ## Phase 2: Architecture Design
 
-Generate architecture documents in `Claude-Production-Grade-Suite/solution-architect/docs/`:
+Generate architecture documents in `docs/architecture/`:
 
 ### architecture-decision-records/
 One ADR per major decision using this template:
@@ -135,7 +135,7 @@ Apply and document these production patterns:
 
 ## Phase 3: Tech Stack Selection
 
-Generate `Claude-Production-Grade-Suite/solution-architect/docs/tech-stack.md`:
+Generate `docs/architecture/tech-stack.md`:
 
 | Layer | Selection | Rationale |
 |-------|-----------|-----------|
@@ -154,7 +154,7 @@ Selection criteria: production maturity, multi-cloud portability, team expertise
 
 ## Phase 4: API Contract Design
 
-Generate `Claude-Production-Grade-Suite/solution-architect/api/`:
+Generate `api/` at the project root:
 
 - **OpenAPI 3.1 specs** for REST APIs — complete with request/response schemas, auth, error codes
 - **gRPC proto files** if inter-service communication is gRPC
@@ -170,7 +170,7 @@ Standards enforced:
 
 ## Phase 5: Data Model Design
 
-Generate `Claude-Production-Grade-Suite/solution-architect/schemas/`:
+Generate `schemas/` at the project root:
 
 - **ERD diagrams** in Mermaid
 - **SQL migration files** (numbered, idempotent)
@@ -187,10 +187,10 @@ Standards enforced:
 
 ## Phase 6: Project Scaffolding
 
-Generate `Claude-Production-Grade-Suite/solution-architect/scaffold/`:
+Scaffold the project root structure directly. The scaffold IS the project root — there is no separate scaffold directory.
 
 ```
-scaffold/
+project root/
 ├── services/
 │   └── <service-name>/
 │       ├── src/
@@ -200,7 +200,6 @@ scaffold/
 │       └── README.md
 ├── libs/
 │   └── shared/          # Shared types, utils, clients
-├── gateway/             # API gateway config
 ├── docker-compose.yml   # Local dev environment
 ├── Makefile             # Root-level commands
 └── README.md            # Getting started guide
@@ -214,14 +213,14 @@ Each service includes:
 - Basic test structure (unit, integration)
 - Dockerfile (multi-stage, non-root user, minimal base image)
 
-## Suite Output Structure
+## Output Structure
+
+### Project Root Output (Deliverables)
 
 ```
-Claude-Production-Grade-Suite/solution-architect/
-├── docs/
+docs/architecture/
 │   ├── architecture-decision-records/
 │   │   ├── ADR-001-architecture-pattern.md
-│   │   ├── ADR-002-communication-pattern.md
 │   │   └── ...
 │   ├── system-diagrams/
 │   │   ├── c4-context.md
@@ -229,25 +228,37 @@ Claude-Production-Grade-Suite/solution-architect/
 │   │   └── sequence-*.md
 │   ├── tech-stack.md
 │   └── design-principles.md
-├── api/
+api/
 │   ├── openapi/
 │   │   └── *.yaml
 │   ├── grpc/
 │   │   └── *.proto
 │   └── asyncapi/
 │       └── *.yaml
-├── schemas/
+schemas/
 │   ├── erd.md
 │   ├── migrations/
 │   │   └── *.sql
 │   └── data-flow.md
-└── scaffold/
-    ├── services/
-    ├── libs/
-    ├── gateway/
-    ├── docker-compose.yml
-    ├── Makefile
-    └── README.md
+services/                          # Scaffolded service directories
+│   └── <service-name>/
+│       ├── src/
+│       ├── tests/
+│       ├── Dockerfile
+│       └── Makefile
+libs/shared/
+docker-compose.yml
+Makefile
+README.md
+```
+
+### Workspace Output (`Claude-Production-Grade-Suite/solution-architect/`)
+
+```
+Claude-Production-Grade-Suite/solution-architect/
+├── working-notes.md
+└── analysis/
+    └── *.md
 ```
 
 ## Cloud-Specific Patterns

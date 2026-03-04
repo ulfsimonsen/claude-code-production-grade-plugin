@@ -6,11 +6,12 @@
 name: qa-engineer
 description: >
   Use when you need to create comprehensive test suites for implemented code.
-  Takes implemented services from Claude-Production-Grade-Suite/software-engineer/, frontend components from
-  Claude-Production-Grade-Suite/frontend-engineer/, API contracts, and BRD acceptance criteria as inputs, then
+  Takes implemented services from services/ and libs/, frontend components from
+  frontend/, API contracts from api/, and BRD acceptance criteria as inputs, then
   generates production-grade test coverage including unit tests, integration tests,
   contract tests, E2E tests, performance tests, and CI test infrastructure. All
-  output is written to Claude-Production-Grade-Suite/qa-engineer/ in the project root.
+  test deliverables are written to tests/ at the project root, with workspace
+  artifacts (test plan, reports) in Claude-Production-Grade-Suite/qa-engineer/.
 ```
 
 ---
@@ -55,24 +56,25 @@ Summary: [what was produced]
 
 ## Context & Position in Pipeline
 
-This skill runs AFTER the Software Engineer (Claude-Production-Grade-Suite/software-engineer/) and Frontend Engineer (Claude-Production-Grade-Suite/frontend-engineer/) skills have completed. It expects:
+This skill runs AFTER the Software Engineer and Frontend Engineer skills have completed. It expects:
 
-- **Claude-Production-Grade-Suite/software-engineer/** — Backend services, handlers, repositories, domain models, API route definitions
-- **Claude-Production-Grade-Suite/frontend-engineer/** — UI components, pages, hooks, state management, API client calls
-- **Claude-Production-Grade-Suite/solution-architect/** — API contracts (OpenAPI/AsyncAPI specs), data models, sequence diagrams
+- **`services/` and `libs/`** — Backend services, handlers, repositories, domain models, API route definitions
+- **`frontend/`** — UI components, pages, hooks, state management, API client calls
+- **`api/`, `schemas/`, `docs/architecture/`** — API contracts (OpenAPI/AsyncAPI specs), data models, sequence diagrams
 - **BRD or PRD** — Acceptance criteria, user stories, business rules, edge cases
 
-The QA Engineer does NOT modify source code. It generates test files, test infrastructure, and test documentation that validate the implemented system against its specification.
+The QA Engineer does NOT modify source code. It generates test files and test infrastructure to `tests/` at the project root, and test documentation (test plan, reports) to `Claude-Production-Grade-Suite/qa-engineer/`.
 
 ---
 
 ## Output Structure
 
-All artifacts are written to `Claude-Production-Grade-Suite/qa-engineer/` in the project root. Never write test files into Claude-Production-Grade-Suite/software-engineer/ or Claude-Production-Grade-Suite/frontend-engineer/ directly.
+This skill produces output in two locations: test deliverables (code, configs, fixtures) at `tests/` in the project root, and workspace artifacts (test plan, reports, findings) in `Claude-Production-Grade-Suite/qa-engineer/`. Never write test files into `services/` or `frontend/` directly.
+
+### Project Root Output (`tests/`)
 
 ```
-Claude-Production-Grade-Suite/qa-engineer/
-├── test-plan.md                        # Master test plan with traceability matrix
+tests/
 ├── unit/
 │   └── <service>/                      # One folder per backend service
 │       ├── handlers/
@@ -139,9 +141,17 @@ Claude-Production-Grade-Suite/qa-engineer/
 │   └── mocks/
 │       ├── <external-api>.mock.ts     # External API mock servers (MSW / nock)
 │       └── <service>.stub.ts          # Internal service stubs
-├── coverage/
-│   └── thresholds.json                # Per-service and global coverage gates
-└── ci-test-config.yml                 # CI pipeline test stage configuration
+└── coverage/
+    └── thresholds.json                # Per-service and global coverage gates
+```
+
+### Workspace Output (`Claude-Production-Grade-Suite/qa-engineer/`)
+
+```
+Claude-Production-Grade-Suite/qa-engineer/
+├── test-plan.md                        # Master test plan with traceability matrix
+├── coverage-report.md                  # Coverage analysis and findings
+└── findings.md                         # QA findings and recommendations
 ```
 
 ---
@@ -158,10 +168,10 @@ Execute each phase sequentially. Do NOT skip phases. Each phase builds on the ou
 
 **Inputs to read:**
 - BRD / PRD acceptance criteria (every GIVEN/WHEN/THEN or equivalent)
-- Claude-Production-Grade-Suite/solution-architect/ API contracts (OpenAPI specs, AsyncAPI specs)
-- Claude-Production-Grade-Suite/solution-architect/ data models and sequence diagrams
-- Claude-Production-Grade-Suite/software-engineer/ service structure (list all services, handlers, repos)
-- Claude-Production-Grade-Suite/frontend-engineer/ component and page structure
+- `api/` API contracts (OpenAPI specs, AsyncAPI specs)
+- `schemas/` data models and `docs/architecture/` sequence diagrams
+- `services/` service structure (list all services, handlers, repos)
+- `frontend/` component and page structure
 
 **Actions:**
 1. Extract every acceptance criterion and assign a unique ID (AC-001, AC-002, ...).
@@ -187,11 +197,11 @@ Execute each phase sequentially. Do NOT skip phases. Each phase builds on the ou
 **Goal:** Test each service's business logic, handlers, and repositories in isolation with full mocking of external dependencies.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/software-engineer/ source code for each service
+- `services/` source code for each service
 - The test plan from Phase 1
 
 **Rules:**
-1. One test file per source file. Mirror the source directory structure under `Claude-Production-Grade-Suite/qa-engineer/unit/<service>/`.
+1. One test file per source file. Mirror the source directory structure under `tests/unit/<service>/`.
 2. Mock ALL external dependencies: databases, caches, message brokers, HTTP clients, other services.
 3. Use dependency injection or module mocking — never patch globals.
 4. Test the happy path, error paths, edge cases, and boundary values for every public function.
@@ -200,13 +210,13 @@ Execute each phase sequentially. Do NOT skip phases. Each phase builds on the ou
 7. For repositories: test query construction, parameter binding, result mapping (with mocked DB driver).
 8. For validators: test every validation rule, including null, empty, boundary, and malformed inputs.
 9. Every test must have a descriptive name that reads as a specification: `it("should return 404 when order does not exist for the given user")`.
-10. Use factories from `Claude-Production-Grade-Suite/qa-engineer/fixtures/factories/` for test data — never inline large object literals.
+10. Use factories from `tests/fixtures/factories/` for test data — never inline large object literals.
 11. Assert on specific values, not just truthiness. Prefer `toEqual` over `toBeTruthy`.
 12. Test error types and messages, not just that an error was thrown.
 
-**Output:** Write test files to `Claude-Production-Grade-Suite/qa-engineer/unit/<service>/`.
+**Output:** Write test files to `tests/unit/<service>/`.
 
-Also write factories to `Claude-Production-Grade-Suite/qa-engineer/fixtures/factories/` as you discover entity shapes.
+Also write factories to `tests/fixtures/factories/` as you discover entity shapes.
 
 ---
 
@@ -215,13 +225,13 @@ Also write factories to `Claude-Production-Grade-Suite/qa-engineer/fixtures/fact
 **Goal:** Test service interactions with real dependencies using testcontainers or docker-compose.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/software-engineer/ database migrations, schemas, connection configs
-- Claude-Production-Grade-Suite/solution-architect/ infrastructure requirements (which DBs, caches, brokers)
+- `services/` database migrations, schemas, connection configs
+- `docs/architecture/` infrastructure requirements (which DBs, caches, brokers)
 - The test plan from Phase 1
 
 **Rules:**
-1. Write `Claude-Production-Grade-Suite/qa-engineer/integration/docker-compose.test.yml` with containers for every real dependency (PostgreSQL, Redis, Kafka, Elasticsearch, etc.). Pin exact image versions.
-2. Write `Claude-Production-Grade-Suite/qa-engineer/integration/setup.ts` with global before/after hooks: start containers, run migrations, seed base data, tear down after suite.
+1. Write `tests/integration/docker-compose.test.yml` with containers for every real dependency (PostgreSQL, Redis, Kafka, Elasticsearch, etc.). Pin exact image versions.
+2. Write `tests/integration/setup.ts` with global before/after hooks: start containers, run migrations, seed base data, tear down after suite.
 3. Each integration test file connects to real containers — no mocks for the dependency under test.
 4. Test actual SQL queries against a real database with realistic data volumes (not just 1 row).
 5. Test cache read/write/eviction with a real Redis instance.
@@ -231,9 +241,9 @@ Also write factories to `Claude-Production-Grade-Suite/qa-engineer/fixtures/fact
 9. Tests must be parallelizable — use unique identifiers to avoid cross-test data collisions.
 10. Test failure modes: connection timeouts, constraint violations, concurrent writes, deadlocks.
 
-**Output:** Write test files to `Claude-Production-Grade-Suite/qa-engineer/integration/<service>/`.
+**Output:** Write test files to `tests/integration/<service>/`.
 
-Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite/qa-engineer/integration/`.
+Write `docker-compose.test.yml` and `setup.ts` to `tests/integration/`.
 
 ---
 
@@ -242,9 +252,9 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 **Goal:** Verify API consumers and providers agree on request/response schemas and that implementations conform to OpenAPI specifications.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/solution-architect/ OpenAPI specs and AsyncAPI specs
-- Claude-Production-Grade-Suite/software-engineer/ API route definitions, request/response DTOs
-- Claude-Production-Grade-Suite/frontend-engineer/ API client calls and expected response shapes
+- `api/` OpenAPI specs and AsyncAPI specs
+- `services/` API route definitions, request/response DTOs
+- `frontend/` API client calls and expected response shapes
 
 **Rules:**
 1. For each API consumer (frontend, other services), write a Pact consumer test that defines the expected interactions.
@@ -255,7 +265,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 6. Configure Pact Broker connection in `pact-broker.config.ts` (even if the broker URL is a placeholder).
 7. Contract tests must fail if a required field is removed, a type changes, or a new required field is added without consumer agreement.
 
-**Output:** Write contract tests to `Claude-Production-Grade-Suite/qa-engineer/contract/`.
+**Output:** Write contract tests to `tests/contract/`.
 
 ---
 
@@ -265,14 +275,14 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 
 **Inputs to read:**
 - BRD / PRD user stories and acceptance criteria (especially the critical path)
-- Claude-Production-Grade-Suite/frontend-engineer/ pages and navigation flow
-- Claude-Production-Grade-Suite/software-engineer/ API endpoints
+- `frontend/` pages and navigation flow
+- `services/` API endpoints
 - The test plan from Phase 1 (critical user flows identified)
 
 **Rules:**
 1. Identify the 5-10 most critical user flows (signup, login, core CRUD, payment, etc.).
 2. For API E2E: chain multiple API calls that represent a complete user journey. Use real auth tokens. Validate side effects (DB state, emails sent, events published).
-3. For UI E2E: use Page Object Model pattern. Each page gets a class in `Claude-Production-Grade-Suite/qa-engineer/e2e/ui/pages/`.
+3. For UI E2E: use Page Object Model pattern. Each page gets a class in `tests/e2e/ui/pages/`.
 4. UI tests must use resilient selectors: `data-testid` attributes, ARIA roles — never CSS classes or DOM structure.
 5. Write a smoke test suite (`smoke.e2e.ts`) that covers the absolute minimum "is the app alive" checks. This runs on every deploy.
 6. E2E tests must be idempotent — running them twice produces the same result.
@@ -281,7 +291,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 9. For visual regression: capture screenshots of key pages and compare against baselines.
 10. Configure test timeouts generously (30s+ per test) — E2E is slow by nature.
 
-**Output:** Write E2E tests and page objects to `Claude-Production-Grade-Suite/qa-engineer/e2e/`. Write Playwright or Cypress config.
+**Output:** Write E2E tests and page objects to `tests/e2e/`. Write Playwright or Cypress config.
 
 ---
 
@@ -290,8 +300,8 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 **Goal:** Establish performance baselines and create load/stress test scripts for performance-sensitive endpoints.
 
 **Inputs to read:**
-- Claude-Production-Grade-Suite/solution-architect/ NFRs (latency targets, throughput requirements, SLOs)
-- Claude-Production-Grade-Suite/software-engineer/ API endpoints (especially high-traffic ones)
+- `docs/architecture/` NFRs (latency targets, throughput requirements, SLOs)
+- `services/` API endpoints (especially high-traffic ones)
 - The test plan from Phase 1 (performance-sensitive areas)
 
 **Rules:**
@@ -306,7 +316,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 9. Test both read-heavy and write-heavy endpoints separately.
 10. Add custom metrics for business-critical operations (e.g., `order_processing_time`).
 
-**Output:** Write k6 scripts to `Claude-Production-Grade-Suite/qa-engineer/performance/`. Write baseline files to `Claude-Production-Grade-Suite/qa-engineer/performance/baselines/`.
+**Output:** Write k6 scripts to `tests/performance/`. Write baseline files to `tests/performance/baselines/`.
 
 ---
 
@@ -320,7 +330,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 - Project CI/CD system (GitHub Actions, GitLab CI, etc.)
 
 **Actions:**
-1. Write `Claude-Production-Grade-Suite/qa-engineer/coverage/thresholds.json` with per-service and global coverage gates:
+1. Write `tests/coverage/thresholds.json` with per-service and global coverage gates:
    ```json
    {
      "global": { "lines": 80, "branches": 75, "functions": 80, "statements": 80 },
@@ -329,7 +339,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
      }
    }
    ```
-2. Write `Claude-Production-Grade-Suite/qa-engineer/ci-test-config.yml` with:
+2. Write `.github/workflows/test.yml` (or `ci/test-config.yml`) with:
    - **Unit test stage** — runs first, fast, no containers. Fails fast on coverage threshold breach.
    - **Integration test stage** — starts docker-compose dependencies, runs integration suite, tears down.
    - **Contract test stage** — runs Pact tests, publishes results to broker.
@@ -339,10 +349,10 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
    - Test result artifacts: JUnit XML reports, coverage HTML reports, k6 JSON results.
    - Flaky test detection: track test pass/fail history, quarantine tests with >5% flake rate.
    - Retry policy: retry failed E2E tests up to 2 times before marking as failed.
-3. Write seed data runner to `Claude-Production-Grade-Suite/qa-engineer/fixtures/seed-data/seed-runner.ts`.
-4. Write external API mock configurations to `Claude-Production-Grade-Suite/qa-engineer/fixtures/mocks/`.
+3. Write seed data runner to `tests/fixtures/seed-data/seed-runner.ts`.
+4. Write external API mock configurations to `tests/fixtures/mocks/`.
 
-**Output:** Write CI config and coverage thresholds to `Claude-Production-Grade-Suite/qa-engineer/`.
+**Output:** Write CI config to `.github/workflows/test.yml`, coverage thresholds and test infrastructure to `tests/`.
 
 ---
 
@@ -350,7 +360,7 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 
 | # | Mistake | Why It Fails | What to Do Instead |
 |---|---------|-------------|-------------------|
-| 1 | Writing tests inside Claude-Production-Grade-Suite/software-engineer/ or Claude-Production-Grade-Suite/frontend-engineer/ | Pollutes source directories; violates pipeline separation | Always write to `Claude-Production-Grade-Suite/qa-engineer/` exclusively |
+| 1 | Writing tests inside `services/` or `frontend/` source directories | Pollutes source directories; violates pipeline separation | Always write tests to `tests/` at project root exclusively |
 | 2 | Testing implementation details instead of behavior | Tests break on every refactor, providing no safety net | Test public interfaces, inputs, and outputs — not private methods or internal state |
 | 3 | Using `any` type or skipping type assertions in test mocks | Mocks drift from real interfaces silently; tests pass but code is broken | Type mocks against the real interface; use `jest.Mocked<typeof RealService>` or equivalent |
 | 4 | Sharing mutable state between tests | Tests pass in isolation but fail when run together; order-dependent results | Reset state in beforeEach; use factory functions that return fresh instances |
@@ -372,15 +382,15 @@ Write `docker-compose.test.yml` and `setup.ts` to `Claude-Production-Grade-Suite
 
 Before marking the skill as complete, verify:
 
-- [ ] `test-plan.md` has a traceability matrix covering every BRD acceptance criterion
-- [ ] Every service in Claude-Production-Grade-Suite/software-engineer/ has corresponding unit tests in `Claude-Production-Grade-Suite/qa-engineer/unit/`
+- [ ] `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` has a traceability matrix covering every BRD acceptance criterion
+- [ ] Every service in `services/` has corresponding unit tests in `tests/unit/`
 - [ ] Every repository/data-access module has integration tests with real database containers
 - [ ] Every API endpoint has at least one contract test validating its schema
 - [ ] The top 5-10 critical user flows have E2E tests
 - [ ] At least 3 performance-sensitive endpoints have k6 load test scripts with baselines
-- [ ] `docker-compose.test.yml` defines all required test containers with pinned versions
-- [ ] `coverage/thresholds.json` defines realistic per-service coverage gates
-- [ ] `ci-test-config.yml` orchestrates all test stages with parallelization and artifact collection
-- [ ] All test factories are in `Claude-Production-Grade-Suite/qa-engineer/fixtures/factories/` and reused across test types
+- [ ] `tests/integration/docker-compose.test.yml` defines all required test containers with pinned versions
+- [ ] `tests/coverage/thresholds.json` defines realistic per-service coverage gates
+- [ ] `.github/workflows/test.yml` orchestrates all test stages with parallelization and artifact collection
+- [ ] All test factories are in `tests/fixtures/factories/` and reused across test types
 - [ ] No test file has hardcoded secrets, credentials, or environment-specific values
 - [ ] All tests can run independently and in any order

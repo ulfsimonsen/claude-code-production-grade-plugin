@@ -48,21 +48,23 @@ Before invoking this skill, ensure the following exist:
 | Artifact | Source | What Technical Writer Needs From It |
 |---|---|---|
 | `Claude-Production-Grade-Suite/product-manager/` | BA skill | Business context, user personas, feature scope, glossary of domain terms |
-| Architecture docs / ADRs | Architect skill | Service boundaries, technology choices, data flow diagrams, decision rationale |
-| OpenAPI / AsyncAPI specs | Implementation | API contracts, request/response schemas, authentication methods |
-| Source code | Implementation | Code comments, module structure, configuration files, environment variables |
-| `Claude-Production-Grade-Suite/qa-engineer/` | Testing skill | Test coverage reports, integration test descriptions, testing strategy |
-| `Claude-Production-Grade-Suite/devops/` | DevOps skill | Deployment procedures, environment configurations, CI/CD pipeline docs |
-| `Claude-Production-Grade-Suite/sre/` | SRE skill | Runbooks, incident procedures, SLO definitions, DR playbooks |
+| `docs/architecture/` | Architect skill | Service boundaries, technology choices, data flow diagrams, decision rationale |
+| `api/` (OpenAPI / AsyncAPI specs) | Implementation | API contracts, request/response schemas, authentication methods |
+| `services/`, `frontend/` (Source code) | Implementation | Code comments, module structure, configuration files, environment variables |
+| `tests/`, `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` | Testing skill | Test coverage reports, integration test descriptions, testing strategy |
+| `infrastructure/`, `.github/workflows/` | DevOps skill | Deployment procedures, environment configurations, CI/CD pipeline docs |
+| `docs/runbooks/`, `Claude-Production-Grade-Suite/sre/` | SRE skill | Runbooks (at `docs/runbooks/`), incident procedures, SLO definitions, DR playbooks (workspace artifacts) |
 
 **Critical rule:** The Technical Writer skill does NOT invent information. Every statement in the documentation must trace to an artifact from a previous phase. If information is missing, the skill creates a placeholder with a `<!-- TODO: Source not found — verify with <team> -->` comment rather than fabricating content.
 
 ## Output Structure
 
-All outputs are written to `Claude-Production-Grade-Suite/technical-writer/` in the project root.
+Technical writer documentation is a project deliverable. Most outputs go to `docs/` at the project root.
+
+### Project Root Output (Deliverables)
 
 ```
-Claude-Production-Grade-Suite/technical-writer/
+docs/
 ├── docusaurus/                  # or mkdocs/ — documentation site scaffold
 │   ├── docusaurus.config.js
 │   ├── sidebars.js
@@ -73,42 +75,49 @@ Claude-Production-Grade-Suite/technical-writer/
 │       │   └── custom.css
 │       └── pages/
 │           └── index.js
-├── docs/
-│   ├── getting-started/
-│   │   ├── quickstart.md
-│   │   ├── installation.md
-│   │   └── local-development.md
-│   ├── architecture/
-│   │   ├── overview.md
-│   │   ├── service-map.md
-│   │   └── decisions/           # Readable ADR summaries
-│   │       └── <NNN-decision-title>.md
-│   ├── api-reference/
-│   │   ├── authentication.md
-│   │   ├── endpoints/
-│   │   │   └── <resource-name>.md
-│   │   ├── error-codes.md
-│   │   ├── rate-limiting.md
-│   │   └── webhooks.md
-│   ├── guides/
-│   │   ├── coding-conventions.md
-│   │   ├── testing-guide.md
-│   │   └── contributing.md
-│   ├── operations/
-│   │   ├── deployment.md
-│   │   ├── monitoring.md
-│   │   ├── incident-response.md
-│   │   └── runbook-index.md
-│   └── integrations/
-│       ├── sdk-quickstart.md
-│       └── webhook-guide.md
+├── getting-started/
+│   ├── quickstart.md
+│   ├── installation.md
+│   └── local-development.md
+├── architecture/
+│   ├── overview.md
+│   ├── service-map.md
+│   └── decisions/           # Readable ADR summaries
+│       └── <NNN-decision-title>.md
 ├── api-reference/
+│   ├── authentication.md
+│   ├── endpoints/
+│   │   └── <resource-name>.md
+│   ├── error-codes.md
+│   ├── rate-limiting.md
+│   ├── webhooks.md
 │   └── generated/               # Auto-generated from OpenAPI
 │       ├── openapi.html
 │       └── openapi.json
-├── CHANGELOG.md
-└── ci/
-    └── docs-build.yml
+├── guides/
+│   ├── coding-conventions.md
+│   ├── testing-guide.md
+│   └── contributing.md
+├── operations/
+│   ├── deployment.md
+│   ├── monitoring.md
+│   ├── incident-response.md
+│   └── runbook-index.md
+└── integrations/
+    ├── sdk-quickstart.md
+    └── webhook-guide.md
+
+CHANGELOG.md                     # Project root
+.github/workflows/
+└── docs-build.yml               # Documentation CI pipeline
+```
+
+### Workspace Output (Writing Notes)
+
+```
+Claude-Production-Grade-Suite/technical-writer/
+├── writing-notes.md             # Style decisions, editorial notes
+└── content-inventory.md         # Documentation gap analysis
 ```
 
 ---
@@ -124,9 +133,9 @@ Execute these phases sequentially. Each phase builds on the documentation archit
 **Goal:** Survey all existing artifacts, determine what documentation is needed, create a sitemap, and establish documentation standards.
 
 **Inputs:**
-- ALL suite outputs (`Claude-Production-Grade-Suite/product-manager/`, architecture docs, `Claude-Production-Grade-Suite/qa-engineer/`, `Claude-Production-Grade-Suite/devops/`, `Claude-Production-Grade-Suite/sre/`)
-- Source code structure
-- OpenAPI/AsyncAPI specifications (if present)
+- ALL prior outputs: `Claude-Production-Grade-Suite/product-manager/` (BRD), `docs/architecture/` (architecture docs), `tests/` and `Claude-Production-Grade-Suite/qa-engineer/` (test artifacts), `infrastructure/` and `.github/workflows/` (DevOps artifacts), `docs/runbooks/` and `Claude-Production-Grade-Suite/sre/` (SRE artifacts)
+- Source code structure (`services/`, `frontend/`, `libs/`)
+- OpenAPI/AsyncAPI specifications in `api/` (if present)
 
 **Process:**
 
@@ -203,7 +212,7 @@ Execute these phases sequentially. Each phase builds on the documentation archit
 
 **Process:**
 
-1. **Generate `docs/api-reference/authentication.md`:**
+1. **Generate `docs/api-reference/authentication.md`** (at project root):
 
 ```markdown
 # Authentication
@@ -355,10 +364,10 @@ curl -X GET "https://api.example.com/v1/resources?page=1&per_page=10" \
 **Goal:** Enable a new developer to go from zero to productive. These guides answer "how do I..." questions.
 
 **Inputs:**
-- Source code structure, build files, configuration
-- `Claude-Production-Grade-Suite/devops/` — Docker configs, environment setup
-- `Claude-Production-Grade-Suite/qa-engineer/` — testing strategy, coverage requirements
-- Architecture ADRs — design decisions and their rationale
+- Source code structure (`services/`, `frontend/`, `libs/`), build files, configuration
+- `infrastructure/`, `docker-compose.yml` — Docker configs, environment setup
+- `tests/`, `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` — testing strategy, coverage requirements
+- `docs/architecture/` ADRs — design decisions and their rationale
 - Git workflow — branching strategy, PR process
 
 **Process:**
@@ -472,7 +481,7 @@ curl http://localhost:<port>/health
    - Logging conventions (log levels, structured logging format)
    - Examples of "good" code from the existing codebase
 
-8. **Generate `docs/guides/testing-guide.md`** from `Claude-Production-Grade-Suite/qa-engineer/`:
+8. **Generate `docs/guides/testing-guide.md`** from `tests/` and `Claude-Production-Grade-Suite/qa-engineer/`:
    - Testing philosophy and strategy
    - How to run each test type (unit, integration, e2e)
    - How to write a new test (template/example)
@@ -494,8 +503,8 @@ curl http://localhost:<port>/health
 **Goal:** Give operators everything they need to deploy, monitor, and respond to incidents without digging through DevOps or SRE suites.
 
 **Inputs:**
-- `Claude-Production-Grade-Suite/devops/` — CI/CD pipelines, Kubernetes manifests, monitoring configs
-- `Claude-Production-Grade-Suite/sre/` — runbooks, incident procedures, SLO definitions, DR playbooks
+- `infrastructure/`, `.github/workflows/` — CI/CD pipelines, Kubernetes manifests, monitoring configs
+- `docs/runbooks/`, `Claude-Production-Grade-Suite/sre/` — runbooks (at `docs/runbooks/`), incident procedures, SLO definitions, DR playbooks (workspace artifacts in `Claude-Production-Grade-Suite/sre/`)
 
 **Process:**
 
@@ -557,14 +566,14 @@ curl http://localhost:<port>/health
    - Log access instructions (how to query logs, common log searches)
    - Tracing instructions (how to find a trace for a specific request)
 
-3. **Generate `docs/operations/incident-response.md`** as a distilled, quick-reference version of `Claude-Production-Grade-Suite/sre/incidents/`:
+3. **Generate `docs/operations/incident-response.md`** as a distilled, quick-reference version of the SRE incident procedures in `Claude-Production-Grade-Suite/sre/incidents/`:
    - Severity classification (one-page summary)
    - On-call contact information and escalation chain
    - War room opening procedure (condensed to steps, not explanation)
    - Statuspage update procedures
    - Postmortem template and timeline
 
-4. **Generate `docs/operations/runbook-index.md`** — a table of all runbooks from `Claude-Production-Grade-Suite/sre/runbooks/` with:
+4. **Generate `docs/operations/runbook-index.md`** — a table of all runbooks from `docs/runbooks/` with:
    - Alert name
    - Severity
    - Service affected
@@ -685,7 +694,7 @@ except ApiError as e:
 
 **Process:**
 
-1. **Generate Docusaurus scaffold** in `Claude-Production-Grade-Suite/technical-writer/docusaurus/`:
+1. **Generate Docusaurus scaffold** in `docs/docusaurus/`:
 
    **`docusaurus.config.js`:**
    ```javascript
@@ -710,7 +719,7 @@ except ApiError as e:
          ({
            docs: {
              sidebarPath: './sidebars.js',
-             editUrl: '<repo-url>/edit/main/Claude-Production-Grade-Suite/technical-writer/docs/',
+             editUrl: '<repo-url>/edit/main/docs/',
              showLastUpdateTime: true,
              showLastUpdateAuthor: true,
              versions: {
@@ -903,7 +912,7 @@ except ApiError as e:
    }
    ```
 
-2. **Generate `Claude-Production-Grade-Suite/technical-writer/ci/docs-build.yml`** — CI pipeline for documentation:
+2. **Generate `.github/workflows/docs-build.yml`** — CI pipeline for documentation:
 
 ```yaml
 name: Documentation Build and Deploy
@@ -912,11 +921,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Claude-Production-Grade-Suite/technical-writer/**'
+      - 'docs/**'
   pull_request:
     branches: [main]
     paths:
-      - 'Claude-Production-Grade-Suite/technical-writer/**'
+      - 'docs/**'
 
 jobs:
   build:
@@ -924,7 +933,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: Claude-Production-Grade-Suite/technical-writer/docusaurus
+        working-directory: docs/docusaurus
     steps:
       - uses: actions/checkout@v4
 
@@ -932,7 +941,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: Claude-Production-Grade-Suite/technical-writer/docusaurus/package-lock.json
+          cache-dependency-path: docs/docusaurus/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -954,7 +963,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Claude-Production-Grade-Suite/technical-writer/docusaurus/build
+          path: docs/docusaurus/build
 
   # OpenAPI spec validation
   validate-api-docs:
@@ -966,7 +975,7 @@ jobs:
       - name: Validate OpenAPI specification
         uses: char0n/swagger-editor-validate@v1
         with:
-          definition-file: Claude-Production-Grade-Suite/technical-writer/api-reference/generated/openapi.json
+          definition-file: docs/api-reference/generated/openapi.json
 
   deploy:
     name: Deploy Documentation
@@ -985,7 +994,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-3. **Generate `Claude-Production-Grade-Suite/technical-writer/CHANGELOG.md`** with a template and instructions:
+3. **Generate `CHANGELOG.md`** at the project root with a template and instructions:
 
 ```markdown
 # Changelog
@@ -1020,7 +1029,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- - Initial release -->
 ```
 
-4. **Generate auto-generated API reference** in `api-reference/generated/`:
+4. **Generate auto-generated API reference** in `docs/api-reference/generated/`:
    - Copy the OpenAPI spec as `openapi.json`
    - Generate `openapi.html` using Redoc standalone HTML (embed the spec in a single-file HTML page)
    - This serves as a fallback API reference that works without the Docusaurus site
@@ -1037,7 +1046,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | Putting all environment variables in a giant table without grouping | Developer scanning for the database URL has to read 50 variables | Group env vars by category (database, cache, auth, external services). Mark required vs. optional. Show working example values. |
 | Code examples that do not actually work | Errors in copy-pasted examples destroy trust in all documentation | Every code example must be tested. Use a CI step that extracts and runs doc examples if possible. At minimum, manually verify before publishing. |
 | No versioning strategy for docs | API v1 docs get overwritten by v2 docs. Users on v1 cannot find their documentation. | Use Docusaurus versioning. Cut a doc version for each major API version. Default to latest, but keep previous versions accessible. |
-| Operational docs that duplicate SRE runbooks verbatim | Two copies of the same content that drift apart over time | Operations docs in Docs-Suite are summaries and indexes. They link to the canonical runbooks in SRE-Suite. Single source of truth. |
+| Operational docs that duplicate SRE runbooks verbatim | Two copies of the same content that drift apart over time | Operations docs are summaries and indexes. They link to the canonical runbooks at `docs/runbooks/`. Single source of truth. |
 | Architecture docs that describe the aspirational design, not the actual system | New developer reads the docs, looks at the code, and they do not match. Trust in docs destroyed. | Document what IS, not what SHOULD BE. If the architecture has tech debt or divergences from the ideal, document those too with links to relevant tickets. |
 | Missing "Last updated" dates on pages | Reader has no way to know if the page is current or stale from 2 years ago | Enable `showLastUpdateTime` in Docusaurus. For non-Docusaurus docs, add a "Last verified: YYYY-MM-DD" line at the top of each page. |
 | Writing documentation in a vacuum without talking to users | Docs answer questions nobody is asking, and miss the questions everyone has | Before writing, audit: support tickets, Slack questions, onboarding feedback, Stack Overflow questions about the product. These reveal what docs are actually needed. |
@@ -1084,7 +1093,7 @@ Before marking the Technical Writer skill as complete, verify:
 - [ ] Deployment guide covers standard deployment, emergency deployment, and rollback
 - [ ] Monitoring guide links to actual dashboards and explains key metrics
 - [ ] Incident response is a quick-reference summary (not a copy of SRE-Suite)
-- [ ] Runbook index links to SRE-Suite runbooks (single source of truth)
+- [ ] Runbook index links to runbooks at `docs/runbooks/` (single source of truth)
 - [ ] Docusaurus config builds without errors
 - [ ] Sidebar navigation matches the documentation sitemap
 - [ ] CI pipeline validates builds and checks for broken links

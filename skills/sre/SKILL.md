@@ -47,10 +47,10 @@ Before invoking this skill, ensure the following exist:
 
 | Artifact | Source | What SRE Needs From It |
 |---|---|---|
-| `Claude-Production-Grade-Suite/devops/terraform/` | DevOps skill | Infrastructure definitions — resource limits, instance types, networking topology |
-| `Claude-Production-Grade-Suite/devops/ci-cd/` | DevOps skill | Pipeline definitions — deployment strategy, rollback mechanisms, canary configs |
-| `Claude-Production-Grade-Suite/devops/kubernetes/` | DevOps skill | K8s manifests — pod specs, resource requests/limits, HPA configs, health probes |
-| `Claude-Production-Grade-Suite/devops/monitoring/` | DevOps skill | Base alerting rules, dashboard templates, log aggregation setup |
+| `infrastructure/terraform/` | DevOps skill | Infrastructure definitions — resource limits, instance types, networking topology |
+| `.github/workflows/` | DevOps skill | Pipeline definitions — deployment strategy, rollback mechanisms, canary configs |
+| `infrastructure/kubernetes/` | DevOps skill | K8s manifests — pod specs, resource requests/limits, HPA configs, health probes |
+| `infrastructure/monitoring/` | DevOps skill | Base alerting rules, dashboard templates, log aggregation setup |
 | Architecture docs (ADRs, service map) | Architect skill | Service boundaries, dependencies, data flow, consistency requirements |
 | Test results / coverage reports | Testing skill | Failure modes already tested, load test baselines |
 | `Claude-Production-Grade-Suite/product-manager/` or requirements docs | BA skill | Business-criticality tiers, availability requirements, user-facing SLA commitments |
@@ -71,7 +71,22 @@ This boundary must be respected. Blurring it produces duplicate work and conflic
 
 ## Output Structure
 
-All outputs are written to `Claude-Production-Grade-Suite/sre/` in the project root.
+### Project Root Output (Deliverables)
+
+Operational runbooks are project deliverables and go to `docs/runbooks/` at the project root.
+
+```
+docs/runbooks/
+└── <service-name>/
+    ├── high-error-rate.md
+    ├── high-latency.md
+    ├── out-of-memory.md
+    └── dependency-down.md
+```
+
+### Workspace Output (Assessment & Analysis)
+
+SRE workspace artifacts (readiness assessments, SLO analysis, chaos scenarios, incident procedures) stay in `Claude-Production-Grade-Suite/sre/`.
 
 ```
 Claude-Production-Grade-Suite/sre/
@@ -108,17 +123,11 @@ Claude-Production-Grade-Suite/sre/
 │   │   ├── internal-slack-alert.md
 │   │   └── customer-notification.md
 │   └── war-room-checklist.md
-├── disaster-recovery/
-│   ├── rto-rpo-definitions.md
-│   ├── failover-playbook.md
-│   ├── backup-verification.md
-│   └── recovery-procedures.md
-└── runbooks/
-    └── <service-name>/
-        ├── high-error-rate.md
-        ├── high-latency.md
-        ├── out-of-memory.md
-        └── dependency-down.md
+└── disaster-recovery/
+    ├── rto-rpo-definitions.md
+    ├── failover-playbook.md
+    ├── backup-verification.md
+    └── recovery-procedures.md
 ```
 
 ---
@@ -134,8 +143,8 @@ Execute these phases sequentially. Each phase builds on the previous. Do not ski
 **Goal:** Systematically evaluate every service for production survivability. This is not a rubber stamp — it is an adversarial review.
 
 **Inputs:**
-- `Claude-Production-Grade-Suite/devops/kubernetes/` — pod specs, probes, resource limits
-- `Claude-Production-Grade-Suite/devops/terraform/` — infrastructure sizing, redundancy
+- `infrastructure/kubernetes/` — pod specs, probes, resource limits
+- `infrastructure/terraform/` — infrastructure sizing, redundancy
 - Application source code — connection pooling, retry logic, timeout configs
 - Architecture docs — dependency map, data stores, external integrations
 
@@ -218,7 +227,7 @@ Reviewer: SRE Skill (automated)
 **Goal:** Transform DevOps monitoring into business-aligned SLOs with actionable error budgets.
 
 **Inputs:**
-- `Claude-Production-Grade-Suite/devops/monitoring/` — existing Prometheus rules, Grafana dashboards
+- `infrastructure/monitoring/` — existing Prometheus rules, Grafana dashboards
 - `Claude-Production-Grade-Suite/product-manager/` or requirements — availability promises, user expectations
 - Architecture docs — request flow, critical paths, dependency chains
 - Phase 1 findings — known reliability risks
@@ -341,7 +350,7 @@ groups:
 
 **Inputs:**
 - Architecture docs — dependency map, single points of failure
-- `Claude-Production-Grade-Suite/devops/kubernetes/` — deployment topology
+- `infrastructure/kubernetes/` — deployment topology
 - Phase 1 findings — known weaknesses to target
 - Phase 2 SLOs — steady-state metrics to monitor during experiments
 
@@ -554,9 +563,9 @@ Immediately halt ALL experiments if:
 **Goal:** Model current and future load, validate auto-scaling, project costs, and identify bottlenecks before they hit production.
 
 **Inputs:**
-- `Claude-Production-Grade-Suite/devops/monitoring/` — current traffic metrics, resource utilization
-- `Claude-Production-Grade-Suite/devops/kubernetes/` — HPA configs, resource limits
-- `Claude-Production-Grade-Suite/devops/terraform/` — infrastructure sizing, instance types
+- `infrastructure/monitoring/` — current traffic metrics, resource utilization
+- `infrastructure/kubernetes/` — HPA configs, resource limits
+- `infrastructure/terraform/` — infrastructure sizing, instance types
 - Architecture docs — request fan-out ratios, data growth patterns
 - Business requirements — growth projections, seasonal patterns
 
@@ -813,7 +822,7 @@ on_call_expectations:
 **Goal:** Define, document, and validate the ability to recover from catastrophic failures. Not theoretical — every procedure must be tested.
 
 **Inputs:**
-- `Claude-Production-Grade-Suite/devops/terraform/` — infrastructure topology, regions, backup configs
+- `infrastructure/terraform/` — infrastructure topology, regions, backup configs
 - Architecture docs — data stores, replication topology, state management
 - Business requirements — acceptable downtime, data loss tolerance
 - Phase 1 findings — backup verification status
@@ -871,12 +880,12 @@ on_call_expectations:
 
 **Inputs:**
 - ALL previous phases — alerts, SLOs, chaos findings, architecture
-- `Claude-Production-Grade-Suite/devops/monitoring/` — alert definitions, metric names
+- `infrastructure/monitoring/` — alert definitions, metric names
 - Application source code — for service-specific debugging commands
 
 **Process:**
 
-For each service identified in the architecture, generate a directory under `runbooks/<service-name>/` with runbooks for every alert. Each runbook MUST follow this template:
+For each service identified in the architecture, generate a directory under `docs/runbooks/<service-name>/` at the project root with runbooks for every alert. Each runbook MUST follow this template:
 
 ```markdown
 # Runbook: <Alert Name>

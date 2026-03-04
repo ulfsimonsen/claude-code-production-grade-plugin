@@ -7,9 +7,9 @@ description: Use when building web frontend applications, UI components, design 
 
 ## Overview
 
-Full frontend implementation pipeline: from BRD user stories and API contracts to a production-ready, accessible, performant web application. Generates a `Claude-Production-Grade-Suite/frontend-engineer/` folder in the project root containing a complete frontend codebase with design system, component library, typed API clients, pages with state management, tests, and Storybook documentation.
+Full frontend implementation pipeline: from BRD user stories and API contracts to a production-ready, accessible, performant web application. Generates a production-ready frontend application at `frontend/` in the project root, with analysis documents in `Claude-Production-Grade-Suite/frontend-engineer/`. The `frontend/` directory contains a complete frontend codebase with design system, component library, typed API clients, pages with state management, tests, and Storybook documentation.
 
-This skill runs in parallel with Software Engineer (Phase 3b of the production-grade pipeline). It consumes `Claude-Production-Grade-Suite/solution-architect/` artifacts (OpenAPI specs, tech stack decisions, system diagrams) and BRD documents (user stories, user flows, acceptance criteria) to produce working frontend code — not templates or boilerplate.
+This skill runs in parallel with Software Engineer (Phase 3b of the production-grade pipeline). It consumes project root artifacts (OpenAPI specs at `api/openapi/`, tech stack decisions at `docs/architecture/tech-stack.md`, system diagrams at `docs/architecture/system-diagrams/`) and BRD documents (user stories, user flows, acceptance criteria) to produce working frontend code — not templates or boilerplate.
 
 ## When to Use
 
@@ -65,11 +65,11 @@ Summary: [what was produced]
 
 This skill reads from two upstream sources:
 
-### From Claude-Production-Grade-Suite/solution-architect/
+### From Project Root
 - `api/openapi/*.yaml` — OpenAPI 3.1 specs for typed client generation
-- `docs/tech-stack.md` — Framework, language, auth provider decisions
-- `docs/system-diagrams/` — C4 container diagrams for understanding service boundaries
-- `docs/architecture-decision-records/` — ADRs for auth strategy, API patterns, multi-tenancy
+- `docs/architecture/tech-stack.md` — Framework, language, auth provider decisions
+- `docs/architecture/system-diagrams/` — C4 container diagrams for understanding service boundaries
+- `docs/architecture/architecture-decision-records/` — ADRs for auth strategy, API patterns, multi-tenancy
 - `schemas/erd.md` — Entity relationships for understanding data shapes
 
 ### From BRD
@@ -143,7 +143,7 @@ Before beginning, confirm the framework with the user via AskUserQuestion:
 
 ## Phase 1: UI/UX Analysis
 
-Read BRD user stories and SolutionArchitect-Suite artifacts. Produce a structured analysis in `Claude-Production-Grade-Suite/frontend-engineer/docs/`.
+Read BRD user stories and solution architect artifacts from the project root. Produce a structured analysis in `Claude-Production-Grade-Suite/frontend-engineer/docs/` (workspace artifacts).
 
 ### 1.1 User Flow Mapping
 
@@ -190,11 +190,11 @@ Cross-reference BRD user stories with OpenAPI specs:
 
 ## Phase 2: Design System
 
-Generate design tokens, theme configuration, and foundational styles in `Claude-Production-Grade-Suite/frontend-engineer/app/styles/`.
+Generate design tokens, theme configuration, and foundational styles in `frontend/app/styles/`.
 
 ### 2.1 Design Tokens
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/styles/tokens/`:
+Create `frontend/app/styles/tokens/`:
 
 ```
 tokens/
@@ -218,7 +218,7 @@ Token standards:
 
 ### 2.2 Theme Configuration
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/styles/theme/`:
+Create `frontend/app/styles/theme/`:
 
 ```
 theme/
@@ -238,7 +238,7 @@ Theme requirements:
 
 ### 2.3 Tailwind Configuration (if Tailwind selected)
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/tailwind.config.ts`:
+Create `frontend/tailwind.config.ts`:
 - Extend default theme with design tokens
 - Custom color palette mapped to semantic tokens
 - Typography plugin configuration
@@ -250,11 +250,11 @@ Create `Claude-Production-Grade-Suite/frontend-engineer/tailwind.config.ts`:
 
 ## Phase 3: Component Library
 
-Build reusable components following atomic design methodology in `Claude-Production-Grade-Suite/frontend-engineer/app/components/`.
+Build reusable components following atomic design methodology in `frontend/app/components/`.
 
 ### 3.1 UI Primitives (Atoms)
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/components/ui/`:
+Create `frontend/app/components/ui/`:
 
 Every component MUST include:
 - TypeScript props interface with JSDoc comments
@@ -322,7 +322,7 @@ ui/
 
 ### 3.2 Layout Components (Molecules)
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/components/layout/`:
+Create `frontend/app/components/layout/`:
 
 ```
 layout/
@@ -341,7 +341,7 @@ layout/
 
 ### 3.3 Feature Components (Organisms)
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/components/features/`:
+Create `frontend/app/components/features/`:
 
 Build feature-specific components derived from BRD user stories:
 
@@ -381,7 +381,7 @@ features/
 
 ## Phase 4: Page Implementation
 
-Build actual pages with routing, state management, data fetching, and auth guards in `Claude-Production-Grade-Suite/frontend-engineer/app/pages/`.
+Build actual pages with routing, state management, data fetching, and auth guards in `frontend/app/pages/`.
 
 ### 4.1 Route Structure
 
@@ -422,7 +422,7 @@ pages/                          # Next.js App Router (or equivalent)
 
 ### 4.2 State Management Setup
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/stores/`:
+Create `frontend/app/stores/`:
 
 ```
 stores/
@@ -442,7 +442,7 @@ For React Query + Zustand (recommended):
 
 ### 4.3 Auth Implementation
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/app/hooks/use-auth.ts` and auth utilities:
+Create `frontend/app/hooks/use-auth.ts` and auth utilities:
 
 ```
 hooks/
@@ -482,11 +482,11 @@ Every page MUST implement:
 
 ## Phase 5: API Client Layer
 
-Auto-generate typed API clients from OpenAPI specifications in `Claude-Production-Grade-Suite/frontend-engineer/app/services/`.
+Auto-generate typed API clients from OpenAPI specifications in `frontend/app/services/`.
 
 ### 5.1 Client Generation
 
-Read `Claude-Production-Grade-Suite/solution-architect/api/openapi/*.yaml` and generate:
+Read `api/openapi/*.yaml` and generate:
 
 ```
 services/
@@ -601,11 +601,11 @@ const errorMessages: Record<string, string> = {
 
 ## Phase 6: Performance & Accessibility
 
-Generate configs and audit tooling in `Claude-Production-Grade-Suite/frontend-engineer/` root and `Claude-Production-Grade-Suite/frontend-engineer/tests/`.
+Generate configs and audit tooling in `frontend/` root and `frontend/tests/`.
 
 ### 6.1 Performance Budget
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/lighthouse.config.js` and `Claude-Production-Grade-Suite/frontend-engineer/docs/performance-budget.md`:
+Create `frontend/lighthouse.config.js` and `Claude-Production-Grade-Suite/frontend-engineer/docs/performance-budget.md`:
 
 | Metric | Budget | Measurement |
 |--------|--------|-------------|
@@ -630,7 +630,7 @@ Create `Claude-Production-Grade-Suite/frontend-engineer/lighthouse.config.js` an
 
 ### 6.2 Accessibility Audit Configuration
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/tests/a11y/`:
+Create `frontend/tests/a11y/`:
 
 ```
 a11y/
@@ -678,7 +678,7 @@ SEO standards:
 
 ### 6.4 Testing Setup
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/tests/`:
+Create `frontend/tests/`:
 
 ```
 tests/
@@ -710,7 +710,7 @@ Testing standards:
 
 ### 6.5 Storybook Configuration
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/storybook/`:
+Create `frontend/storybook/`:
 
 ```
 storybook/
@@ -738,92 +738,31 @@ Every component gets stories covering:
 - Responsive behavior (mobile, tablet, desktop)
 - Dark mode appearance
 
-## Suite Output Structure
+## Output Structure
+
+This skill produces output in two locations: project deliverables at `frontend/` in the project root, and workspace artifacts (analysis documents, progress notes) in `Claude-Production-Grade-Suite/frontend-engineer/`.
+
+### Project Root Output (`frontend/`)
 
 ```
-Claude-Production-Grade-Suite/frontend-engineer/
+frontend/
 ├── app/
 │   ├── components/
 │   │   ├── ui/                    # Primitives (Button, Input, Modal, etc.)
-│   │   │   ├── button/
-│   │   │   ├── input/
-│   │   │   ├── typography/
-│   │   │   ├── feedback/
-│   │   │   ├── overlay/
-│   │   │   ├── data-display/
-│   │   │   ├── navigation/
-│   │   │   └── index.ts
 │   │   ├── layout/                # Layout components (Header, Sidebar, Footer)
-│   │   │   ├── header.tsx
-│   │   │   ├── sidebar.tsx
-│   │   │   ├── footer.tsx
-│   │   │   ├── dashboard-layout.tsx
-│   │   │   ├── auth-layout.tsx
-│   │   │   └── error-boundary.tsx
 │   │   └── features/              # Feature-specific components
-│   │       ├── auth/
-│   │       ├── dashboard/
-│   │       ├── data-table/
-│   │       ├── forms/
-│   │       ├── settings/
-│   │       └── common/
 │   ├── pages/                     # Route pages (Next.js App Router)
-│   │   ├── (auth)/
-│   │   ├── (dashboard)/
-│   │   ├── (marketing)/
-│   │   ├── layout.tsx
-│   │   ├── error.tsx
-│   │   └── not-found.tsx
 │   ├── hooks/                     # Custom React hooks
-│   │   ├── use-auth.ts
-│   │   ├── use-permissions.ts
-│   │   ├── use-debounce.ts
-│   │   ├── use-media-query.ts
-│   │   ├── use-pagination.ts
-│   │   └── use-keyboard-shortcut.ts
 │   ├── services/                  # API client layer
-│   │   ├── api-client.ts
-│   │   ├── interceptors.ts
-│   │   ├── generated/
-│   │   │   ├── types.ts
-│   │   │   ├── schemas.ts
-│   │   │   └── endpoints.ts
-│   │   ├── queries/
-│   │   │   └── use-[resource].ts
-│   │   ├── query-keys.ts
-│   │   └── [resource]-service.ts
 │   ├── stores/                    # State management (Zustand)
-│   │   ├── auth-store.ts
-│   │   ├── ui-store.ts
-│   │   └── notification-store.ts
 │   ├── styles/
 │   │   ├── tokens/                # Design tokens
-│   │   │   ├── colors.ts
-│   │   │   ├── typography.ts
-│   │   │   ├── spacing.ts
-│   │   │   ├── breakpoints.ts
-│   │   │   ├── shadows.ts
-│   │   │   ├── radii.ts
-│   │   │   ├── z-index.ts
-│   │   │   ├── motion.ts
-│   │   │   └── index.ts
 │   │   └── theme/                 # Theme configuration
-│   │       ├── theme-provider.tsx
-│   │       ├── light-theme.ts
-│   │       ├── dark-theme.ts
-│   │       ├── theme.css
-│   │       └── global.css
-│   └── utils/
-│       ├── cn.ts                  # Class name merge utility (clsx + twMerge)
-│       ├── format.ts              # Date, number, currency formatters
-│       ├── validation.ts          # Form validation helpers
-│       ├── seo.ts                 # SEO metadata helpers
-│       ├── sitemap.ts             # Sitemap generation
-│       └── structured-data.ts     # JSON-LD helpers
+│   └── utils/                     # Utilities (cn, format, validation, seo)
 ├── public/
 │   ├── favicon.ico
 │   ├── robots.txt
-│   └── manifest.json             # PWA manifest
+│   └── manifest.json              # PWA manifest
 ├── tests/
 │   ├── components/
 │   │   ├── ui/                    # Primitive component tests
@@ -849,11 +788,6 @@ Claude-Production-Grade-Suite/frontend-engineer/
 │   │   ├── preview.ts
 │   │   └── manager.ts
 │   └── stories/
-├── docs/
-│   ├── user-flows.md              # Phase 1 analysis
-│   ├── page-inventory.md          # Phase 1 analysis
-│   ├── component-inventory.md     # Phase 1 analysis
-│   └── performance-budget.md      # Phase 6 budgets
 ├── package.json
 ├── tsconfig.json
 ├── next.config.js                 # (or vite.config.ts / svelte.config.js)
@@ -867,9 +801,21 @@ Claude-Production-Grade-Suite/frontend-engineer/
 └── README.md                      # Getting started, scripts, architecture overview
 ```
 
+### Workspace Output (`Claude-Production-Grade-Suite/frontend-engineer/`)
+
+```
+Claude-Production-Grade-Suite/frontend-engineer/
+├── docs/
+│   ├── user-flows.md              # Phase 1 analysis
+│   ├── page-inventory.md          # Phase 1 analysis
+│   ├── component-inventory.md     # Phase 1 analysis
+│   └── performance-budget.md      # Phase 6 budgets
+└── progress.md
+```
+
 ## Execution Protocol
 
-1. **Read upstream artifacts** — Parse BRD user stories and `Claude-Production-Grade-Suite/solution-architect/api/openapi/*.yaml`
+1. **Read upstream artifacts** — Parse BRD user stories and `api/openapi/*.yaml`
 2. **Phase 0** — Confirm framework, state management, and styling with user
 3. **Phase 1** — Analyze user flows, build page inventory, map API surface
 4. **Phase 2** — Generate design tokens and theme configuration
@@ -883,10 +829,10 @@ Claude-Production-Grade-Suite/frontend-engineer/
 
 ### Parallel Execution Note
 
-This skill runs as Phase 3b in the production-grade pipeline, in parallel with Software Engineer (Phase 3a). Both consume `Claude-Production-Grade-Suite/solution-architect/` artifacts independently. Coordination points:
+This skill runs as Phase 3b in the production-grade pipeline, in parallel with Software Engineer (Phase 3a). Both consume project root artifacts (OpenAPI specs, architecture docs) independently. Coordination points:
 - API client types generated here must match the service implementations from Software Engineer
 - Both skills reference the same OpenAPI specs as the single source of truth
-- Claude-Production-Grade-Suite/frontend-engineer/ and Claude-Production-Grade-Suite/software-engineer/ are independent folder trees with no file conflicts
+- `frontend/` and `services/` are independent folder trees at the project root with no file conflicts
 
 ## package.json Standards
 
@@ -910,7 +856,7 @@ The generated `package.json` MUST include:
     "storybook:build": "storybook build",
     "analyze": "ANALYZE=true next build",
     "lighthouse": "lhci autorun",
-    "generate:api": "openapi-typescript Claude-Production-Grade-Suite/solution-architect/api/openapi/*.yaml -o app/services/generated/types.ts",
+    "generate:api": "openapi-typescript ../api/openapi/*.yaml -o app/services/generated/types.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   }
@@ -939,7 +885,7 @@ The `tsconfig.json` MUST include:
 
 ## Environment Variables
 
-Create `Claude-Production-Grade-Suite/frontend-engineer/.env.example`:
+Create `frontend/.env.example`:
 
 ```bash
 # API
