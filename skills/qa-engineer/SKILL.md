@@ -15,8 +15,18 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+!`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 
 **Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
+## Brownfield Awareness
+
+If `Claude-Production-Grade-Suite/.orchestrator/codebase-context.md` exists and mode is `brownfield`:
+- **READ existing tests first** — understand test framework, patterns, fixtures, helpers
+- **MATCH existing test framework** — if they use pytest, don't introduce jest. If they use Vitest, use Vitest
+- **ADD tests alongside existing ones** — don't restructure their test directory
+- **Existing tests must still pass** — run the full test suite after adding new tests
+- **Reuse existing fixtures and helpers** — don't duplicate test utilities
 
 ## Config Paths
 

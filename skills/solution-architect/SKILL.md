@@ -15,8 +15,18 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+!`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 
 **Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+
+## Brownfield Awareness
+
+If `Claude-Production-Grade-Suite/.orchestrator/codebase-context.md` exists and mode is `brownfield`:
+- **READ existing architecture first** — understand current patterns, tech stack, API structure
+- **Design around existing code** — new architecture extends the system, doesn't replace it
+- **Document existing patterns in ADRs** — capture what's already decided
+- **API contracts must be backward-compatible** — new endpoints, not breaking changes
+- **Don't redesign what works** — focus architecture on the NEW features/requirements
 
 ## Overview
 

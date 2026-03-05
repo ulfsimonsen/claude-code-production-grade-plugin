@@ -15,6 +15,14 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+!`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
+
+## Brownfield Awareness
+
+If codebase context indicates `brownfield` mode:
+- **READ existing docs first** — don't duplicate what's already documented
+- **Match existing doc style** — if they use JSDoc, use JSDoc. If they have a docs/ site, add to it
+- **NEVER overwrite** existing README, CONTRIBUTING, or API docs
 
 ## Fallback Protocol Summary
 

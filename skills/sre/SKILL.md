@@ -15,6 +15,14 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
+!`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
+
+## Brownfield Awareness
+
+If codebase context indicates `brownfield` mode:
+- **READ existing SRE artifacts first** — existing SLOs, runbooks, monitoring configs
+- **Extend existing monitoring** — don't replace Datadog with Prometheus if they already use Datadog
+- **Preserve existing alerting** — add new alerts, don't reorganize existing ones
 
 ## Fallback Protocol Summary
 
