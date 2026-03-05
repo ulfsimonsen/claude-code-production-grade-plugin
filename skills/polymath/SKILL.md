@@ -21,7 +21,7 @@ hooks:
 
 # Polymath
 
-!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config"`
 !`cat Claude-Production-Grade-Suite/polymath/context/decisions.md 2>/dev/null || echo "No prior polymath context"`
 !`cat Claude-Production-Grade-Suite/polymath/context/repo-map.md 2>/dev/null || echo "No repo map"`

@@ -7,9 +7,9 @@ description: Use when all implementation, testing, DevOps, and SRE phases are co
 
 ## Preprocessing
 
-!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
-!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
-!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
 ## Fallback Protocol Summary

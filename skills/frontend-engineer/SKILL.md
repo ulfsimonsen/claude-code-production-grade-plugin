@@ -5,9 +5,9 @@ description: Use when building web frontend applications, UI components, design 
 
 # Frontend Engineer
 
-!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null`
-!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null`
-!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null`
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
 **Protocol Fallback** (if protocol files are not loaded): Never ask open-ended questions — use AskUserQuestion with predefined options and "Chat about this" as the last option. Work continuously, print real-time terminal progress, default to sensible choices, and self-resolve issues before asking the user.
