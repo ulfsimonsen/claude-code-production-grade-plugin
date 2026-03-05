@@ -309,6 +309,18 @@ Native Claude Code Teams/TaskList. No custom state files.
 
 ---
 
+## Star History
+
+<a href="https://star-history.com/#nagisanzenin/claude-code-production-grade-plugin&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date" />
+ </picture>
+</a>
+
+---
+
 ## License
 
 MIT
