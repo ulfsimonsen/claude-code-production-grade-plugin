@@ -22,6 +22,7 @@ description: >
 !`ls Claude-Production-Grade-Suite/ 2>/dev/null || echo "No existing workspace"`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config file — defaults apply"`
 !`cat Claude-Production-Grade-Suite/.protocols/visual-identity.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/freshness-protocol.md 2>/dev/null || true`
 
 <IMPORTANT>
 This skill ENHANCES Claude Code's development capabilities. Without it, Claude Code produces code files. With it, Claude Code produces complete production-ready systems — architecture, tested code, security audit, CI/CD, and documentation.
@@ -123,7 +124,7 @@ For non-Full-Build modes, use the lightweight execution flows below. For Full Bu
 
 All modes share these behaviors:
 - Bootstrap workspace: `mkdir -p Claude-Production-Grade-Suite/.protocols/ Claude-Production-Grade-Suite/.orchestrator/`
-- Write shared protocols (same as Full Build step 3, including `visual-identity.md`)
+- Write shared protocols (same as Full Build step 3, including `visual-identity.md` and `freshness-protocol.md`)
 - Read `.production-grade.yaml` for path overrides
 - Read existing workspace state if present
 - Engagement mode + parallelism: ask ONLY if mode involves 3+ skills. For 1-2 skill modes, use Standard engagement + Sequential execution (overhead of asking isn't worth it).
@@ -378,6 +379,7 @@ mkdir -p Claude-Production-Grade-Suite/.orchestrator/
 | `tool-efficiency.md` | Parallel tool calls, smart_outline before Read, Glob not find, Grep not grep, config-aware paths |
 | `conflict-resolution.md` | Authority hierarchy, dedup by file:line (keep highest severity), HARDEN→BUILD feedback loops (2 cycle max) |
 | `visual-identity.md` | Visual design language: container hierarchy (Tier 1/2/3), icon vocabulary, progress patterns, gate ceremonies, wave announcements, completion summaries, timing |
+| `freshness-protocol.md` | Temporal sensitivity: volatility tiers (Critical/High/Medium/Stable), WebSearch triggers for outdated data (model IDs, versions, pricing, CVEs), search-then-implement pattern |
 
 Read these from the plugin's `skills/_shared/protocols/` directory and copy them. If plugin path is unavailable, write from the summaries above.
 

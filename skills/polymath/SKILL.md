@@ -10,6 +10,7 @@ description: >
 
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/visual-identity.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/freshness-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config"`
 !`cat Claude-Production-Grade-Suite/polymath/context/decisions.md 2>/dev/null || echo "No prior polymath context"`
 !`cat Claude-Production-Grade-Suite/polymath/context/repo-map.md 2>/dev/null || echo "No repo map"`

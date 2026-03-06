@@ -14,6 +14,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/visual-identity.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/freshness-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 !`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 

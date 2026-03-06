@@ -2,6 +2,18 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [4.4.0] — 2026-03-06
+
+### Added
+- **Freshness protocol** — new shared protocol (`freshness-protocol.md`) that gives all 14 agents temporal sensitivity to volatile data. Agents now recognize when they're about to use potentially outdated information (LLM model IDs, API pricing, package versions, CVEs, framework APIs, Docker tags, cloud service features) and trigger WebSearch to verify before implementing.
+- **4-tier volatility classification** — Critical (days-weeks: model IDs, pricing, CVEs → MUST search), High (weeks-months: package versions, framework APIs, Docker tags → search when writing config), Medium (months-quarters: browser APIs, crypto best practices → search if uncertain), Stable (years+: language fundamentals, protocols → trust training data).
+- **Search-then-implement pattern** — when volatile data is detected, agents pause, WebSearch for current state, cite what they found with `✓ Verified:` markers, then implement with verified data.
+- **Skill-specific sensitivity table** — each agent knows its own high-sensitivity areas (Software Engineer: package versions/SDK APIs, DevOps: Docker tags/Terraform providers, Security: CVEs/crypto, Data Scientist: LLM model IDs/pricing, etc.).
+
+### Changed
+- **All 14 skills** now load `freshness-protocol.md` at startup alongside existing protocols.
+- **Orchestrator protocol table** updated to include freshness protocol in workspace bootstrap.
+
 ## [4.3.0] — 2026-03-06
 
 ### Added

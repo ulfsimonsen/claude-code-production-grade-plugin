@@ -14,6 +14,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/visual-identity.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/freshness-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
 **Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
