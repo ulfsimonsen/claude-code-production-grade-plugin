@@ -310,8 +310,8 @@ Run BEFORE any execution (all modes). Silent if current. One prompt max if updat
 
 **Step 0 — version check:**
 
-1. Read `~/.claude/plugins/installed_plugins.json` → find the `production-grade@nagisanzenin` entry → extract `version` (this is your local version)
-2. WebFetch `https://raw.githubusercontent.com/nagisanzenin/claude-code-production-grade-plugin/main/.claude-plugin/plugin.json` → extract `version` (this is the remote version)
+1. Read `~/.claude/plugins/installed_plugins.json` → find the `production-grade@ulfsimonsen` entry → extract `version` (this is your local version)
+2. WebFetch `https://raw.githubusercontent.com/ulfsimonsen/claude-code-production-grade-plugin/main/.claude-plugin/plugin.json` → extract `version` (this is the remote version)
 3. **If WebFetch fails** (offline, timeout, 404) → silently continue. Never block the pipeline over an update check.
 4. **If remote ≤ local** → continue silently (user sees nothing)
 5. **If remote > local** → prompt:
@@ -331,11 +331,11 @@ AskUserQuestion(questions=[{
 6. **If skip** → continue pipeline with current version
 7. **If update** → execute in sequence:
    ```bash
-   git clone --depth 1 https://github.com/nagisanzenin/claude-code-production-grade-plugin.git /tmp/pg-update
+   git clone --depth 1 https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git /tmp/pg-update
    ```
    - Read new SHA: `git -C /tmp/pg-update rev-parse HEAD`
-   - Create cache dir: `mkdir -p ~/.claude/plugins/cache/nagisanzenin/production-grade/{remote_version}`
-   - Copy files: `cp -r /tmp/pg-update/skills /tmp/pg-update/.claude-plugin /tmp/pg-update/README.md /tmp/pg-update/VISION.md ~/.claude/plugins/cache/nagisanzenin/production-grade/{remote_version}/`
+   - Create cache dir: `mkdir -p ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}`
+   - Copy files: `cp -r /tmp/pg-update/skills /tmp/pg-update/.claude-plugin /tmp/pg-update/README.md /tmp/pg-update/VISION.md ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}/`
    - Update `~/.claude/plugins/installed_plugins.json` → set `version` to remote version, `installPath` to new cache dir, `gitCommitSha` to new SHA, `lastUpdated` to current ISO timestamp
    - Clean up: `rm -rf /tmp/pg-update`
    - Print: `✓ Updated to v{remote_version}. Re-invoke /production-grade to use the new version.`

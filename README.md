@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/nagisanzenin/claude-code-production-grade-plugin"><img src="https://img.shields.io/github/stars/nagisanzenin/claude-code-production-grade-plugin?style=social" alt="GitHub stars"></a>
+  <a href="https://github.com/ulfsimonsen/claude-code-production-grade-plugin"><img src="https://img.shields.io/github/stars/ulfsimonsen/claude-code-production-grade-plugin?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
   <img src="https://img.shields.io/badge/version-5.4.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/agents-14-green.svg" alt="14 agents">
@@ -16,8 +16,8 @@
 <h3 align="center">14 AI agents, one install, idea to production.</h3>
 
 ```bash
-/plugin marketplace add nagisanzenin/claude-code-plugins
-/plugin install production-grade@nagisanzenin
+/plugin marketplace add ulfsimonsen/claude-code-plugins
+/plugin install production-grade@ulfsimonsen
 ```
 
 <br>
@@ -341,11 +341,11 @@ Large skills split into **router + on-demand phases**. Only what's needed loads.
 
 ```bash
 # Marketplace (recommended)
-/plugin marketplace add nagisanzenin/claude-code-plugins
-/plugin install production-grade@nagisanzenin
+/plugin marketplace add ulfsimonsen/claude-code-plugins
+/plugin install production-grade@ulfsimonsen
 
 # Or from source
-git clone https://github.com/nagisanzenin/claude-code-production-grade-plugin.git
+git clone https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git
 claude --plugin-dir /path/to/claude-code-production-grade-plugin
 ```
 
@@ -382,11 +382,11 @@ Works on existing codebases — brownfield detection auto-maps your project stru
 
 ## Star History
 
-<a href="https://star-history.com/#nagisanzenin/claude-code-production-grade-plugin&Date">
+<a href="https://star-history.com/#ulfsimonsen/claude-code-production-grade-plugin&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=nagisanzenin/claude-code-production-grade-plugin&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ulfsimonsen/claude-code-production-grade-plugin&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ulfsimonsen/claude-code-production-grade-plugin&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ulfsimonsen/claude-code-production-grade-plugin&type=Date" />
  </picture>
 </a>
 

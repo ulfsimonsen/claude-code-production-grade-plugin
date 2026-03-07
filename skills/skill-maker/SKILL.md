@@ -185,8 +185,8 @@ Create the plugin directory structure:
 ## Installation
 
 ### Via Marketplace
-/plugin marketplace add nagisanzenin/claude-code-plugins
-/plugin install <skill-name>@nagisanzenin
+/plugin marketplace add ulfsimonsen/claude-code-plugins
+/plugin install <skill-name>@ulfsimonsen
 
 ### Load Directly
 claude --plugin-dir /path/to/<skill-name>-plugin
@@ -207,7 +207,7 @@ MIT
 
 ## Phase 5: Add to Marketplace
 
-1. Read the user's marketplace repo (default: `nagisanzenin/claude-code-plugins`)
+1. Read the user's marketplace repo (default: `ulfsimonsen/claude-code-plugins`)
 2. Clone or locate the marketplace locally
 3. Add new plugin entry to `.claude-plugin/marketplace.json`:
    ```json
@@ -215,7 +215,7 @@ MIT
      "name": "<skill-name>",
      "source": {
        "source": "github",
-       "repo": "nagisanzenin/<skill-name>-plugin"
+       "repo": "ulfsimonsen/<skill-name>-plugin"
      },
      "description": "<description>",
      "version": "1.0.0"
@@ -223,12 +223,12 @@ MIT
    ```
 4. Update README.md plugin table
 5. Commit and push marketplace repo
-6. Report final install command: `/plugin install <skill-name>@nagisanzenin`
+6. Report final install command: `/plugin install <skill-name>@ulfsimonsen`
 
 ## Marketplace Config
 
-**Default marketplace repo:** `nagisanzenin/claude-code-plugins`
-**Default marketplace local path:** `~/nagisanzenin-plugins`
+**Default marketplace repo:** `ulfsimonsen/claude-code-plugins`
+**Default marketplace local path:** `~/ulfsimonsen-plugins`
 **Default plugin location:** `~/<skill-name>-plugin`
 
 If the user has a different marketplace, ask which one to use.

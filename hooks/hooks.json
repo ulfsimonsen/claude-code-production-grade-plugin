@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"$HOME/.claude/plugins/cache/nagisanzenin/production-grade\"; bash \"$_R/hooks/session-guard.sh\"",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"/dev/claude-plugins/claude-code-production-grade-plugin\"; bash \"$_R/hooks/session-guard.sh\"",
             "timeout": 10
           }
         ]

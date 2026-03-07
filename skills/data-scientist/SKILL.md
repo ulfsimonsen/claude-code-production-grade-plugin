@@ -5,7 +5,7 @@ description: >
   model selection, prompt engineering, cost reduction, or experiment design.
   Routed via the production-grade orchestrator.
 version: 1.0.0
-author: nagisanzenin
+author: ulfsimonsen
 tags: [ml, ai, llm, data-science, optimization, analytics, ab-testing, prompt-engineering, mlops]
 ---
 
