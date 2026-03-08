@@ -124,11 +124,11 @@ This skill reads from `api/`, `schemas/`, and `docs/architecture/` and produces 
 
 | Phase | File | When to Load | Purpose |
 |-------|------|-------------|---------|
-| 1 | phases/01-context-analysis.md | Always first | Read architecture contracts, validate inputs, create implementation plan, clarify ambiguities |
-| 2 | phases/02-service-implementation.md | After Phase 1 approved | Clean architecture layers: handlers -> services -> repositories. TDD per endpoint. Language-specific standards. |
-| 3 | phases/03-cross-cutting.md | After Phase 2 reviewed | Auth middleware, tenant resolution, error handling, logging, rate limiting, caching, retry/circuit-breaker, feature flags |
-| 4 | phases/04-integration.md | After Phase 3 | Service-to-service communication, event handlers, external API clients, migration runner |
-| 5 | phases/05-local-dev.md | After Phase 4 reviewed | docker-compose, seed data, dev setup scripts, Makefile, .env.example |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-context-analysis.md` | Always first | Read architecture contracts, validate inputs, create implementation plan, clarify ambiguities |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-service-implementation.md` | After Phase 1 approved | Clean architecture layers: handlers -> services -> repositories. TDD per endpoint. Language-specific standards. |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-cross-cutting.md` | After Phase 2 reviewed | Auth middleware, tenant resolution, error handling, logging, rate limiting, caching, retry/circuit-breaker, feature flags |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-integration.md` | After Phase 3 | Service-to-service communication, event handlers, external API clients, migration runner |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-local-dev.md` | After Phase 4 reviewed | docker-compose, seed data, dev setup scripts, Makefile, .env.example |
 
 ## Dispatch Protocol
 
@@ -162,7 +162,7 @@ Agent(
     "FIRST read shared foundations at libs/shared/ — use these patterns for error handling, "
     "logging, auth, and types. Do NOT create your own versions. "
     "Read API contract at api/openapi/{service}.yaml. "
-    "Follow skills/software-engineer/phases/02-service-implementation.md. "
+    "Follow ${CLAUDE_SKILL_DIR}/phases/02-service-implementation.md. "
     "Write output to services/{service_name}/.",
   subagent_type="general-purpose",
   mode="bypassPermissions",

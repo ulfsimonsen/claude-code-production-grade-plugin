@@ -126,12 +126,12 @@ Claude-Production-Grade-Suite/data-scientist/
 
 | Phase | File | When to Load | Purpose |
 |-------|------|--------------|---------|
-| 1 | phases/01-system-audit.md | Always first | Detect AI/ML/LLM usage, classify system, analyze current patterns, map API calls and token flows, cost analysis |
-| 2 | phases/02-llm-optimization.md | After phase 1 (if LLM usage found) | Prompt engineering, token optimization, semantic caching, model selection, fallback chains, quality metrics |
-| 3 | phases/03-experiment-framework.md | After phase 2 | A/B testing infrastructure, evaluation metrics, statistical significance, experiment tracking, feature flags |
-| 4 | phases/04-data-pipeline.md | After phase 3 | Analytics event schema, ETL pipeline architecture, data warehouse design, real-time vs batch, dashboards |
-| 5 | phases/05-ml-infrastructure.md | After phase 4 (if custom ML models) | Model serving, model monitoring (drift), retraining pipelines, feature store, model registry |
-| 6 | phases/06-cost-modeling.md | After all prior phases | API cost analysis, budget projections, cost optimization, usage forecasting, ROI analysis, scientific studies |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-system-audit.md` | Always first | Detect AI/ML/LLM usage, classify system, analyze current patterns, map API calls and token flows, cost analysis |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-llm-optimization.md` | After phase 1 (if LLM usage found) | Prompt engineering, token optimization, semantic caching, model selection, fallback chains, quality metrics |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-experiment-framework.md` | After phase 2 | A/B testing infrastructure, evaluation metrics, statistical significance, experiment tracking, feature flags |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-data-pipeline.md` | After phase 3 | Analytics event schema, ETL pipeline architecture, data warehouse design, real-time vs batch, dashboards |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-ml-infrastructure.md` | After phase 4 (if custom ML models) | Model serving, model monitoring (drift), retraining pipelines, feature store, model registry |
+| 6 | `${CLAUDE_SKILL_DIR}/phases/06-cost-modeling.md` | After all prior phases | API cost analysis, budget projections, cost optimization, usage forecasting, ROI analysis, scientific studies |
 
 ## System Classification Guide
 

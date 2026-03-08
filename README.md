@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/ulfsimonsen/claude-code-production-grade-plugin"><img src="https://img.shields.io/github/stars/ulfsimonsen/claude-code-production-grade-plugin?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-5.4.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-5.5.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/agents-14-green.svg" alt="14 agents">
   <img src="https://img.shields.io/badge/protocols-8-red.svg" alt="7 protocols">
   <img src="https://img.shields.io/badge/execution%20modes-10-purple.svg" alt="10 modes">
@@ -33,6 +33,8 @@
 ## Release Timeline
 
 ```
+2026-03-08  v5.5  ●━━━ Claude Code 2.1.69+ compatibility — ${CLAUDE_SKILL_DIR}, effort auto-set, compaction guard, teammate cleanup
+                  │
 2026-03-07  v5.4  ●━━━ Harmonization — mode-aware autonomy, cross-session enforcement, agent skill loading
                   │
 2026-03-07  v5.3  ●━━━ Worktree isolation, self-healing gates, cost dashboard
@@ -349,7 +351,11 @@ git clone https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git
 claude --plugin-dir /path/to/claude-code-production-grade-plugin
 ```
 
-**Requirements:** Claude Code (with plugin support), Docker & Docker Compose, Git.
+**Requirements:** Claude Code 2.1.69+ (with plugin support), Docker & Docker Compose, Git.
+
+**Recommended settings:**
+- **Effort level:** The plugin's session guard automatically sets `CLAUDE_CODE_EFFORT_LEVEL=high` for production-grade projects. This ensures Sonnet 4.6 and Opus 4.6 don't abbreviate critical pipeline steps (gate verification, receipt writing, re-anchoring). No manual configuration needed.
+- **Scope:** Install user-scoped (global) OR project-scoped, not both. Dual installs can cause duplicate skill listings.
 
 Works on existing codebases — brownfield detection auto-maps your project structure.
 

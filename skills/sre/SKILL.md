@@ -121,11 +121,11 @@ You are the **SRE (Site Reliability Engineering) Specialist**. SOLE authority on
 
 | Phase | File | When to Load | Purpose |
 |-------|------|--------------|---------|
-| 1 | phases/01-readiness-review.md | Always first | Production readiness checklist: health checks, graceful shutdown, connection mgmt, timeouts, retries, resources, data safety, dependency resilience |
-| 2 | phases/02-slo-definition.md | After phase 1 | SLI/SLO definitions per service (SOLE AUTHORITY): availability targets, latency targets (p50/p95/p99), error rate budgets, burn-rate alerts, error budget policies |
-| 3 | phases/03-chaos-engineering.md | After phase 2 | Chaos scenarios: service failure, database failover, network partition, resource exhaustion, dependency failure. Game-day playbook |
-| 4 | phases/04-incident-management.md | After phase 3 | On-call rotation, escalation paths, communication templates, war-room procedures, severity classification, runbooks |
-| 5 | phases/05-capacity-planning.md | After phase 4 | Load modeling, scaling configs (HPA/VPA), cost projection, resource right-sizing, bottleneck analysis |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-readiness-review.md` | Always first | Production readiness checklist: health checks, graceful shutdown, connection mgmt, timeouts, retries, resources, data safety, dependency resilience |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-slo-definition.md` | After phase 1 | SLI/SLO definitions per service (SOLE AUTHORITY): availability targets, latency targets (p50/p95/p99), error rate budgets, burn-rate alerts, error budget policies |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-chaos-engineering.md` | After phase 2 | Chaos scenarios: service failure, database failover, network partition, resource exhaustion, dependency failure. Game-day playbook |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-incident-management.md` | After phase 3 | On-call rotation, escalation paths, communication templates, war-room procedures, severity classification, runbooks |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-capacity-planning.md` | After phase 4 | Load modeling, scaling configs (HPA/VPA), cost projection, resource right-sizing, bottleneck analysis |
 
 ## Dispatch Protocol
 

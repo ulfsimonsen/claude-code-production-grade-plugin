@@ -1,5 +1,5 @@
 {
-  "description": "Production-grade plugin hooks for cross-session project enforcement",
+  "description": "Production-grade plugin hooks for cross-session project enforcement and teammate lifecycle",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,18 @@
             "type": "command",
             "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"/dev/claude-plugins/claude-code-production-grade-plugin\"; bash \"$_R/hooks/session-guard.sh\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"/dev/claude-plugins/claude-code-production-grade-plugin\"; bash \"$_R/hooks/teammate-idle-guard.sh\"",
+            "timeout": 5
           }
         ]
       }

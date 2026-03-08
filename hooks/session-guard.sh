@@ -2,12 +2,78 @@
 # Production-Grade Session Guard
 # Detects if the current project was built with production-grade and offers
 # the user a choice: work with the pipeline or without it.
+#
+# Reads hook input from stdin (JSON with source, session_id, etc.)
+# If source is "compact" or "clear" during an active pipeline, outputs a
+# short re-orientation message instead of the full guard prompt.
+#
+# Sets CLAUDE_CODE_EFFORT_LEVEL=high via CLAUDE_ENV_FILE when a pipeline
+# is active — ensures Sonnet 4.6 and Opus 4.6 don't abbreviate critical
+# pipeline steps (gate verification, receipt writing, re-anchoring).
 
 SUITE_DIR="Claude-Production-Grade-Suite"
 
 # Only fire if the suite directory exists in the current project
 if [ ! -d "$SUITE_DIR" ]; then
   exit 0
+fi
+
+# Read hook input from stdin
+INPUT=$(cat)
+
+# Extract source field (startup|resume|clear|compact)
+SOURCE=$(echo "$INPUT" | grep -o '"source"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"source"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+# Set high effort for production-grade projects via CLAUDE_ENV_FILE.
+# CLAUDE_ENV_FILE is only available in SessionStart hooks — it persists
+# environment variables for the session's Bash commands and model effort.
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo 'export CLAUDE_CODE_EFFORT_LEVEL=high' >> "$CLAUDE_ENV_FILE"
+fi
+
+# During compaction or clear, check if a pipeline is actively running.
+# If so, output a short re-orientation message instead of the full guard.
+if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ]; then
+  if [ -f "$SUITE_DIR/.orchestrator/settings.md" ]; then
+    # Check if pipeline already completed (pipeline-status marker)
+    if [ -f "$SUITE_DIR/.orchestrator/pipeline-status" ]; then
+      STATUS_CONTENT=$(cat "$SUITE_DIR/.orchestrator/pipeline-status" 2>/dev/null)
+      if echo "$STATUS_CONTENT" | grep -q "complete\|rejected"; then
+        # Pipeline is done — fall through to normal guard
+        :
+      else
+        # Pipeline active — short message
+        cat <<REORIENT
+# Production-Grade Pipeline Active
+
+Context was compacted during an active pipeline run. **Do not re-prompt the user about using production-grade.**
+
+Re-orient by reading these files from disk:
+- \`$SUITE_DIR/.orchestrator/settings.md\` — engagement mode and parallelism
+- \`$SUITE_DIR/.orchestrator/receipts/\` — latest completed receipts (check which tasks are done)
+- The current phase dispatcher file for the active phase
+
+Continue the pipeline from where you left off.
+REORIENT
+        exit 0
+      fi
+    else
+      # settings.md exists but no pipeline-status — pipeline is in progress
+      cat <<REORIENT
+# Production-Grade Pipeline Active
+
+Context was compacted during an active pipeline run. **Do not re-prompt the user about using production-grade.**
+
+Re-orient by reading these files from disk:
+- \`$SUITE_DIR/.orchestrator/settings.md\` — engagement mode and parallelism
+- \`$SUITE_DIR/.orchestrator/receipts/\` — latest completed receipts (check which tasks are done)
+- The current phase dispatcher file for the active phase
+
+Continue the pipeline from where you left off.
+REORIENT
+      exit 0
+    fi
+  fi
 fi
 
 # Count artifacts for context

@@ -101,10 +101,10 @@ You are the **Technical Writer Specialist**. Your role is to produce comprehensi
 
 | Phase | File | When to Load | Purpose |
 |-------|------|--------------|---------|
-| 1 | phases/01-content-audit.md | Always first | Inventory existing docs, identify gaps, create sitemap, establish standards |
-| 2 | phases/02-api-reference.md | After phase 1 | Auto-generate from OpenAPI, auth docs, error codes, rate limiting, webhooks |
-| 3 | phases/03-developer-guides.md | After phase 2 | Quickstart, local dev setup, contributing guide, testing guide, architecture overview, operational docs, integration guides |
-| 4 | phases/04-docusaurus-scaffold.md | After phase 3 | Docusaurus config, sidebar organization, CI pipeline, changelog |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-content-audit.md` | Always first | Inventory existing docs, identify gaps, create sitemap, establish standards |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-api-reference.md` | After phase 1 | Auto-generate from OpenAPI, auth docs, error codes, rate limiting, webhooks |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-developer-guides.md` | After phase 2 | Quickstart, local dev setup, contributing guide, testing guide, architecture overview, operational docs, integration guides |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-docusaurus-scaffold.md` | After phase 3 | Docusaurus config, sidebar organization, CI pipeline, changelog |
 
 ## Dispatch Protocol
 

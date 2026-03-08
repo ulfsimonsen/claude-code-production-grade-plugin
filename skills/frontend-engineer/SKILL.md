@@ -107,13 +107,13 @@ This skill runs as Phase 3b in the production-grade pipeline, in parallel with S
 
 | Phase | File | When to Load | Purpose |
 |-------|------|-------------|---------|
-| 1 | phases/01-analysis.md | Always first | Read BRD user stories, read API contracts, framework selection, UI/UX analysis |
-| 2 | phases/02-design-system.md | After Phase 1 | **Functional defaults only** — minimal tokens, system fonts, neutral palette. NOT final design. |
-| 3 | phases/03-components.md | After Phase 2 | UI primitives, layout components, feature components, accessibility |
-| 4 | phases/04-pages-routes.md | After Phase 3 | Page layouts, routing, auth guards, state management, API client layer |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-analysis.md` | Always first | Read BRD user stories, read API contracts, framework selection, UI/UX analysis |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-design-system.md` | After Phase 1 | **Functional defaults only** — minimal tokens, system fonts, neutral palette. NOT final design. |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-components.md` | After Phase 2 | UI primitives, layout components, feature components, accessibility |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-pages-routes.md` | After Phase 3 | Page layouts, routing, auth guards, state management, API client layer |
 | 4b | (inline — see Functional Completeness below) | After Phase 4 | Dead element scan, navigation graph, interaction trace, cross-agent reconciliation |
-| 5 | phases/05-design-polish.md | After Phase 4b verified | **Style selection (mode-aware: auto-select in Express, ask user in Standard+). Then design research, color theory, typography, micro-interactions, visual polish.** |
-| 6 | phases/06-testing-a11y.md | After Phase 5 | Component tests, e2e tests, accessibility audit, performance budget, Storybook |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-design-polish.md` | After Phase 4b verified | **Style selection (mode-aware: auto-select in Express, ask user in Standard+). Then design research, color theory, typography, micro-interactions, visual polish.** |
+| 6 | `${CLAUDE_SKILL_DIR}/phases/06-testing-a11y.md` | After Phase 5 | Component tests, e2e tests, accessibility audit, performance budget, Storybook |
 
 ## Dispatch Protocol
 
@@ -141,7 +141,7 @@ When the BRD defines multiple page groups, components and pages use targeted par
 
 ```python
 Agent(
-  prompt="Build layout components (Sidebar, Header, PageLayout, etc.) following phases/03-components.md. "
+  prompt="Build layout components (Sidebar, Header, PageLayout, etc.) following ${CLAUDE_SKILL_DIR}/phases/03-components.md. "
     "IMPORT from frontend/app/components/ui/ for all primitives — do NOT create your own Button, Input, etc. "
     "Write to frontend/app/components/layout/.",
   subagent_type="general-purpose",
@@ -149,7 +149,7 @@ Agent(
   run_in_background=True
 )
 Agent(
-  prompt="Build feature components (DataTable, FileUpload, RichEditor, etc.) following phases/03-components.md. "
+  prompt="Build feature components (DataTable, FileUpload, RichEditor, etc.) following ${CLAUDE_SKILL_DIR}/phases/03-components.md. "
     "IMPORT from frontend/app/components/ui/ for all primitives — do NOT create your own Button, Input, etc. "
     "Write to frontend/app/components/features/.",
   subagent_type="general-purpose",

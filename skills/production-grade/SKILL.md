@@ -542,7 +542,7 @@ TeamCreate(team_name="production-grade")
 ```
 Create all 13 tasks with dependencies (see Task Dependency Graph). Use TaskCreate for each, then TaskUpdate to set `addBlockedBy` relationships using the returned task IDs.
 
-11. **Begin Phase 1** — read `phases/define.md` and start immediately. Do NOT ask "should I proceed?"
+11. **Begin Phase 1** — read `${CLAUDE_SKILL_DIR}/phases/define.md` and start immediately. Do NOT ask "should I proceed?"
 
 **Key principle:** The user already told you what to build. Research, plan, start building. Pause at the 3 approval gates. In Thorough/Meticulous mode, also show phase summaries between major phases — but never block on them (inform, don't gate).
 
@@ -869,7 +869,7 @@ After Gate 2 (architecture approved), the orchestrator reads the architecture ou
 Each subtask is dispatched as:
 ```python
 Agent(
-  prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow skills/software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
+  prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow ${CLAUDE_SKILL_DIR}/../software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
   subagent_type="general-purpose",
   mode="bypassPermissions",
   run_in_background=True
@@ -887,11 +887,11 @@ Each phase loads its dispatcher file for task management and agent spawning.
 
 | Phase | File | Tasks | Parallel Strategy |
 |-------|------|-------|-------------------|
-| DEFINE | `phases/define.md` | T1, T2 | Sequential (gates) |
-| BUILD + ANALYSIS | `phases/build.md` | T3a, T3b, T4a, T5a, T6a, T6b, T9a | Wave A: all 7 parallel, skills spawn internal agents |
-| HARDEN | `phases/harden.md` | T4b, T5b, T6c, T6d | Wave B: all 4 parallel, skills spawn internal agents |
-| SHIP | `phases/ship.md` | T7, T8, T9b, T10 | #5, #6 parallel pairs |
-| SUSTAIN | `phases/sustain.md` | T11, T12, T13 | #7 parallel + internal |
+| DEFINE | `${CLAUDE_SKILL_DIR}/phases/define.md` | T1, T2 | Sequential (gates) |
+| BUILD + ANALYSIS | `${CLAUDE_SKILL_DIR}/phases/build.md` | T3a, T3b, T4a, T5a, T6a, T6b, T9a | Wave A: all 7 parallel, skills spawn internal agents |
+| HARDEN | `${CLAUDE_SKILL_DIR}/phases/harden.md` | T4b, T5b, T6c, T6d | Wave B: all 4 parallel, skills spawn internal agents |
+| SHIP | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T7, T8, T9b, T10 | #5, #6 parallel pairs |
+| SUSTAIN | `${CLAUDE_SKILL_DIR}/phases/sustain.md` | T11, T12, T13 | #7 parallel + internal |
 
 **Internal skill parallelism** — each skill spawns its own concurrent agents:
 
@@ -1099,7 +1099,13 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 ## Pipeline Cleanup
 
-**Immediately after printing the final summary**, clean up the team:
+**Immediately after printing the final summary**, write a pipeline status marker and clean up:
+
+```bash
+# Write pipeline-status marker BEFORE TeamDelete — this tells the session guard hook
+# and the TeammateIdle hook that the pipeline is done.
+echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
+```
 
 ```python
 TeamDelete(team_name="production-grade")
@@ -1112,7 +1118,11 @@ This shuts down all agents and frees resources. Do NOT leave agents idle — the
 - Whether the pipeline succeeded or was cancelled at a gate
 - Whether the user approved or rejected the final gate
 
-**If the user rejects at any gate** (Gate 1, 2, or 3), also run `TeamDelete` before stopping. Never leave orphaned agents.
+**If the user rejects at any gate** (Gate 1, 2, or 3), write the status marker and run `TeamDelete` before stopping:
+```bash
+echo "rejected" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
+```
+Never leave orphaned agents.
 
 ## Common Mistakes
 

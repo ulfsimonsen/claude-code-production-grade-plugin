@@ -109,12 +109,12 @@ This skill handles **application-level security**. It is distinct from DevOps se
 
 | Phase | File | When to Load | Purpose |
 |-------|------|-------------|---------|
-| 1 | phases/01-threat-modeling.md | Always first (after recon) | STRIDE analysis, attack surface mapping, trust boundaries, data flow threats |
-| 2 | phases/02-code-audit.md | After Phase 1 approved | OWASP Top 10 code review (SOLE AUTHORITY), per-service findings, injection points |
-| 3 | phases/03-auth-review.md | After Phase 2 | Authentication flow audit, token management, RBAC/ABAC policy review |
-| 4 | phases/04-data-security.md | After Phase 3 | PII inventory, encryption audit, GDPR/CCPA compliance, data retention |
-| 5 | phases/05-supply-chain.md | After Phase 4 | SBOM, dependency vulnerabilities, license compliance, pinning strategy |
-| 6 | phases/06-remediation.md | After Phase 5 | Remediation plan, critical fixes with code, timeline, pen test plan |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-threat-modeling.md` | Always first (after recon) | STRIDE analysis, attack surface mapping, trust boundaries, data flow threats |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-code-audit.md` | After Phase 1 approved | OWASP Top 10 code review (SOLE AUTHORITY), per-service findings, injection points |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-auth-review.md` | After Phase 2 | Authentication flow audit, token management, RBAC/ABAC policy review |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-data-security.md` | After Phase 3 | PII inventory, encryption audit, GDPR/CCPA compliance, data retention |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-supply-chain.md` | After Phase 4 | SBOM, dependency vulnerabilities, license compliance, pinning strategy |
+| 6 | `${CLAUDE_SKILL_DIR}/phases/06-remediation.md` | After Phase 5 | Remediation plan, critical fixes with code, timeline, pen test plan |
 
 ## Dispatch Protocol
 
