@@ -34,6 +34,8 @@ Before creating SUSTAIN agent tasks, re-read from disk:
 
 Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
 
+**IMPORTANT:** T11 and T12 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to T13. Using background agents here causes the orchestrator turn to end before T13 can fire.
+
 ```python
 # T11: Technical Writer
 TaskUpdate(taskId=t11_id, status="in_progress")
@@ -51,7 +53,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/technical-writer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T11-technical-writer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -68,7 +69,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/skill-maker/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```
