@@ -89,8 +89,10 @@ Worktrees: [enabled|disabled]
 
 ## PARALLEL #1: T3a + T3b
 
-Spawn backend and frontend agents simultaneously as background Agents.
+Spawn backend and frontend agents simultaneously as foreground Agents.
 When `use_worktrees` is True, add `isolation="worktree"` to each Agent call. Each agent gets its own isolated copy of the repo — no file race conditions.
+
+**IMPORTANT:** T3a and T3b MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and T4. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
 # T3a: Backend Engineering
@@ -107,7 +109,6 @@ TDD enforced: write test → watch fail → implement → watch pass → refacto
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 
@@ -135,18 +136,18 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/frontend-engineer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```
 
-## PARALLEL #2: T4 Starts When T3a Completes
+## PARALLEL #2: T4 After T3a + T3b Complete
 
-T4 begins containerization as soon as backend is done, even if frontend is still building:
+T4 begins containerization after PARALLEL #1 completes:
+
+**IMPORTANT:** T4 MUST run as a foreground agent (no `run_in_background`). The orchestrator blocks until T4 returns — then naturally continues to worktree merge-back. Using a background agent here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# Wait for T3a completion (check TaskList or receive agent result)
-# If T3a used worktree: merge its branch first so T4 sees the code
+# PARALLEL #1 worktree branches already merged above — T4 sees committed code
 TaskUpdate(taskId=t4_id, status="in_progress")
 Agent(
   prompt="""You are the DevOps Containerization Engineer.
@@ -160,7 +161,6 @@ Validate: docker build succeeds for each service, docker-compose up starts all.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T4-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```

@@ -26,6 +26,8 @@ All three start together:
 
 Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
 
+**IMPORTANT:** T5, T6a, and T6b MUST run as foreground agents (no `run_in_background`). All three Agent calls in the same message still execute concurrently, but the orchestrator blocks until all return — then naturally continues to worktree merge-back and post-HARDEN verification. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
+
 ```python
 # T5: QA Testing
 TaskUpdate(taskId=t5_id, status="in_progress")
@@ -42,7 +44,6 @@ Distinguish test bugs (fix immediately) from implementation bugs (log as finding
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T5-qa-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -61,7 +62,6 @@ Document Medium/Low for remediation plan.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6a-security-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -82,7 +82,6 @@ ADVERSARIAL STANCE: Your job is to find where this code breaks, not confirm it w
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6b-code-reviewer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```

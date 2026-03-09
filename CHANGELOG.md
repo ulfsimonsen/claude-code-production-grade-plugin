@@ -2,6 +2,33 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.6.0] — 2026-03-09
+
+### Fixed
+- **Worktree changes lost on cleanup** — all parallel agent dispatches across BUILD, HARDEN, SHIP, and SUSTAIN phases used `run_in_background=True` with `isolation="worktree"`. Background agents caused the orchestrator turn to end before worktree merge-back could fire, so Claude Code auto-cleaned the worktrees and discarded agent output. Fix: all phase-level agents now run as foreground agents. Multiple foreground agents in the same message still execute concurrently — parallelism is preserved — but the orchestrator blocks until all return, ensuring merge-back and subsequent phases fire correctly.
+- **SKILL.md dispatch examples taught the wrong pattern** — two code examples in the orchestrator SKILL.md showed `run_in_background=True` as the recommended Agent dispatch pattern. Updated to foreground dispatch with explanation of why concurrent foreground agents preserve both parallelism and execution chain integrity.
+
+### Changed
+- **BUILD Phase** — T3a + T3b now foreground (concurrent in same message). T4 starts after both complete and merge-back (previously documented as starting after T3a alone, which was unreliable with worktrees).
+- **HARDEN Phase** — T5 + T6a + T6b now foreground (concurrent in same message).
+- **SHIP Phase** — T7 + T8 (PARALLEL #5) and T9 + T10 (PARALLEL #6) now foreground (concurrent in same message per wave).
+- **SUSTAIN Phase** — T11 + T12 already fixed in v5.5.1.
+
+## [5.5.0] — 2026-03-08
+
+### Added
+- **Effort level auto-set** — session guard sets `CLAUDE_CODE_EFFORT_LEVEL=high` via `CLAUDE_ENV_FILE` for production-grade projects. Ensures Sonnet 4.6 and Opus 4.6 operate at full reasoning depth throughout the pipeline.
+- **Compaction guard** — session guard detects active pipeline state and outputs a short re-orientation block instead of re-firing the full guard prompt during compaction or `/clear`. Prevents mid-pipeline disruption.
+- **TeammateIdle hook** — new `teammate-idle-guard.sh` with pipeline-status marker check. Stops orphaned teammates when the pipeline completes or is rejected at a gate. Orchestrator writes `pipeline-status: complete|rejected` before calling `TeamDelete`.
+- **Minimum Claude Code version** bumped to 2.1.69+.
+
+### Changed
+- **`${CLAUDE_SKILL_DIR}` adoption** — all phase file references across 7 skills with phases (42 references) converted from bare relative paths to `${CLAUDE_SKILL_DIR}/phases/...`. Zero bare paths remain. Ensures skills resolve correctly regardless of install location.
+- **Author/repo references** updated to ulfsimonsen across plugin metadata and README.
+
+### Fixed
+- **SUSTAIN phase stall** — T11 + T12 ran as background agents, causing the orchestrator turn to end after dispatch. T13 (compound learning + final assembly) never fired. Fix: T11 + T12 now run as foreground agents (still concurrent in same message). Orchestrator blocks until both return, then naturally continues to T13.
+
 ## [5.4.0] — 2026-03-07
 
 ### Added

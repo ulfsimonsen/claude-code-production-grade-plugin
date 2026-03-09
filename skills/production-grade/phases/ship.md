@@ -53,6 +53,8 @@ Use this freshly-read data when writing agent task prompts below.
 
 Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
 
+**IMPORTANT:** T7 and T8 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and PARALLEL #6. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
+
 ```python
 # T7: DevOps IaC + CI/CD
 TaskUpdate(taskId=t7_id, status="in_progress")
@@ -72,7 +74,6 @@ Validate: terraform validate, pipeline syntax lint.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T7-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -92,12 +93,13 @@ Medium/Low findings: document but do not block.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T8-remediation.json with task, agent, phase, status, artifacts (files modified), metrics (findings_fixed, findings_remaining), effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```
 
 ## PARALLEL #6: T9 + T10 (after T7 + T8 complete)
+
+**IMPORTANT:** T9 and T10 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and Gate 3. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
 # T9: SRE — Production Readiness (SOLE SLO AUTHORITY)
@@ -115,7 +117,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/sre/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T9-sre.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -134,7 +135,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/data-scientist/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T10-data-scientist.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   mode="bypassPermissions",
-  run_in_background=True,
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 # If NOT detected AND features.ai_ml is false:

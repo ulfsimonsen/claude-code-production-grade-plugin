@@ -866,13 +866,12 @@ After Gate 2 (architecture approved), the orchestrator reads the architecture ou
 3. **Generate Wave A TaskList** — All T3a subtasks + T3b subtasks + T4a + T5a + T6a + T6b + T9a. No cross-dependencies.
 4. **On Wave A completion** — Generate Wave B TaskList with dependencies on Wave A outputs.
 
-Each subtask is dispatched as:
+Each subtask is dispatched as a foreground agent (multiple foreground agents in the same message execute concurrently):
 ```python
 Agent(
   prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow ${CLAUDE_SKILL_DIR}/../software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
   subagent_type="general-purpose",
-  mode="bypassPermissions",
-  run_in_background=True
+  mode="bypassPermissions"
 )
 ```
 
@@ -915,13 +914,12 @@ Each phase loads its dispatcher file for task management and agent spawning.
 Skill(skill="product-manager")
 ```
 
-**Agent Tool** — for parallel, background tasks:
+**Agent Tool** — for parallel, concurrent tasks (multiple foreground agents in the same message run concurrently — the orchestrator blocks until all return, preserving the execution chain for merge-back and subsequent phases):
 ```python
 Agent(
   prompt="You are the Backend Engineer. Read architecture at...",
   subagent_type="general-purpose",
-  mode="bypassPermissions",
-  run_in_background=True
+  mode="bypassPermissions"
 )
 ```
 
