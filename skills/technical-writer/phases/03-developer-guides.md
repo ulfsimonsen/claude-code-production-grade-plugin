@@ -123,7 +123,7 @@ Generate `docs/guides/coding-conventions.md`:
 | Coding conventions | `docs/guides/coding-conventions.md` |
 | Architecture overview | `docs/architecture/overview.md` |
 | Service map | `docs/architecture/service-map.md` |
-| ADR summaries | `docs/architecture/decisions/<NNN-title>.md` |
+| ADR summaries | `docs/architecture/architecture-decision-records/<NNN-title>.md` |
 | Deployment guide | `docs/operations/deployment.md` |
 
 ## Validation Loop

@@ -25,7 +25,7 @@ fi
 # Check 1: pipeline-status marker (written by orchestrator on completion or rejection)
 if [ -f "$SUITE_DIR/.orchestrator/pipeline-status" ]; then
   STATUS=$(cat "$SUITE_DIR/.orchestrator/pipeline-status" 2>/dev/null)
-  if echo "$STATUS" | grep -q "complete\|rejected"; then
+  if echo "$STATUS" | grep -qx "complete\|rejected"; then
     echo '{"continue": false, "stopReason": "Production-grade pipeline finished — stopping idle teammate"}'
     exit 0
   fi
@@ -38,4 +38,5 @@ if ls "$SUITE_DIR/.orchestrator/receipts"/T13-* 1>/dev/null 2>&1; then
 fi
 
 # Pipeline still running — let teammate continue
+echo '{"continue": true}'
 exit 0

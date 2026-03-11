@@ -38,7 +38,7 @@ if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ]; then
     # Check if pipeline already completed (pipeline-status marker)
     if [ -f "$SUITE_DIR/.orchestrator/pipeline-status" ]; then
       STATUS_CONTENT=$(cat "$SUITE_DIR/.orchestrator/pipeline-status" 2>/dev/null)
-      if echo "$STATUS_CONTENT" | grep -q "complete\|rejected"; then
+      if echo "$STATUS_CONTENT" | grep -qx "complete\|rejected"; then
         # Pipeline is done — fall through to normal guard
         :
       else

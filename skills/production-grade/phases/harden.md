@@ -14,7 +14,7 @@ Enforce these boundaries strictly:
 
 Before creating HARDEN agent tasks, re-read key artifacts from disk:
 - `Claude-Production-Grade-Suite/solution-architect/system-design.md`
-- `docs/architecture/adr/*.md` (Glob to list)
+- `docs/architecture/architecture-decision-records/*.md` (Glob to list)
 - Directory listing of `services/`, `frontend/`, `libs/shared/` (what BUILD actually produced)
 - `Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-*.json`, `T3b-*.json` (BUILD receipts — what was built, metrics)
 

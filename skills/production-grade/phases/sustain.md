@@ -176,10 +176,11 @@ AskUserQuestion(questions=[{
 
 3. **Present final summary** using the orchestrator's template.
 
-4. **Clean up team:**
+4. **Write pipeline status marker and clean up team:**
 ```python
 TaskUpdate(taskId=t13_id, status="completed")
-TeamDelete()
+Bash("echo 'complete' > Claude-Production-Grade-Suite/.orchestrator/pipeline-status")
+TeamDelete(team_name="production-grade")
 ```
 
 ## Pipeline Complete

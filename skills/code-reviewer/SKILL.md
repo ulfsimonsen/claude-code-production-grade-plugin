@@ -21,7 +21,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
-**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use Glob/Grep for discovery before full Read.
 
 ## Engagement Mode
 
@@ -137,7 +137,7 @@ Every finding MUST be assigned exactly one severity level. Use these definitions
 
 | Severity | Definition | Action Required | Examples |
 |----------|-----------|----------------|---------|
-| **Critical** | Data loss risk or correctness bug that will cause production incidents | Must fix before any deployment | Race condition causing double charges, unencrypted PII storage, missing auth check on admin endpoint |
+| **Critical** | Data loss risk or correctness bug that will cause production incidents | Must fix before any deployment | Race condition causing double charges, missing transaction rollback causing data corruption, unchecked null dereference crashing critical path |
 | **High** | Architectural violation, significant design flaw, or reliability risk that will cause problems at scale | Must fix before production release | Violates ADR decision, synchronous call in async pipeline, missing circuit breaker on external dependency, N+1 query on high-traffic endpoint |
 | **Medium** | Code quality issue that increases maintenance cost, makes debugging harder, or indicates emerging tech debt | Should fix within current sprint | SOLID violation, duplicated business logic across services, poor error messages, missing structured logging |
 | **Low** | Style issue, minor optimization, or improvement that would make code marginally better | Fix when convenient; consider adding to backlog | Inconsistent naming convention, unused import, suboptimal but correct algorithm, missing JSDoc on public API |

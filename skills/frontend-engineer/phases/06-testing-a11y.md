@@ -21,7 +21,7 @@ Set up component tests with the project's framework (Vitest + @testing-library/r
 
 Coverage target: 80% branch coverage on component files, 100% for hooks and utilities.
 
-Produce tests in `frontend/tests/components/` mirroring the component directory structure.
+Produce tests in `tests/frontend/components/` mirroring the component directory structure.
 
 ### Step 2: End-to-End Testing (Playwright)
 
@@ -29,7 +29,7 @@ Configure Playwright with projects for Desktop Chrome, Firefox, Safari (WebKit),
 
 Write E2E tests for every critical user flow from Phase 1: authentication (signup, login, logout, session expiry), onboarding, core CRUD operations, navigation and deep linking, admin operations. Use role-based test fixtures for multi-role flows.
 
-Produce E2E tests in `frontend/tests/e2e/` and `frontend/playwright.config.ts`.
+Produce E2E tests in `tests/frontend/e2e/` and `frontend/playwright.config.ts`.
 
 ### Step 3: Accessibility Audit
 
@@ -69,7 +69,7 @@ Produce `frontend/lighthouserc.json` and `Claude-Production-Grade-Suite/frontend
 
 Capture baseline screenshots per component and page across viewports using Playwright `toHaveScreenshot()` or Chromatic. Pixel diff tolerance: 0.1%. CI blocks merge on unexpected visual diff.
 
-Produce visual regression configs in `frontend/tests/visual/`.
+Produce visual regression configs in `tests/frontend/visual/`.
 
 ### Step 6: Cross-Browser Testing Strategy
 
@@ -86,9 +86,9 @@ Produce `Claude-Production-Grade-Suite/frontend-engineer/docs/browser-support.md
 
 ## Output Files
 
-- `frontend/tests/components/` (component tests with a11y)
-- `frontend/tests/e2e/` (Playwright E2E tests)
-- `frontend/tests/visual/` (visual regression)
+- `tests/frontend/components/` (component tests with a11y)
+- `tests/frontend/e2e/` (Playwright E2E tests)
+- `tests/frontend/visual/` (visual regression)
 - `frontend/playwright.config.ts`
 - `frontend/lighthouserc.json`
 - `Claude-Production-Grade-Suite/frontend-engineer/docs/a11y-audit.md`

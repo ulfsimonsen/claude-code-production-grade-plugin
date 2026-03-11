@@ -20,7 +20,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
-**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use Glob/Grep for discovery before full Read.
 
 ## Engagement Mode
 
@@ -269,7 +269,7 @@ Once the CEO approves the BRD (explicitly ask "Does this BRD look good to you? A
 - Mark status as "Approved"
 - Ensure acceptance criteria are clear enough to implement directly
 - Ensure business rules have no ambiguity
-- If an implementation plan is needed, invoke `superpowers:writing-plans` (or write a basic task breakdown inline if that skill is unavailable)
+- If an implementation plan is needed, write a basic task breakdown inline (numbered steps with acceptance criteria per step)
 - If the user asks you to implement: redirect — "I'm your PM. Let me hand this off to engineering (invoke the appropriate implementation skill or let you drive the coding)."
 
 ## Phase 4: Autonomous Verification

@@ -380,7 +380,7 @@ mkdir -p Claude-Production-Grade-Suite/.orchestrator/receipts/
 |---------------|---------|
 | `ux-protocol.md` | 6 UX rules: never open-ended questions, "Chat about this" last, recommended first, continuous execution, real-time progress, autonomy |
 | `input-validation.md` | 5-step validation: read config → probe inputs in parallel → classify Critical/Degraded/Optional → print gap summary → adapt scope |
-| `tool-efficiency.md` | Parallel tool calls, smart_outline before Read, Glob not find, Grep not grep, config-aware paths |
+| `tool-efficiency.md` | Parallel tool calls, Glob/Grep for discovery before Read, Glob not find, Grep not grep, config-aware paths |
 | `conflict-resolution.md` | Authority hierarchy, dedup by file:line (keep highest severity), HARDEN→BUILD feedback loops (2 cycle max) |
 | `visual-identity.md` | Visual design language: container hierarchy (Tier 1/2/3), icon vocabulary, progress patterns, gate ceremonies, wave announcements, completion summaries, timing |
 | `freshness-protocol.md` | Temporal sensitivity: volatility tiers (Critical/High/Medium/Stable), WebSearch triggers for outdated data (model IDs, versions, pricing, CVEs), search-then-implement pattern |
@@ -562,7 +562,7 @@ Follow the shared UX Protocol at `Claude-Production-Grade-Suite/.protocols/ux-pr
 When the user selects **"Chat about this"** at any gate, invoke the polymath in translate mode:
 
 ```python
-Skill(skill="polymath")
+Skill(skill="production-grade:polymath")
 # Polymath reads the gate artifacts, explains in plain language,
 # answers the user's questions via structured options,
 # then re-presents the original gate options when the user is ready.
@@ -806,7 +806,7 @@ T2: solution-architect (Architecture)
 T7: devops (IaC + CI/CD) ──────────┐
 T8: remediation (HARDEN fixes) ────┘ PARALLEL
     ↓
-T9b: sre (chaos + capacity) ──────┐
+T9: sre (production readiness) ───┐
 T10: data-scientist (conditional) ─┘ PARALLEL
     ↓ [GATE 3]
 T11: technical-writer (spawns N: API ref / dev guide / ops guide) ──┐
@@ -850,12 +850,12 @@ Create tasks with TaskCreate, then set dependencies with TaskUpdate using the re
 
 | Task | Blocked By | Notes |
 |------|-----------|-------|
-| T7 | T5b, T6c, T6d | IaC + CI/CD — needs HARDEN output |
-| T8 | T5b, T6c, T6d | Remediation — needs HARDEN findings |
-| T9b | T7, T8, T9a | SRE execution — needs infra + SLO defs |
+| T7 | T5, T6a, T6b | IaC + CI/CD — needs HARDEN output |
+| T8 | T5, T6a, T6b | Remediation — needs HARDEN findings |
+| T9 | T7, T8 | SRE — production readiness, needs infra |
 | T10 | T7, T8 | Conditional on AI/ML usage |
-| T11 | T9b | Docs — needs all prior output |
-| T12 | T9b | Skills — needs all prior output |
+| T11 | T9 | Docs — needs all prior output |
+| T12 | T9 | Skills — needs all prior output |
 | T13 | T11, T12 | Final step |
 
 ### Dynamic Task Generation
@@ -889,10 +889,12 @@ Each phase loads its dispatcher file for task management and agent spawning.
 | Phase | File | Tasks | Parallel Strategy |
 |-------|------|-------|-------------------|
 | DEFINE | `${CLAUDE_SKILL_DIR}/phases/define.md` | T1, T2 | Sequential (gates) |
-| BUILD + ANALYSIS | `${CLAUDE_SKILL_DIR}/phases/build.md` | T3a, T3b, T4a, T5a, T6a, T6b, T9a | Wave A: all 7 parallel, skills spawn internal agents |
-| HARDEN | `${CLAUDE_SKILL_DIR}/phases/harden.md` | T4b, T5b, T6c, T6d | Wave B: all 4 parallel, skills spawn internal agents |
-| SHIP | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T7, T8, T9b, T10 | #5, #6 parallel pairs |
+| BUILD | `${CLAUDE_SKILL_DIR}/phases/build.md` | T3a, T3b, T4 | #1: T3a+T3b parallel, then #2: T4 |
+| HARDEN | `${CLAUDE_SKILL_DIR}/phases/harden.md` | T5, T6a, T6b | All 3 parallel, skills spawn internal agents |
+| SHIP | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T7, T8, T9, T10 | #5: T7+T8 parallel, #6: T9+T10 parallel |
 | SUSTAIN | `${CLAUDE_SKILL_DIR}/phases/sustain.md` | T11, T12, T13 | #7 parallel + internal |
+
+**Note:** The Maximum Parallelism task dependency graph below describes a two-wave architecture (Wave A + Wave B) that splits analysis and execution into separate concurrent groups. The dispatchers currently implement the standard phase model above. The two-wave graph is the target for maximum parallelism and may require dispatcher updates to fully realize.
 
 **Internal skill parallelism** — each skill spawns its own concurrent agents:
 
@@ -913,7 +915,7 @@ Each phase loads its dispatcher file for task management and agent spawning.
 
 **Skill Tool** — for sequential, user-interactive tasks (PM interview, gate approvals):
 ```python
-Skill(skill="product-manager")
+Skill(skill="production-grade:product-manager")
 ```
 
 **Agent Tool** — for parallel, concurrent tasks (multiple foreground agents in the same message run concurrently — the orchestrator blocks until all return, preserving the execution chain for merge-back and subsequent phases):
@@ -1188,7 +1190,7 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 | Transition | Re-read from disk |
 |-----------|-------------------|
-| **DEFINE → BUILD** | `product-manager/BRD/brd.md`, `solution-architect/system-design.md`, `docs/architecture/adr/*.md` (list), `api/openapi/*.yaml` (list), `.orchestrator/settings.md`, `.orchestrator/receipts/T1-*.json`, `.orchestrator/receipts/T2-*.json` |
+| **DEFINE → BUILD** | `product-manager/BRD/brd.md`, `solution-architect/system-design.md`, `docs/architecture/architecture-decision-records/*.md` (list), `api/openapi/*.yaml` (list), `.orchestrator/settings.md`, `.orchestrator/receipts/T1-*.json`, `.orchestrator/receipts/T2-*.json` |
 | **BUILD → HARDEN** | All DEFINE artifacts above + directory listing of `services/`, `frontend/`, `libs/shared/`, `.orchestrator/receipts/T3*.json`, `.orchestrator/receipts/T4*.json` |
 | **HARDEN → SHIP** | `security-engineer/findings/critical.md`, `security-engineer/findings/high.md`, `code-reviewer/findings/critical.md`, `code-reviewer/findings/high.md`, `qa-engineer/` test results, `.orchestrator/receipts/T5*.json`, `.orchestrator/receipts/T6*.json` |
 | **SHIP → SUSTAIN** | `infrastructure/` listing, `.github/workflows/` listing, `.orchestrator/receipts/T7*.json` through `.orchestrator/receipts/T10*.json` |

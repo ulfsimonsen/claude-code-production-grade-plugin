@@ -197,7 +197,7 @@ Triggered -> Phase 1: Context Analysis -> Implementation Plan
 | Output | Location | Description |
 |--------|----------|-------------|
 | Service implementations | `services/<name>/src/` | Handlers, services, repositories, models, middleware, events, config |
-| Service tests | `services/<name>/tests/` | Unit, integration, fixtures |
+| Service tests | `tests/<name>/` | Unit, integration, fixtures (follows QA Engineer's `tests/` root policy) |
 | Shared libraries | `libs/shared/` | Types, errors, middleware, clients, events, cache, resilience, feature-flags, observability, testing |
 | Scripts | `scripts/` | seed-data.sh, dev-setup.sh, migrate.sh |
 | Docker Compose | `docker-compose.dev.yml` | Full local dev stack |

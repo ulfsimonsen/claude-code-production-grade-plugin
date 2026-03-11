@@ -21,7 +21,7 @@ description: >
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 !`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 
-**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use Glob/Grep for discovery before full Read.
 
 ## Brownfield Awareness
 
@@ -513,7 +513,6 @@ project root/
 ├── services/
 │   └── <service-name>/
 │       ├── src/
-│       ├── tests/
 │       ├── Dockerfile
 │       ├── Makefile
 │       └── README.md
@@ -529,7 +528,7 @@ Each service includes:
 - Structured logging (JSON, correlation IDs)
 - Graceful shutdown handling
 - Configuration from environment variables
-- Basic test structure (unit, integration)
+- Tests written to `tests/` at project root by QA Engineer (not inside service directories)
 - Dockerfile (multi-stage, non-root user, minimal base image)
 
 ## Output Structure
@@ -562,7 +561,6 @@ schemas/
 services/                          # Scaffolded service directories
 │   └── <service-name>/
 │       ├── src/
-│       ├── tests/
 │       ├── Dockerfile
 │       └── Makefile
 libs/shared/

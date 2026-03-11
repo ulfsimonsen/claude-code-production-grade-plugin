@@ -9,7 +9,7 @@ Build actual pages with routing, state management, data fetching, and auth guard
 Generate routes based on the Page Inventory from Phase 1:
 
 ```
-pages/                          # Next.js App Router (or equivalent)
+frontend/app/pages/             # Next.js App Router (or equivalent)
 ├── (auth)/                     # Auth layout group
 │   ├── login/page.tsx
 │   ├── signup/page.tsx

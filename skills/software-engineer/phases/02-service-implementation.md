@@ -36,13 +36,6 @@ services/<service-name>/
 │   │   ├── producers/
 │   │   └── consumers/
 │   └── index.ts            # Entry point — bootstrap, graceful shutdown
-├── tests/
-│   ├── unit/               # Pure logic tests (no I/O)
-│   │   ├── services/
-│   │   └── mappers/
-│   ├── integration/        # Tests against real DB/cache (testcontainers)
-│   │   └── repositories/
-│   └── fixtures/           # Shared test data factories
 ├── Makefile                # build, test, lint, run, migrate
 └── package.json / go.mod / requirements.txt / Cargo.toml  # (per language)
 ```

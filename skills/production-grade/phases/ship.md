@@ -63,7 +63,7 @@ Read these inputs:
 - Claude-Production-Grade-Suite/code-reviewer/findings/ (all review findings)
 - Claude-Production-Grade-Suite/qa-engineer/ (test results, failure reports)
 - Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture for infra planning)
-- docs/architecture/adr/*.md (architecture decisions)
+- docs/architecture/architecture-decision-records/*.md (architecture decisions)
 - Directory listing of services/, frontend/, infrastructure/ (what exists)
 - .production-grade.yaml (path overrides, framework preferences)
 
@@ -122,7 +122,10 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
-# T8: Remediation — executes SHIP plan
+# T8: Remediation — executes SHIP plan (skip if no Critical/High findings)
+# If HARDEN found zero Critical/High findings:
+#   TaskUpdate(taskId=t8_id, status="completed")  # Skip — nothing to remediate
+# If HARDEN found Critical/High findings:
 TaskUpdate(taskId=t8_id, status="in_progress")
 Agent(
   prompt="""You are the Remediation Engineer.
@@ -150,7 +153,9 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 **IMPORTANT:** T9 and T10 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and Gate 3. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# T9: SRE — Production Readiness (SOLE SLO AUTHORITY)
+# T9 (SRE — Production Readiness, SOLE SLO AUTHORITY)
+# Note: If using the two-wave model from SKILL.md, this is T9b (execution).
+# T9a (SLO definitions) ran during Wave A in BUILD phase.
 TaskUpdate(taskId=t9_id, status="in_progress")
 Agent(
   prompt="""You are the SRE — SOLE authority on SLO definitions, error budgets, runbooks, capacity planning.

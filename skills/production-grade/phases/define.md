@@ -32,7 +32,7 @@ Mark task in progress and invoke as Skill (needs user interaction for CEO interv
 
 ```python
 TaskUpdate(taskId=t1_id, status="in_progress")
-Skill(skill="product-manager")
+Skill(skill="production-grade:product-manager")
 ```
 
 The product-manager skill will:
@@ -59,7 +59,7 @@ If user selects "Show BRD details" → display BRD, re-present Gate 1.
 
 ```python
 TaskUpdate(taskId=t2_id, status="in_progress")
-Skill(skill="solution-architect")
+Skill(skill="production-grade:solution-architect")
 ```
 
 The solution-architect skill will:
@@ -88,7 +88,7 @@ After Gate 2 approval:
 2. **Re-anchor:** Re-read from disk before transitioning:
    - `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`
    - `Claude-Production-Grade-Suite/solution-architect/system-design.md`
-   - `docs/architecture/adr/*.md` (list files)
+   - `docs/architecture/architecture-decision-records/*.md` (list files)
    - `api/openapi/*.yaml` (list files)
    - `.orchestrator/settings.md`
 3. Verify architecture outputs exist at project root (`api/`, `schemas/`, `docs/architecture/`)

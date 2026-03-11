@@ -64,7 +64,7 @@ const sidebars = {
     {
       type: 'category', label: 'Architecture',
       items: ['architecture/overview', 'architecture/service-map',
-        { type: 'category', label: 'Design Decisions', items: [/* populated from docs/architecture/decisions/ */] },
+        { type: 'category', label: 'Design Decisions', items: [/* populated from docs/architecture/architecture-decision-records/ */] },
       ],
     },
     {
@@ -124,7 +124,7 @@ Generate deployment config for the documentation site:
      "buildCommand": "npm run build",
      "outputDirectory": "build",
      "installCommand": "npm ci",
-     "framework": "docusaurus-2"
+     "framework": "docusaurus"
    }
    ```
 

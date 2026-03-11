@@ -426,20 +426,18 @@ AskUserQuestion(questions=[{
 - **WebFetch** — deep-read specific pages discovered via search
 
 ### For Codebase Understanding
-- **smart_outline** — first, to understand structure without reading everything
-- **smart_search** — find patterns, symbols, conventions across the codebase
 - **Glob** — map file structure and organization
-- **Grep** — find specific patterns, imports, business logic markers
-- **Read** — deep-read specific files identified as important
+- **Grep** — find specific patterns, symbols, imports, business logic markers across the codebase
+- **Read** — deep-read specific files identified as important (use offset/limit for large files)
 
 ### For Dialogue
 - **AskUserQuestion** — every user interaction, always with predefined options
 - Text output — for presenting research, explanations, analysis (between option prompts)
 
 ### Efficiency
-- Always parallel: when onboarding a repo, issue Glob + Grep + smart_outline simultaneously
+- Always parallel: when onboarding a repo, issue Glob + Grep + Read simultaneously
 - Always parallel: when researching, issue multiple WebSearch calls for different angles
-- Always smart_outline before full Read — don't read 500-line files to find one function
+- Always Grep before full Read — don't read 500-line files to find one function
 - Read `context/` files at startup to avoid re-asking what's already established
 
 ---

@@ -42,6 +42,9 @@ Follow `Claude-Production-Grade-Suite/.protocols/visual-identity.md`. Print stru
 
 **Phase progress** (print during execution):
 ```
+  [0/6] Reconnaissance
+    ✓ {N} services mapped, {M} entry points, {K} auth mechanisms
+
   [1/6] Threat Modeling
     ✓ STRIDE: {N} threats identified
     ⧖ mapping trust boundaries...
@@ -109,12 +112,13 @@ This skill handles **application-level security**. It is distinct from DevOps se
 
 | Phase | File | When to Load | Purpose |
 |-------|------|-------------|---------|
-| 1 | `${CLAUDE_SKILL_DIR}/phases/01-threat-modeling.md` | Always first (after recon) | STRIDE analysis, attack surface mapping, trust boundaries, data flow threats |
-| 2 | `${CLAUDE_SKILL_DIR}/phases/02-code-audit.md` | After Phase 1 approved | OWASP Top 10 code review (SOLE AUTHORITY), per-service findings, injection points |
-| 3 | `${CLAUDE_SKILL_DIR}/phases/03-auth-review.md` | After Phase 2 | Authentication flow audit, token management, RBAC/ABAC policy review |
-| 4 | `${CLAUDE_SKILL_DIR}/phases/04-data-security.md` | After Phase 3 | PII inventory, encryption audit, GDPR/CCPA compliance, data retention |
-| 5 | `${CLAUDE_SKILL_DIR}/phases/05-supply-chain.md` | After Phase 4 | SBOM, dependency vulnerabilities, license compliance, pinning strategy |
-| 6 | `${CLAUDE_SKILL_DIR}/phases/06-remediation.md` | After Phase 5 | Remediation plan, critical fixes with code, timeline, pen test plan |
+| 0 | Inline in SKILL.md (below) | Always first | Reconnaissance — identify services, map data flows, inventory auth mechanisms |
+| 1 | `${CLAUDE_SKILL_DIR}/phases/01-threat-modeling.md` | After Phase 0 | STRIDE analysis, attack surface mapping, trust boundaries, data flow threats |
+| 2 | `${CLAUDE_SKILL_DIR}/phases/02-code-audit.md` | After Phase 1 (parallel with 3-5) | OWASP Top 10 code review (SOLE AUTHORITY), per-service findings, injection points |
+| 3 | `${CLAUDE_SKILL_DIR}/phases/03-auth-review.md` | After Phase 1 (parallel with 2,4,5) | Authentication flow audit, token management, RBAC/ABAC policy review |
+| 4 | `${CLAUDE_SKILL_DIR}/phases/04-data-security.md` | After Phase 1 (parallel with 2,3,5) | PII inventory, encryption audit, GDPR/CCPA compliance, data retention |
+| 5 | `${CLAUDE_SKILL_DIR}/phases/05-supply-chain.md` | After Phase 1 (parallel with 2-4) | SBOM, dependency vulnerabilities, license compliance, pinning strategy |
+| 6 | `${CLAUDE_SKILL_DIR}/phases/06-remediation.md` | After Phases 2-5 complete | Remediation plan, critical fixes with code, timeline, pen test plan |
 
 ## Dispatch Protocol
 

@@ -133,7 +133,7 @@ Wait for both, then run Phase 4 (Docusaurus Scaffold) sequentially — it organi
 docs/
     docusaurus/                (docusaurus.config.js, sidebars.js, package.json, src/)
     getting-started/           (quickstart.md, installation.md, local-development.md)
-    architecture/              (overview.md, service-map.md, decisions/)
+    architecture/              (overview.md, service-map.md, architecture-decision-records/)
     api-reference/             (authentication.md, endpoints/, error-codes.md, rate-limiting.md, webhooks.md, generated/)
     guides/                    (coding-conventions.md, testing-guide.md, contributing.md)
     operations/                (deployment.md, monitoring.md, incident-response.md, runbook-index.md)

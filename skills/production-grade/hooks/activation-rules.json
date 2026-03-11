@@ -33,7 +33,8 @@
         "(?:write|create|draft).*(?:brd|requirements|spec)",
         "(?:define|describe).*(?:product|feature|requirement)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to generate a structured BRD with user stories and acceptance criteria."
     },
     {
       "skill": "solution-architect",
@@ -42,7 +43,8 @@
         "(?:design|architect).*(?:system|api|service)",
         "(?:choose|select).*(?:tech stack|framework|database)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to design architecture with ADRs, API contracts, and project scaffold."
     },
     {
       "skill": "software-engineer",
@@ -50,7 +52,8 @@
       "intent_patterns": [
         "(?:implement|build|write|code).*(?:service|backend|api|handler)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to implement backend services with TDD, structured error handling, and validation."
     },
     {
       "skill": "frontend-engineer",
@@ -58,7 +61,8 @@
       "intent_patterns": [
         "(?:build|create|implement).*(?:frontend|ui|dashboard|web app)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to build frontend with design system, typed API clients, and accessibility."
     },
     {
       "skill": "qa-engineer",
@@ -66,7 +70,8 @@
       "intent_patterns": [
         "(?:write|run|create).*(?:test|spec|e2e|integration)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to write comprehensive tests — unit, integration, e2e, and performance."
     },
     {
       "skill": "security-engineer",
@@ -74,7 +79,8 @@
       "intent_patterns": [
         "(?:audit|review|check).*(?:security|vulnerability|owasp)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to run a security audit — STRIDE threat model, OWASP Top 10, dependency scan."
     },
     {
       "skill": "devops",
@@ -82,15 +88,17 @@
       "intent_patterns": [
         "(?:setup|configure|create).*(?:ci|cd|pipeline|docker|terraform|k8s)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to set up infrastructure — Docker, CI/CD pipelines, Terraform, monitoring."
     },
     {
       "skill": "sre",
       "keywords": ["sre", "production readiness", "slo", "runbook", "incident"],
       "intent_patterns": [
-        "(?:production|readiness|operational).*(?:review|check|readiness)"
+        "(?:production|operational|sre).*(?:review|check|readiness)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to define SLOs, error budgets, runbooks, and chaos engineering scenarios."
     },
     {
       "skill": "data-scientist",
@@ -98,7 +106,8 @@
       "intent_patterns": [
         "(?:optimize|tune|analyze).*(?:llm|ml|model|prompt|token)"
       ],
-      "priority": "medium"
+      "priority": "medium",
+      "recommendation": "Use /production-grade to optimize LLM/ML usage — prompt engineering, token costs, experiment design."
     }
   ],
   "hook_config": {

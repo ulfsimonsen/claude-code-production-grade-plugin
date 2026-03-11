@@ -137,13 +137,6 @@ services/
 │       │   │   ├── database.ts
 │       │   │   └── dependencies.ts
 │       │   └── index.ts            # Entry point
-│       ├── tests/
-│       │   ├── unit/
-│       │   │   ├── services/
-│       │   │   └── mappers/
-│       │   ├── integration/
-│       │   │   └── repositories/
-│       │   └── fixtures/
 │       ├── Dockerfile
 │       └── Makefile
 libs/

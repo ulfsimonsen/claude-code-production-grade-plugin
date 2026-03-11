@@ -23,16 +23,16 @@ Read("file2.md")
 Read("file3.md")
 ```
 
-## Rule 2: Use Structural Tools Before Full Reads
+## Rule 2: Use Discovery Tools Before Full Reads
 
-For code analysis, use `smart_outline` to get a file's structure before reading the full file. Only use `smart_unfold` or full `Read` for specific functions you need to inspect.
+For code analysis, use `Glob` to discover files and `Grep` to find specific symbols before reading full files. Only use full `Read` for files you've confirmed are relevant.
 
 | Need | Tool | Token Cost |
 |------|------|-----------|
-| File structure overview | `smart_outline(file)` | Low (~200-500 tokens) |
-| Specific function code | `smart_unfold(file, symbol)` | Medium (~200-1000 tokens) |
+| Find files by name/pattern | `Glob("**/*.ts")` | Low (~100-300 tokens) |
+| Find symbols across codebase | `Grep("className", pattern="*.ts")` | Low (~200-500 tokens) |
+| Specific function in known file | `Read(file, offset=N, limit=M)` | Medium (~200-1000 tokens) |
 | Full file content | `Read(file)` | High (~500-5000 tokens) |
-| Find symbols across codebase | `smart_search(query)` | Low (~300-800 tokens) |
 
 ## Rule 3: Use the Right Tool for the Job
 
@@ -67,8 +67,9 @@ This removes a class of failure modes from Rule 1 parallel reads. You no longer 
 Always check `.production-grade.yaml` for path overrides before using hardcoded paths. This allows the plugin to work with existing project structures.
 
 ```
-# Read config paths
-config = Read(".production-grade.yaml")
-api_path = config.paths.api_contracts || "api/openapi/*.yaml"
-arch_path = config.paths.architecture_docs || "docs/architecture/"
+# Read config, then parse the YAML text for path overrides
+config_text = Read(".production-grade.yaml")
+# Look for paths.api_contracts in the YAML — fall back to defaults if not found
+# Default: api_path = "api/openapi/*.yaml"
+# Default: arch_path = "docs/architecture/"
 ```

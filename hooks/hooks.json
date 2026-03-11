@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"/dev/claude-plugins/claude-code-production-grade-plugin\"; bash \"$_R/hooks/session-guard.sh\"",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && exit 0; bash \"$_R/hooks/session-guard.sh\"",
             "timeout": 10
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && _R=\"/dev/claude-plugins/claude-code-production-grade-plugin\"; bash \"$_R/hooks/teammate-idle-guard.sh\"",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && exit 0; bash \"$_R/hooks/teammate-idle-guard.sh\"",
             "timeout": 5
           }
         ]

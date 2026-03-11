@@ -30,7 +30,7 @@ For each expected input, classify into one of three categories:
 
 | Classification | Criteria | Action |
 |---------------|----------|--------|
-| **Critical** | Skill cannot produce meaningful output without this input | Stop. Use AskUserQuestion to ask user where the input is or whether to skip this skill. |
+| **Critical** | Skill cannot produce meaningful output without this input | **Express mode:** Log the gap, attempt to infer from available context, continue with degraded scope. Only stop if nothing can be inferred. **Standard+ modes:** Stop. Use AskUserQuestion to ask user where the input is or whether to skip this skill. |
 | **Degraded** | Skill can produce partial output but some sections will be incomplete | Log the gap. Print a warning. Continue with partial scope. Mark affected sections as `[DEGRADED: <input> not found]`. |
 | **Optional** | Nice-to-have input that enriches output but is not necessary | Skip silently. Do not mention to user. |
 

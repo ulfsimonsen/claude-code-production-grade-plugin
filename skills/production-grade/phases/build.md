@@ -6,45 +6,36 @@ This phase manages tasks T3a (Backend), T3b (Frontend), and T4 (DevOps Container
 
 Print pipeline dashboard with BUILD ● active on phase start. Then print Wave A announcement:
 ```
-┌─ WAVE A: BUILD + ANALYSIS ────────────── {N} agents ─┐
-│                                                        │
-│  T3a  Software Engineer    {services from architecture}│
-│  T3b  Frontend Engineer    {pages from BRD}            │
-│  T4a  DevOps               Dockerfiles + CI skeleton   │
-│  T5a  QA Engineer          test plan from BRD          │
-│  T6a  Security Engineer    STRIDE threat model         │
-│  T6b  Code Reviewer        conformance checklist       │
-│  T9a  SRE                  SLO definitions             │
-│                                                        │
-│  All agents launched. Working autonomously...          │
-└────────────────────────────────────────────────────────┘
+┌─ BUILD ──────────────────────────────── {N} agents ─┐
+│                                                      │
+│  T3a  Software Engineer    {services from arch}      │
+│  T3b  Frontend Engineer    {pages from BRD}          │
+│                                                      │
+│  Agents launched. Working autonomously...            │
+└──────────────────────────────────────────────────────┘
 ```
 
 When Wave A completes, print the checkmark cascade:
 ```
-┌─ WAVE A COMPLETE ─────────────────────── ⏱ {time} ─┐
+┌─ BUILD COMPLETE ──────────────────────── ⏱ {time} ─┐
 │                                                      │
 │  ✓ Software Engineer    {N} services, {M} endpoints  │
 │  ✓ Frontend Engineer    {N} pages, {M} components    │
 │  ✓ DevOps               {N} Dockerfiles, 1 compose   │
-│  ✓ QA Engineer          {N} test cases planned       │
-│  ✓ Security Engineer    STRIDE: {N} threats          │
-│  ✓ Code Reviewer        {N} checkpoints defined      │
-│  ✓ SRE                  {N} SLOs, {M} alerts         │
 │                                                      │
 │  {N}/{N} complete                                    │
-│  → Starting Wave B ({M} agents against written code) │
+│  → Starting HARDEN phase                             │
 └──────────────────────────────────────────────────────┘
 ```
 
-Then print Wave B announcement and completion similarly. Each agent's completion line MUST include concrete numbers.
+Each agent's completion line MUST include concrete numbers.
 
 ## Re-Anchor
 
 Before creating any agent tasks, re-read key artifacts from disk:
 - `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`
 - `Claude-Production-Grade-Suite/solution-architect/system-design.md`
-- `docs/architecture/adr/*.md` (Glob to list, Read key ADRs)
+- `docs/architecture/architecture-decision-records/*.md` (Glob to list, Read key ADRs)
 - `api/openapi/*.yaml` (Glob to list)
 - `.orchestrator/receipts/T1-*.json`, `.orchestrator/receipts/T2-*.json`
 
@@ -59,11 +50,17 @@ Read `.production-grade.yaml` to determine:
 
 ## Worktree Pre-Flight
 
-Before launching parallel agents, check if worktree isolation is available:
+Before launching parallel agents, check if a worktree decision already exists in settings:
 
 ```python
-# Check for clean git state (worktrees require committed state)
-result = Bash("git status --porcelain 2>/dev/null | head -5")
+# First check if settings.md already has a Worktrees decision (e.g., from a prior run)
+settings = Read("Claude-Production-Grade-Suite/.orchestrator/settings.md")
+if "Worktrees: enabled" in settings or "Worktrees: disabled" in settings:
+  use_worktrees = "Worktrees: enabled" in settings
+  # Skip the question — decision already made
+else:
+  # Check for clean git state (worktrees require committed state)
+  result = Bash("git status --porcelain 2>/dev/null | head -5")
 if result.strip():
   # Dirty repo — ask user
   AskUserQuestion(questions=[{
@@ -99,7 +96,7 @@ Agent(
 Read these inputs:
 - Claude-Production-Grade-Suite/product-manager/BRD/brd.md (user stories, acceptance criteria)
 - Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture pattern, service boundaries)
-- docs/architecture/adr/*.md (all architecture decisions)
+- docs/architecture/architecture-decision-records/*.md (all architecture decisions)
 - api/openapi/*.yaml (all API contracts)
 - schemas/ (data models)
 - .production-grade.yaml (path overrides, framework preferences)
@@ -202,7 +199,9 @@ T4 begins containerization after PARALLEL #1 completes:
 **IMPORTANT:** T4 MUST run as a foreground agent (no `run_in_background`). The orchestrator blocks until T4 returns — then naturally continues to worktree merge-back. Using a background agent here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# PARALLEL #1 worktree branches already merged above — T4 sees committed code
+# NOTE: Merge PARALLEL #1 worktree branches (T3a, T3b) BEFORE starting T4,
+# so T4 sees the committed code. See Worktree Merge-Back section below —
+# run that merge-back here for T3a/T3b branches, then launch T4.
 TaskUpdate(taskId=t4_id, status="in_progress")
 Agent(
   prompt="""You are the DevOps Containerization Engineer.
@@ -229,8 +228,13 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 If worktrees were used, merge each agent's branch back to the working branch after the wave completes:
 
 ```python
-# For each completed agent that used a worktree:
-# The Agent result includes the worktree branch name.
+# Collect worktree branches from Agent results.
+# Each Agent call that used isolation="worktree" returns a result containing
+# the worktree branch name. Collect these into a list:
+worktree_branches = []
+# For T3a: worktree_branches.append(t3a_result.branch)
+# For T3b: worktree_branches.append(t3b_result.branch)  # if frontend enabled
+# For T4:  worktree_branches.append(t4_result.branch)
 # Merge each branch in sequence (should be conflict-free — agents write to different directories).
 for branch in worktree_branches:
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
@@ -252,10 +256,10 @@ When all BUILD tasks complete:
 3. **Re-anchor:** Re-read from disk before transitioning to HARDEN:
    - Directory listing of `services/`, `frontend/`, `libs/shared/` (what was actually built)
    - `Claude-Production-Grade-Suite/solution-architect/system-design.md` (architecture reference for HARDEN agents)
-3. Verify all services compile and start
-4. Verify docker-compose brings up the full stack
-5. Log BUILD completion to workspace
-6. Read `phases/harden.md` and begin HARDEN phase — use freshly-read data for agent prompts
+4. Verify all services compile and start
+5. Verify docker-compose brings up the full stack
+6. Log BUILD completion to workspace
+7. Read `phases/harden.md` and begin HARDEN phase — use freshly-read data for agent prompts
 
 ## Failure Handling
 

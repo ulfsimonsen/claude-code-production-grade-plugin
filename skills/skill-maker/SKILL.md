@@ -20,7 +20,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
-**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use smart_outline before full Read.
+**Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use Glob/Grep for discovery before full Read.
 
 ## Progress Output
 
@@ -33,18 +33,21 @@ Follow `Claude-Production-Grade-Suite/.protocols/visual-identity.md`. Print stru
 
 **Phase progress** (print during execution):
 ```
-  [1/3] Pattern Analysis
+  [1/5] Pattern Analysis
     ✓ {N} recurring patterns identified
     ⧖ analyzing workflow structure...
-    ○ skill generation
-    ○ installation
 
-  [2/3] Skill Generation
+  [2/5] Skill Generation
     ✓ {N} custom skills drafted
     ⧖ writing SKILL.md files...
-    ○ installation
 
-  [3/3] Installation
+  [3/5] Plugin Packaging
+    ✓ plugin.json + directory structure
+
+  [4/5] Repository Creation
+    ✓ repo created and pushed
+
+  [5/5] Installation
     ✓ {N} skills installed to .claude/skills/
 ```
 

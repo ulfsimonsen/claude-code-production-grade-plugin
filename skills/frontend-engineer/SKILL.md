@@ -257,7 +257,7 @@ When parallel page agents complete (auth agent, dashboard agent, settings agent,
 | Services | `frontend/app/services/` | Typed API client layer, React Query hooks, interceptors |
 | Stores | `frontend/app/stores/` | Client state management (Zustand) |
 | Styles | `frontend/app/styles/` | Design tokens, theme config, global styles |
-| Tests | `frontend/tests/` | Component, page, hook, e2e, a11y tests |
+| Tests | `tests/frontend/` | Component, page, hook, e2e, a11y tests (follows QA Engineer's `tests/` root policy) |
 | Storybook | `frontend/storybook/` | Component documentation and visual testing |
 | Config | `frontend/` root | package.json, tsconfig, tailwind, eslint, playwright, lighthouse |
 | Workspace | `Claude-Production-Grade-Suite/frontend-engineer/` | Analysis docs, design research, design decisions, performance budget, progress notes |

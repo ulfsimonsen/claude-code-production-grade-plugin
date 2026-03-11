@@ -103,7 +103,7 @@ groups:
           slo: api-availability
         annotations:
           summary: "High SLO burn rate — 2% error budget consumed in 1h"
-          runbook: "../runbooks/api/high-error-rate.md"
+          runbook: "docs/runbooks/api/high-error-rate.md"
 
       # Slow burn — 5% budget consumed in 6 hours (ticket)
       - alert: SLOHighBurnRate_Warning
@@ -123,7 +123,7 @@ groups:
           slo: api-availability
         annotations:
           summary: "Elevated SLO burn rate — 5% error budget consumed in 6h"
-          runbook: "../runbooks/api/high-error-rate.md"
+          runbook: "docs/runbooks/api/high-error-rate.md"
 ```
 
 ### Step 5: Generate SLO Dashboard
