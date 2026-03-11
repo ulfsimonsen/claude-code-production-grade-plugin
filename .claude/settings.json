@@ -1,0 +1,49 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllow": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowedHosts": [
+        "registry.npmjs.org",
+        "github.com",
+        "objects.githubusercontent.com",
+        "api.github.com",
+        "context7.com",
+        "api.context7.com"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "LS",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "MultiEdit",
+      "Skill",
+      "Task",
+      "WebSearch",
+      "WebFetch",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "WebFetch(domain:github.com)",
+      "Bash(docker compose:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -f *)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(chown *)",
+      "Bash(dd *)",
+      "Bash(mkfs*)",
+      "Read(**/.env)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)"
+    ]
+  }
+}
