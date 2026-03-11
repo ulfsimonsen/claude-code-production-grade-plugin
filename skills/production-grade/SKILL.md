@@ -134,7 +134,7 @@ All modes share these behaviors:
 - Read `.production-grade.yaml` for path overrides
 - Read existing workspace state if present
 - Engagement mode + parallelism: ask ONLY if mode involves 3+ skills. For 1-2 skill modes, use Standard engagement + Sequential execution (overhead of asking isn't worth it).
-- **Cleanup:** After mode completion (or gate rejection), write the pipeline-status marker (`echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status`). For multi-skill modes that used TaskCreate, no additional cleanup is needed — agents terminate when their work is done.
+- **Cleanup:** After mode completion (or gate rejection), run `TeamDelete(team_name="production-grade")` if a team was created. Never leave orphaned agents.
 
 ### Non-Full-Build Visual Output
 
@@ -541,8 +541,10 @@ Use the cost estimation table from the visual-identity protocol to look up the r
 
 9. **Research the domain** — use WebSearch before asking the user anything (skip if polymath already researched).
 
-10. **Create task graph:**
-
+10. **Create team and task graph:**
+```python
+TeamCreate(team_name="production-grade")
+```
 Create all 13 tasks with dependencies (see Task Dependency Graph). Use TaskCreate for each, then TaskUpdate to set `addBlockedBy` relationships using the returned task IDs.
 
 11. **Begin Phase 1** — read `${CLAUDE_SKILL_DIR}/phases/define.md` and start immediately. Do NOT ask "should I proceed?"
@@ -1201,25 +1203,30 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 ## Pipeline Cleanup
 
-**Immediately after printing the final summary**, write a pipeline status marker:
+**Immediately after printing the final summary**, write a pipeline status marker and clean up:
 
 ```bash
-# Write pipeline-status marker — this tells the session guard hook
+# Write pipeline-status marker BEFORE TeamDelete — this tells the session guard hook
 # and the TeammateIdle hook that the pipeline is done.
 echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
 ```
 
-This signals pipeline completion. All foreground agents have already terminated when their work returned to the orchestrator.
+```python
+TeamDelete(team_name="production-grade")
+```
 
-**This step is MANDATORY.** The status marker must be written regardless of:
+This shuts down all agents and frees resources. Do NOT leave agents idle — the pipeline is complete, there is no further work.
+
+**This step is MANDATORY.** Without it, agents remain alive indefinitely consuming resources. The cleanup must happen regardless of:
 - Which execution mode was used (Full Build, Feature, Harden, etc.)
 - Whether the pipeline succeeded or was cancelled at a gate
 - Whether the user approved or rejected the final gate
 
-**If the user rejects at any gate** (Gate 1, 2, or 3), write the status marker before stopping:
+**If the user rejects at any gate** (Gate 1, 2, or 3), write the status marker and run `TeamDelete` before stopping:
 ```bash
 echo "rejected" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
 ```
+Never leave orphaned agents.
 
 ## Common Mistakes
 
@@ -1243,7 +1250,7 @@ echo "rejected" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
 | Skipping pipeline dashboard reprint | Dashboard reprints at every phase transition and gate |
 | Using emoji for status | Unicode symbols only (`● ○ ✓ ✗ ⧖`) — no emoji |
 | Missing wave announcements | Print Tier 2 box before and after every parallel wave |
-| Not writing pipeline-status marker after completion | ALWAYS write `echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status` after final summary or gate rejection. |
+| Not calling TeamDelete after completion | ALWAYS run `TeamDelete(team_name="production-grade")` after final summary or gate rejection. Orphaned agents idle forever. |
 | Opening a gate without verifying receipts | Read receipts and verify artifacts exist on disk BEFORE presenting any gate. No receipt = task didn't complete properly. |
 | Skipping re-anchor at phase transitions | Re-read workspace artifacts from disk at every transition. Your compressed memory of the architecture spec is lossy after 20+ minutes. |
 | Trusting agent metrics without receipt verification | Gate metrics come from verified receipt data, not from agent memory or task status. |

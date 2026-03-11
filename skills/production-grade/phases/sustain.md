@@ -178,6 +178,7 @@ AskUserQuestion(questions=[{
 ```python
 TaskUpdate(taskId=t13_id, status="completed")
 Bash("echo 'complete' > Claude-Production-Grade-Suite/.orchestrator/pipeline-status")
+TeamDelete(team_name="production-grade")
 ```
 
 ## Pipeline Complete

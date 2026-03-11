@@ -2,6 +2,11 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.3] — 2026-03-12
+
+### Fixed
+- **Restore `TeamCreate`/`TeamDelete`** — these are valid experimental agent team tools (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`), not phantom tools. Restored `TeamCreate(team_name="production-grade")` at pipeline start (SKILL.md step 10), `TeamDelete(team_name="production-grade")` at pipeline cleanup (SKILL.md, sustain.md), and the common mistakes table entry. Restored TeammateIdle hook comment referencing TeamDelete as primary cleanup.
+
 ## [5.7.2] — 2026-03-12
 
 ### Fixed

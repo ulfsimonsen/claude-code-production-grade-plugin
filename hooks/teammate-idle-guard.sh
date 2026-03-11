@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Production-Grade Teammate Idle Guard
 # Stops idle teammates when the pipeline is complete or rejected.
-# This is a safety net — primary cleanup is the pipeline-status marker written by the orchestrator.
+# This is a safety net — primary cleanup is TeamDelete in the orchestrator SKILL.md.
 # Without this, orphaned teammates idle forever if the orchestrator loses context.
 
 SUITE_DIR="Claude-Production-Grade-Suite"
