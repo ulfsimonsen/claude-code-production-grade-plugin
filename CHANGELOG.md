@@ -2,6 +2,23 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.1] — 2026-03-11
+
+### Fixed
+- **Gate 3 verification receipt gap** — ship.md expected verification receipts for Critical/High findings but no task re-scanned after remediation. Added re-verification step: after T8 completes, an opus agent re-scans affected files and writes `T8-verification.json`. Gate 3 now checks this receipt instead of requiring nonexistent per-finding receipts.
+- **T4 plan file naming mismatch** — planner wrote `T4a-containers-plan.md` but task is T4 (not T4a). Renamed to `T4-containers-plan.md` across build.md and SKILL.md (6 references). Added fallback for when Model-Optimization is disabled and no planner runs.
+- **False T9a comment in ship.md** — comment claimed "T9a (SLO definitions) ran during Wave A in BUILD phase" but no T9a task exists in any dispatcher. Replaced with accurate description: T9 handles the full SRE scope in SHIP.
+- **Conflict resolution header** — "Feedback Loops (HARDEN → BUILD)" corrected to "HARDEN → SHIP Remediation" since remediation happens in T8 (SHIP phase).
+- **Dead UserPromptSubmit hook config** — `activation-rules.json` defined a `hook_config` for `UserPromptSubmit` not wired in `hooks.json`. Marked with `"active": false` and `"status": "planned"` to prevent false expectations.
+- **Worktree pre-flight indentation bug** — `if result.strip():` was at the outer indentation level in build.md, executing even when settings.md already had a worktree decision (referencing undefined `result`). Fixed indentation to nest inside the `else` block.
+- **T3a/T3b merge-back positioned after T4** — build.md had a NOTE saying merge before T4 but the merge-back section was after the T4 Agent call. Added explicit "Merge T3a/T3b Worktree Branches Before T4" section positioned correctly before PARALLEL #2.
+- **Duplicate step numbering in harden.md** — two consecutive items both numbered "2." in post-HARDEN processing. Fixed to sequential 2-7.
+- **Technical writer soft dependency** — `03-developer-guides.md` referenced `qa-engineer/test-plan.md` without fallback. Added graceful degradation when QA has not run.
+
+### Changed
+- **Two-wave model note strengthened** — SKILL.md note now explicitly states which tasks each dispatcher actually executes (BUILD: T3a/T3b/T4, HARDEN: T5/T6a/T6b, SHIP: T7-T10) vs the theoretical two-wave model.
+- **Worktree branch extraction documented** — all three phase dispatchers (build.md, harden.md, ship.md) now include guidance on how to parse branch names from Agent results.
+
 ## [5.7.0] — 2026-03-11
 
 ### Added
