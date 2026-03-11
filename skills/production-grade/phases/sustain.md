@@ -64,8 +64,9 @@ Use the Skill tool to invoke 'production-grade:skill-maker' to load your complet
 Analyze the completed project for recurring patterns: API routes, DB queries, auth checks, deployment procedures, testing patterns, domain-specific workflows.
 Read protocols from: Claude-Production-Grade-Suite/.protocols/
 Generate 3-5 project-specific skills as SKILL.md files.
-Install skills to: .claude/skills/
+Stage skills to: Claude-Production-Grade-Suite/skill-maker/skills/ (sandbox blocks direct writes to .claude/skills/)
 Write workspace artifacts to: Claude-Production-Grade-Suite/skill-maker/
+After staging, provide the user with install instructions (copy to .claude/skills/ or package as plugin).
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
@@ -170,11 +171,18 @@ AskUserQuestion(questions=[{
 }])
 ```
 
-2. **Run final validation:** `docker-compose up`, `make test`, `terraform validate`, health checks.
+2. **Install staged skills** — if T12 produced skills, inform user:
+```
+Skills staged to Claude-Production-Grade-Suite/skill-maker/skills/
+To install: cp -r Claude-Production-Grade-Suite/skill-maker/skills/* .claude/skills/
+(Sandbox blocks direct writes to .claude/skills/ — manual copy required)
+```
 
-3. **Present final summary** using the orchestrator's template.
+3. **Run final validation:** `docker-compose up`, `make test`, `terraform validate`, health checks.
 
-4. **Write pipeline status marker and clean up team:**
+4. **Present final summary** using the orchestrator's template.
+
+5. **Write pipeline status marker and clean up team:**
 ```python
 TaskUpdate(taskId=t13_id, status="completed")
 Bash("echo 'complete' > Claude-Production-Grade-Suite/.orchestrator/pipeline-status")

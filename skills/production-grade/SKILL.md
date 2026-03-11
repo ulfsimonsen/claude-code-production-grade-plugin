@@ -520,6 +520,8 @@ Maximum parallelism with worktree isolation is the recommended default — paral
 
 **Worktree requirements:** Git repo must have a clean state (no uncommitted changes). If dirty, the BUILD phase dispatcher will prompt the user to auto-commit or skip worktrees. See `phases/build.md` for the pre-flight check.
 
+**Known limitation:** Worktree isolation + permission prompts can cause agents to be blocked on file operations (GitHub #29110). If agents report permission errors in worktrees, the dispatcher should fall back to shared directory mode. Agents must commit their work before returning — worktrees are auto-cleaned if no commits are made, which can silently lose work.
+
 **Show pre-pipeline cost estimate** after both selections:
 ```
   Est. cost: ~{low}K-{high}K tokens (~${low_cost}-${high_cost} at Sonnet pricing)
@@ -1068,7 +1070,7 @@ When HARDEN skills find Critical/High issues:
 | T9: SRE | All prior outputs | `docs/runbooks/` | `sre/` |
 | T10: Data Sci | Implementation (LLM usage) | — | `data-scientist/` |
 | T11: Tech Writer | ALL workspace + project | `docs/` | `technical-writer/` |
-| T12: Skill Maker | ALL workspace | `.claude/skills/` | `skill-maker/` |
+| T12: Skill Maker | ALL workspace | — (staged to `skill-maker/skills/`, sandbox blocks `.claude/skills/`) | `skill-maker/` |
 
 **Deliverables** go to project root (respecting `.production-grade.yaml` path overrides). **Workspace artifacts** go to `Claude-Production-Grade-Suite/<skill-name>/`.
 
@@ -1217,6 +1219,8 @@ TeamDelete(team_name="production-grade")
 
 This shuts down all agents and frees resources. Do NOT leave agents idle — the pipeline is complete, there is no further work.
 
+**Known issue:** `TeamDelete` can block indefinitely if an agent is hung and ignores shutdown requests (GitHub #31788). If `TeamDelete` does not return within ~60 seconds, warn the user and move on — the `pipeline-status` marker and TeammateIdle hook provide a safety net for cleanup.
+
 **This step is MANDATORY.** Without it, agents remain alive indefinitely consuming resources. The cleanup must happen regardless of:
 - Which execution mode was used (Full Build, Feature, Harden, etc.)
 - Whether the pipeline succeeded or was cancelled at a gate
@@ -1265,3 +1269,7 @@ Never leave orphaned agents.
 | Missing effort tracking in receipts | Every receipt must include an `effort` field with files_read, files_written, tool_calls. These aggregate into the cost dashboard in the final summary. |
 | All agents running on Opus | Use model tiers: `model="opus"` for planners + analysis, `model="sonnet"` for executors. Saves 30-50% on full pipeline. Requires Claude Code 2.1.72+. |
 | Omitting `model` when Model-Optimization is enabled | Read `settings.md` → if Model-Optimization is enabled (default), every Agent call MUST include the `model` parameter from the tier table. |
+| Worktree agents blocked on file operations | Known issue (GitHub #29110): `isolation="worktree"` + permission prompts can block agents on Write/Edit/Bash. If agents report permission errors in worktrees, fall back to shared directory (`Worktrees: disabled`). |
+| Worktree cleanup deleting uncommitted work | Worktrees are auto-cleaned if the agent makes no commits. Agents MUST commit their work before returning. Phase dispatchers verify commits exist before merge-back. If worktree branches are empty after agent completion, warn the user. |
+| `TeamDelete` hanging on unresponsive agents | Known issue (GitHub #31788): no timeout/force-kill. If `TeamDelete` blocks for >60s, warn user and move on. The `pipeline-status` marker + TeammateIdle hook handle cleanup. |
+| Skill-maker writing to `.claude/skills/` | Sandbox blocks writes to `.claude/skills/` (v2.1.38). Stage skills to `Claude-Production-Grade-Suite/skill-maker/skills/` and provide install instructions. |

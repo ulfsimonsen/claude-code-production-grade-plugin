@@ -49,7 +49,8 @@ Follow `Claude-Production-Grade-Suite/.protocols/visual-identity.md`. Print stru
     ✓ repo created and pushed
 
   [5/5] Installation
-    ✓ {N} skills installed to .claude/skills/
+    ✓ {N} skills staged to Claude-Production-Grade-Suite/skill-maker/skills/
+    ⧖ install instructions provided
 ```
 
 **Completion summary** (print on finish — MUST include concrete numbers):
@@ -151,6 +152,15 @@ Table of mistake -> fix pairs.
 - Include keywords for discoverability (error messages, symptoms, tool names)
 
 **Skill review (mode-aware):** Express — proceed to packaging, report skill summary. Standard — present brief summary for approval. Thorough/Meticulous — present full SKILL.md for detailed review via AskUserQuestion.
+
+## Sandbox Restriction
+
+Claude Code v2.1.38+ blocks writes to `.claude/skills/` in sandbox mode as a security
+measure (skills are executable code). The skill-maker writes skills to a staging directory
+first, then provides install instructions.
+
+**Staging path:** `Claude-Production-Grade-Suite/skill-maker/skills/`
+**Final install:** User copies to `.claude/skills/` or packages as a plugin.
 
 ## Phase 3: Package as Plugin
 

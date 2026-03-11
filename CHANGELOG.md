@@ -2,6 +2,16 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.4] — 2026-03-12
+
+### Fixed
+- **Auto-update WebFetch blocked by sandbox** — `raw.githubusercontent.com` missing from `.claude/settings.json` network hosts. Auto-update check silently failed due to sandbox network restrictions. Added to `allowedHosts`.
+- **`CLAUDE_ENV_FILE` unreliable for plugin hooks** — session-guard.sh wrote effort level to `$CLAUDE_ENV_FILE`, but this variable can be empty for plugin-provided hooks (GitHub #11649). Added `-w` (writable) check alongside `-n` (non-empty) check. Comment documents the known limitation.
+- **Session guard re-prompts on `--resume` during active pipeline** — when resuming a session with `--resume`/`--continue`, the `source` field is `"resume"` but the guard only handled `"compact"` and `"clear"`, falling through to the full guard prompt every resume. Now handles `"resume"` the same as compact/clear — re-orients without re-prompting when a pipeline is active. Per Claude Code 2.1.73 fix (SessionStart hooks now fire once, not twice, on resume).
+- **Skill-maker writes to sandbox-blocked `.claude/skills/`** — Claude Code v2.1.38 blocks writes to `.claude/skills/` in sandbox mode (skills are executable code). skill-maker SKILL.md, sustain.md T12 prompt, and SKILL.md context bridging table updated to stage skills to `Claude-Production-Grade-Suite/skill-maker/skills/` with user install instructions. Final assembly step in sustain.md now includes skill install guidance.
+- **`TeamDelete` can block indefinitely on hung agents** — GitHub #31788 documents that `TeamDelete` has no timeout or force-kill when an agent is unresponsive. Added warning in pipeline cleanup section and common mistakes table. The `pipeline-status` marker + TeammateIdle hook provide a safety net.
+- **Worktree isolation + permission issues undocumented** — GitHub #29110 documents that `isolation="worktree"` combined with permission prompts can block agents on Write/Edit/Bash operations, and worktrees can be silently deleted if agents don't commit. Added known limitation note to worktree requirements, and 3 new common mistakes table entries for worktree permission errors, data loss, and TeamDelete hanging.
+
 ## [5.7.3] — 2026-03-12
 
 ### Fixed

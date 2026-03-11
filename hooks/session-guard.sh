@@ -27,13 +27,18 @@ SOURCE=$(echo "$INPUT" | grep -o '"source"[[:space:]]*:[[:space:]]*"[^"]*"' | he
 # Set high effort for production-grade projects via CLAUDE_ENV_FILE.
 # CLAUDE_ENV_FILE is only available in SessionStart hooks — it persists
 # environment variables for the session's Bash commands and model effort.
-if [ -n "$CLAUDE_ENV_FILE" ]; then
+# Known issue: CLAUDE_ENV_FILE may be empty for plugin-provided hooks
+# (GitHub #11649). The guard still works — effort just won't auto-set.
+if [ -n "$CLAUDE_ENV_FILE" ] && [ -w "$CLAUDE_ENV_FILE" ]; then
   echo 'export CLAUDE_CODE_EFFORT_LEVEL=high' >> "$CLAUDE_ENV_FILE"
 fi
 
-# During compaction or clear, check if a pipeline is actively running.
+# During compaction, clear, or resume, check if a pipeline is actively running.
 # If so, output a short re-orientation message instead of the full guard.
-if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ]; then
+# "resume" added per Claude Code 2.1.73 — SessionStart hooks now fire once
+# (not twice) on --resume/--continue. Active pipelines should re-orient, not
+# re-prompt.
+if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ] || [ "$SOURCE" = "resume" ]; then
   if [ -f "$SUITE_DIR/.orchestrator/settings.md" ]; then
     # Check if pipeline already completed (pipeline-status marker)
     if [ -f "$SUITE_DIR/.orchestrator/pipeline-status" ]; then
