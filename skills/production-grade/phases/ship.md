@@ -49,6 +49,49 @@ Before creating SHIP agent tasks, re-read key artifacts from disk:
 
 Use this freshly-read data when writing agent task prompts below.
 
+## SHIP Planning (opus planner)
+
+Before dispatching PARALLEL #5, spawn a single opus planner that reads HARDEN findings and architecture artifacts, then writes execution plans for the sonnet agents. Skip this step if `Model-Optimization: disabled` in settings.
+
+```python
+# SHIP Planner — opus reasons about WHAT to fix/provision; sonnet agents implement
+Agent(
+  prompt="""You are the SHIP Planner. Your job: read HARDEN findings and architecture artifacts, then produce detailed, unambiguous execution plans for the SHIP agents.
+
+Read these inputs:
+- Claude-Production-Grade-Suite/security-engineer/findings/ (all security findings)
+- Claude-Production-Grade-Suite/code-reviewer/findings/ (all review findings)
+- Claude-Production-Grade-Suite/qa-engineer/ (test results, failure reports)
+- Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture for infra planning)
+- docs/architecture/adr/*.md (architecture decisions)
+- Directory listing of services/, frontend/, infrastructure/ (what exists)
+- .production-grade.yaml (path overrides, framework preferences)
+
+Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/ship/:
+
+1. **T7-infra-plan.md** — For each service in the architecture:
+   - Terraform/Pulumi modules to create (full file path, resource types)
+   - K8s manifests if microservices (deployments, services, ingress — exact specs)
+   - CI/CD pipeline per service (stages, steps, triggers, environment variables)
+   - Monitoring dashboards (which metrics, what thresholds)
+   - Environment configuration (dev, staging, prod — what differs)
+   - Explicit note: DO NOT define SLOs — placeholder only
+
+2. **T8-remediation-plan.md** — For each Critical and High finding from HARDEN:
+   - Finding ID, severity, affected file (full path), affected line range
+   - Root cause analysis (what's wrong and why)
+   - Exact fix instructions (what to change, not "fix the vulnerability")
+   - Verification steps (which tests to run, what to re-scan)
+   - Dependency order (if fix A must happen before fix B)
+   - Medium/Low findings: list but mark as "document only, do not block"
+
+Plans must be detailed enough that an agent can implement WITHOUT making judgment calls about severity or architecture.""",
+  subagent_type="general-purpose",
+  model="opus",  # Planner tier — always opus
+  mode="bypassPermissions"
+)
+```
+
 ## PARALLEL #5: T7 + T8
 
 Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
@@ -56,16 +99,17 @@ Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Work
 **IMPORTANT:** T7 and T8 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and PARALLEL #6. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# T7: DevOps IaC + CI/CD
+# T7: DevOps IaC + CI/CD — executes SHIP plan
 TaskUpdate(taskId=t7_id, status="in_progress")
 Agent(
   prompt="""You are the DevOps Engineer — IaC and CI/CD.
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/ship/T7-infra-plan.md
+Implement EXACTLY what the plan specifies — Terraform modules, K8s manifests, CI/CD pipelines, monitoring.
+Do not deviate from the plan. Do not make infrastructure decisions. The plan is your specification.
+
 Use the Skill tool to invoke 'production-grade:devops' to load your complete methodology and follow it.
-Read architecture: docs/architecture/
-Read implementation: services/, frontend/
 Read .production-grade.yaml for paths and preferences.
 Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Generate: Terraform/Pulumi, K8s manifests (if microservices), CI/CD pipelines, monitoring dashboards.
 Write to project root: infrastructure/, .github/workflows/
 Write workspace artifacts to: Claude-Production-Grade-Suite/devops/
 DO NOT define SLOs — add placeholder: "SLO thresholds defined by SRE."
@@ -73,25 +117,29 @@ DO NOT write runbooks — SRE writes runbooks to docs/runbooks/.
 Validate: terraform validate, pipeline syntax lint.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T7-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
-# T8: Remediation (fix HARDEN findings)
+# T8: Remediation — executes SHIP plan
 TaskUpdate(taskId=t8_id, status="in_progress")
 Agent(
   prompt="""You are the Remediation Engineer.
-Read HARDEN findings from workspace: Claude-Production-Grade-Suite/security-engineer/, code-reviewer/, qa-engineer/
-Focus on Critical and High severity findings only.
-For each finding:
-  1. Read the affected file
-  2. Apply the fix
-  3. Run affected tests to verify no regressions
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/ship/T8-remediation-plan.md
+Follow the plan EXACTLY — fix each finding in the specified order, using the exact fix instructions provided.
+Do not make severity judgments. Do not skip findings the plan marks as Critical/High. The plan is your specification.
+
+For each finding in the plan:
+  1. Read the affected file at the path specified
+  2. Apply the fix exactly as described
+  3. Run the verification steps specified in the plan
   4. Re-scan the affected code
 If findings persist after 2 fix-rescan cycles → document and escalate.
-Medium/Low findings: document but do not block.
+Medium/Low findings: document but do not block (plan marks these explicitly).
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T8-remediation.json with task, agent, phase, status, artifacts (files modified), metrics (findings_fixed, findings_remaining), effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
@@ -116,6 +164,7 @@ Write runbooks to project root: docs/runbooks/
 Write workspace artifacts to: Claude-Production-Grade-Suite/sre/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T9-sre.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
@@ -134,6 +183,7 @@ Design: A/B testing infrastructure, experiment framework, data pipeline.
 Write workspace artifacts to: Claude-Production-Grade-Suite/data-scientist/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T10-data-scientist.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )

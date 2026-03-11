@@ -509,6 +509,7 @@ Store all choices in `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
 Engagement: [express|standard|thorough|meticulous]
 Parallelism: [maximum|standard|sequential]
 Worktrees: [enabled|disabled]
+Model-Optimization: [enabled|disabled]
 ```
 
 Maximum parallelism with worktree isolation is the recommended default — parallel execution is both faster AND cheaper in total tokens because each agent carries minimal context instead of accumulating prior work. Worktree isolation eliminates file race conditions between concurrent agents.
@@ -871,6 +872,7 @@ Each subtask is dispatched as a foreground agent (multiple foreground agents in 
 Agent(
   prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow ${CLAUDE_SKILL_DIR}/../software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — see Model Tier Strategy
   mode="bypassPermissions"
 )
 ```
@@ -919,9 +921,109 @@ Skill(skill="product-manager")
 Agent(
   prompt="You are the Backend Engineer. Read architecture at...",
   subagent_type="general-purpose",
+  model="sonnet",  # See Model Tier Strategy below
   mode="bypassPermissions"
 )
 ```
+
+### Model Tier Strategy (requires Claude Code 2.1.72+)
+
+The `model` parameter on the Agent tool enables per-agent model selection. The orchestrator uses a **planner-executor pattern**: opus agents plan, sonnet agents execute against those plans.
+
+**Principle:** Sonnet cannot "think for itself" — it needs unambiguous instructions. Opus reasons about what to build; sonnet implements exactly what opus specified. The planning layer bridges this gap.
+
+| Role | Model | Tasks | What It Does |
+|------|-------|-------|-------------|
+| **Planner** | `opus` | Wave Planners | Reads architecture + BRD, writes file-level execution plans for sonnet agents |
+| **Analysis** | `opus` | T6a (Security), T6b (Code Reviewer), T9 (SRE), T10 (Data Scientist), T12 (Skill Maker) | Judgment tasks: threat modeling, code review, SLO design, LLM trade-offs, skill design |
+| **Executor** | `sonnet` | T3a (Backend), T3b (Frontend), T4 (DevOps), T5 (QA), T7 (IaC), T8 (Remediation), T11 (Tech Writer) | Implements exactly what the plan specifies — no architectural decisions |
+
+**How it works:**
+
+Before each parallel wave that contains sonnet agents, the phase dispatcher spawns a single **opus wave planner**. The planner reads all upstream artifacts and writes per-agent execution plans to `Claude-Production-Grade-Suite/.orchestrator/plans/`. Sonnet agents then read their plan + SKILL.md and implement.
+
+```
+Gate 2 approved
+  → 1 opus Wave A planner (reads BRD, ADRs, API contracts)
+     writes: plans/wave-a/T3a-backend-plan.md, T3b-frontend-plan.md, T4a-containers-plan.md
+  → 7 agents in parallel:
+     - T3a sonnet (reads T3a-backend-plan.md + software-engineer SKILL.md)
+     - T3b sonnet (reads T3b-frontend-plan.md + frontend-engineer SKILL.md)
+     - T4a sonnet (reads T4a-containers-plan.md + devops SKILL.md)
+     - T5a opus  (QA test plan — IS a planner, feeds Wave B)
+     - T6a opus  (STRIDE model — IS a planner, feeds Wave B)
+     - T6b opus  (review checklist — IS a planner, feeds Wave B)
+     - T9a opus  (SLO definitions — IS a planner, feeds SHIP)
+```
+
+**Key insight:** The opus analysis agents in Wave A (T5a, T6a, T6b, T9a) ARE planners — they produce test plans, threat models, and review checklists that sonnet agents execute against in later waves. The wave planner only plans for BUILD agents (T3a, T3b, T4a) which have no upstream analysis agent.
+
+### Execution Plan Format
+
+Plans written by the wave planner must be **unambiguous enough for sonnet to implement without making decisions**:
+
+```markdown
+# Execution Plan: T3a Backend Engineer
+
+## Overview
+Architecture: modular monolith (ADR-001)
+Language: TypeScript / Node.js / Express
+Database: PostgreSQL with Prisma ORM
+Services: 3 bounded contexts (orders, inventory, payments)
+
+## services/order-service/src/handlers/create-order.ts
+- Export: handleCreateOrder(req: CreateOrderRequest): Promise<OrderResponse>
+- Middleware: authMiddleware, validateBody(CreateOrderSchema)
+- Steps:
+  1. Extract idempotencyKey from req.headers. Query orders WHERE idempotencyKey = key.
+     If found: return 200 with existing order.
+  2. Call inventoryClient.reserveStock({ items: req.items, ttl: 300 })
+     If error: return 422 { error: "INSUFFICIENT_STOCK", available: response.available }
+  3. Call paymentClient.createIntent({ amount, currency })
+     If error: call inventoryClient.release(reservationId), return 502 { error: "PAYMENT_FAILED" }
+  4. prisma.order.create({ data: { id, userId, items, paymentIntentId, status: "CONFIRMED" } })
+  5. eventBus.emit("OrderCreated", { orderId, userId, items })
+  6. Return 201 { order }
+- Error responses: 200 (idempotent), 422 (stock), 502 (payment), 401 (auth), 400 (validation)
+
+## services/order-service/src/schemas/order.ts
+- Export: CreateOrderSchema (Zod) matching api/openapi/orders.yaml request body
+- Export: OrderResponse (Zod) matching api/openapi/orders.yaml response
+[... more files ...]
+```
+
+Every file gets: export signatures, implementation steps, error handling, dependencies. Sonnet follows the plan; the SKILL.md provides methodology (coding patterns, testing conventions, error handling style).
+
+### Which Waves Get Planners
+
+| Wave | Planner? | Why |
+|------|----------|-----|
+| **Wave A** | Yes | T3a, T3b, T4a need file-level implementation plans from architecture |
+| **Wave B** | No | T5b reads T5a's test plan. T4b reads T4a's Dockerfiles. T6c, T6d are opus. |
+| **SHIP #5** | Yes | T8 needs opus to translate HARDEN findings into unambiguous fix instructions |
+| **SHIP #6** | No | T9, T10 are opus. |
+| **SUSTAIN** | No | T11 reads full workspace as input. T12 is opus. |
+
+Plans are stored at:
+```
+Claude-Production-Grade-Suite/.orchestrator/plans/
+├── wave-a/
+│   ├── T3a-backend-plan.md
+│   ├── T3b-frontend-plan.md
+│   └── T4a-containers-plan.md
+└── ship/
+    ├── T7-infra-plan.md
+    └── T8-remediation-plan.md
+```
+
+### Settings
+
+Model optimization and wave planning are **enabled by default**. To disable (all agents inherit leader's model, no planning layer), add to `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
+```
+Model-Optimization: disabled
+```
+
+When disabled, omit `model` from all Agent calls and skip wave planners — agents inherit the leader's model and plan for themselves (pre-5.7.0 behavior).
 
 ## Conflict Resolution
 
@@ -1157,3 +1259,5 @@ Never leave orphaned agents.
 | Stopping pipeline on gate rejection | Gates are self-healing. On rejection, loop back to the relevant agent for rework (max 2 cycles), re-verify, re-present. Only stop if user explicitly cancels or rework limit reached. |
 | Not tracking rework cycles | Log every rework cycle to `.orchestrator/rework-log.md` with gate number, concerns, and changes. Rework count appears in gate ceremony header and final summary. |
 | Missing effort tracking in receipts | Every receipt must include an `effort` field with files_read, files_written, tool_calls. These aggregate into the cost dashboard in the final summary. |
+| All agents running on Opus | Use model tiers: `model="opus"` for planners + analysis, `model="sonnet"` for executors. Saves 30-50% on full pipeline. Requires Claude Code 2.1.72+. |
+| Omitting `model` when Model-Optimization is enabled | Read `settings.md` → if Model-Optimization is enabled (default), every Agent call MUST include the `model` parameter from the tier table. |

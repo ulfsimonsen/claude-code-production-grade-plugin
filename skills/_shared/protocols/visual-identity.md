@@ -74,6 +74,8 @@ Minimal set. Each icon has exactly one meaning.
 
 **Never mix icons.** `●` is always "running." `✓` is always "done." No synonyms, no alternatives.
 
+**Note on effort level symbols:** Claude Code 2.1.72+ displays effort levels as `○` (low), `◐` (medium), `●` (high) in the status bar. These overlap with our `○` (pending) and `●` (active) icons. No conflict in practice — effort symbols appear in the Claude Code chrome, while our icons appear in pipeline output text. Do not use `◐` in pipeline output to avoid confusion.
+
 ---
 
 ## Container Hierarchy

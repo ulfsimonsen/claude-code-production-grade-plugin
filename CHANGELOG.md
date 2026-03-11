@@ -2,6 +2,27 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.0] — 2026-03-11
+
+### Added
+- **Planner-executor architecture** — opus wave planners produce file-level execution plans before parallel waves; sonnet agents execute against those plans without making architectural decisions. Wave A planner (BUILD) writes `T3a-backend-plan.md`, `T3b-frontend-plan.md`, `T4a-containers-plan.md`. SHIP planner writes `T7-infra-plan.md`, `T8-remediation-plan.md`. Plans include every file to create, every function signature, implementation steps, error handling — detailed enough that executors never need to make judgment calls. Plans stored in `Claude-Production-Grade-Suite/.orchestrator/plans/{wave}/`.
+- **Model tier strategy** — per-agent model selection using the `model` parameter restored in Claude Code 2.1.72. Three roles: Planner (`opus` — wave planners), Analysis (`opus` — Security, Code Reviewer, SRE, Data Scientist, Skill Maker), Executor (`sonnet` — Backend, Frontend, DevOps, QA, Remediation, Tech Writer). Haiku excluded — all plugin tasks require either judgment (opus) or codebase understanding (sonnet). Tier assignments based on specs-vs-judgment analysis of all 14 skill SKILL.md files. Reduces full pipeline cost by ~30-50%. Enabled by default via `Model-Optimization: enabled` in settings.md. All 12 Agent calls across 4 phase dispatchers updated.
+- **Effort symbol disambiguation** — visual-identity protocol now documents that `○ ◐ ●` also represent Claude Code 2.1.72+ effort levels (low/medium/high). No pipeline output conflict (different rendering contexts), but `◐` excluded from pipeline icons to avoid confusion.
+- **Parallel tool failure resilience** — tool-efficiency protocol updated with new Rule 5: failed Read/WebFetch/Glob no longer cancel sibling tool calls (Claude Code 2.1.72 fix). Parallel discovery batches are now safe without defensive file-exists checks.
+
+### Changed
+- **Minimum Claude Code version** bumped to 2.1.72+ (from 2.1.69+). Required for model parameter, parallel resilience, and worktree fixes.
+- **Settings schema** — `Model-Optimization: [enabled|disabled]` added to pipeline settings alongside Engagement, Parallelism, and Worktrees.
+- **Common mistakes table** — 2 new entries: all agents running on Opus (use model tiers), omitting `model` when optimization enabled.
+
+### Improved (from Claude Code 2.1.72 upstream)
+- **Worktree isolation reliability** — Task tool resume now restores cwd correctly, background task notifications include `worktreePath` and `worktreeBranch`. Improves reliability of the existing foreground-agent worktree pattern.
+- **Team model inheritance** — team agents now properly inherit the leader's model (fixed in 2.1.72). Combined with model tiers, this means: when Model-Optimization is disabled, all agents reliably inherit the leader's model; when enabled, per-agent overrides work correctly.
+- **Skill hooks single-fire** — hooks no longer fire twice per event when a hooks-enabled skill is invoked by the model. The plugin's SessionStart and TeammateIdle hooks are more reliable.
+- **CLAUDE.md HTML comments hidden** — HTML comments (`<!-- ... -->`) in CLAUDE.md are now hidden from auto-injection but visible via Read tool. The SUSTAIN phase's Production-Grade Native directive is unaffected (no HTML comments), but this opens a path for embedding pipeline metadata in CLAUDE.md comments.
+- **Bash auto-approval additions** — `lsof`, `pgrep`, `tput`, `ss`, `fd`, `fdfind` now auto-approved, reducing permission prompts for agents.
+- **Prompt cache optimization** — SDK query() prompt cache fix reduces input token costs up to 12x, directly benefiting the plugin's multi-agent execution.
+
 ## [5.6.0] — 2026-03-09
 
 ### Fixed

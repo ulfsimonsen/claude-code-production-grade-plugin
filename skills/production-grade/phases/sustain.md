@@ -52,6 +52,7 @@ Write docs to project root: docs/
 Write workspace artifacts to: Claude-Production-Grade-Suite/technical-writer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T11-technical-writer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
@@ -68,6 +69,7 @@ Install skills to: .claude/skills/
 Write workspace artifacts to: Claude-Production-Grade-Suite/skill-maker/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )

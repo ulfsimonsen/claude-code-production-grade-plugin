@@ -49,7 +49,20 @@ For code analysis, use `smart_outline` to get a file's structure before reading 
 
 When creating multiple files, use parallel Write/Edit calls where possible. When reading a directory of related files, use Glob first to discover files, then parallel Read.
 
-## Rule 5: Config-Aware Paths
+## Rule 5: Parallel Failure Resilience (Claude Code 2.1.72+)
+
+As of Claude Code 2.1.72, failed Read/WebFetch/Glob calls no longer cancel their sibling tool calls — only Bash errors cascade. This means parallel discovery operations are safe:
+
+```
+# Safe — if file2.md doesn't exist, file1.md and file3.md still return:
+Read("file1.md")
+Read("file2.md")  # 404 → returns error, siblings unaffected
+Read("file3.md")
+```
+
+This removes a class of failure modes from Rule 1 parallel reads. You no longer need defensive file-exists checks before parallel Read batches.
+
+## Rule 6: Config-Aware Paths
 
 Always check `.production-grade.yaml` for path overrides before using hardcoded paths. This allows the plugin to work with existing project structures.
 

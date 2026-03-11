@@ -87,6 +87,56 @@ Store the worktree decision in `Claude-Production-Grade-Suite/.orchestrator/sett
 Worktrees: [enabled|disabled]
 ```
 
+## Wave A Planning (opus planner)
+
+Before dispatching parallel agents, spawn a single opus planner that reads all architecture artifacts and writes file-level execution plans for the sonnet agents. Skip this step if `Model-Optimization: disabled` in settings.
+
+```python
+# Wave A Planner — opus reasons about WHAT to build; sonnet agents implement
+Agent(
+  prompt="""You are the Wave A Planner. Your job: read architecture artifacts and produce detailed, unambiguous execution plans for the BUILD agents.
+
+Read these inputs:
+- Claude-Production-Grade-Suite/product-manager/BRD/brd.md (user stories, acceptance criteria)
+- Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture pattern, service boundaries)
+- docs/architecture/adr/*.md (all architecture decisions)
+- api/openapi/*.yaml (all API contracts)
+- schemas/ (data models)
+- .production-grade.yaml (path overrides, framework preferences)
+
+Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/:
+
+1. **T3a-backend-plan.md** — For each service in the architecture:
+   - Every file to create (full path)
+   - Every exported function/class with signature
+   - Implementation steps for each function (numbered, specific)
+   - Error handling per function (which errors, what response)
+   - Dependencies between services (which clients to call, what events to emit)
+   - Database operations (exact Prisma/SQL calls, not "persist data")
+   - Middleware chain per route
+
+2. **T3b-frontend-plan.md** — For each page group from BRD:
+   - Every component to create (path, props interface)
+   - Page layout structure (which components, where)
+   - API client calls per page (which endpoints, what state)
+   - Route definitions (path, auth requirements, layout)
+   - Form validations (which fields, what rules)
+   - Navigation wiring (every link, button, redirect)
+
+3. **T4a-containers-plan.md** — For each service:
+   - Base image and version
+   - Build stages (dependencies, build, runtime)
+   - Exposed ports, health check path
+   - Environment variables needed
+   - docker-compose service entry
+
+Plans must be detailed enough that an agent can implement WITHOUT making architectural decisions. Every function gets explicit steps. No "implement business logic" — specify the logic.""",
+  subagent_type="general-purpose",
+  model="opus",  # Planner tier — always opus
+  mode="bypassPermissions"
+)
+```
+
 ## PARALLEL #1: T3a + T3b
 
 Spawn backend and frontend agents simultaneously as foreground Agents.
@@ -95,12 +145,15 @@ When `use_worktrees` is True, add `isolation="worktree"` to each Agent call. Eac
 **IMPORTANT:** T3a and T3b MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and T4. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# T3a: Backend Engineering
+# T3a: Backend Engineering — executes Wave A plan
 TaskUpdate(taskId=t3a_id, status="in_progress")
 Agent(
   prompt="""You are the Backend Engineer.
-Use the Skill tool to invoke 'production-grade:software-engineer' to load your complete methodology and follow it.
-Read architecture from: api/, schemas/, docs/architecture/
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T3a-backend-plan.md
+Implement EXACTLY what the plan specifies — file structure, function signatures, implementation steps, error handling.
+Do not deviate from the plan. Do not make architectural decisions. The plan is your specification.
+
+Use the Skill tool to invoke 'production-grade:software-engineer' for coding methodology (patterns, testing conventions, error handling style).
 Read protocols from: Claude-Production-Grade-Suite/.protocols/
 Read .production-grade.yaml for paths and preferences.
 Write services to project root: services/, libs/shared/
@@ -108,33 +161,35 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/software-engineer/
 TDD enforced: write test → watch fail → implement → watch pass → refactor.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 
-# T3b: Frontend Engineering (skip if features.frontend is false)
+# T3b: Frontend Engineering — executes Wave A plan (skip if features.frontend is false)
 TaskUpdate(taskId=t3b_id, status="in_progress")
 Agent(
   prompt="""You are the Frontend Engineer.
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T3b-frontend-plan.md
+Implement EXACTLY what the plan specifies — components, pages, routes, API wiring, navigation.
+Do not deviate from the plan. Do not make architectural decisions. The plan is your specification.
+
+Use the Skill tool to invoke 'production-grade:frontend-engineer' for coding methodology (6-phase build process).
 Read API contracts from: api/
 Read BRD user stories from: Claude-Production-Grade-Suite/product-manager/BRD/
 Read protocols from: Claude-Production-Grade-Suite/.protocols/
 Read .production-grade.yaml for framework and styling preferences.
 
-Use the Skill tool to invoke 'production-grade:frontend-engineer'. This loads your complete SKILL.md with a 6-phase build process. You MUST follow all 6 phases in order:
-  Phase 1: Analysis — read BRD, API contracts, select framework
-  Phase 2: Design System — functional defaults (tokens, theme, Tailwind)
-  Phase 3: Components — UI primitives first (sequential), then layout+feature (parallel)
-  Phase 4: Pages + Routing — parallel by route group, then functional verification (4b)
-  Phase 5: Design & Polish — Style selection is engagement-mode-aware:
-    Express: auto-select best style for the domain, report choice, proceed.
-    Standard+: ask user via AskUserQuestion (Creative | Elegance | High Tech | Corporate | Custom).
-  Phase 6: Testing & A11y — component tests, accessibility audit
+The SKILL.md gives you methodology (HOW to build). The plan gives you specification (WHAT to build).
+For Phase 5 (Design & Polish), the plan may include style guidance — follow it. If the plan doesn't specify a style:
+  Express: auto-select best style for the domain, report choice, proceed.
+  Standard+: ask user via AskUserQuestion (Creative | Elegance | High Tech | Corporate | Custom).
 
 Write frontend to project root: frontend/
 Write workspace artifacts to: Claude-Production-Grade-Suite/frontend-engineer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
@@ -151,15 +206,19 @@ T4 begins containerization after PARALLEL #1 completes:
 TaskUpdate(taskId=t4_id, status="in_progress")
 Agent(
   prompt="""You are the DevOps Containerization Engineer.
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T4a-containers-plan.md
+Implement EXACTLY what the plan specifies — base images, build stages, ports, health checks, compose entries.
+Do not deviate from the plan. Do not make infrastructure decisions. The plan is your specification.
+
 Use the Skill tool to invoke 'production-grade:devops' to load your complete methodology and follow it.
 Read services from: services/
-Read architecture from: docs/architecture/
 Read .production-grade.yaml for paths and preferences.
 Write Dockerfiles per service, docker-compose.yml at project root.
 Write workspace artifacts to: Claude-Production-Grade-Suite/devops/containers/
 Validate: docker build succeeds for each service, docker-compose up starts all.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T4-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )

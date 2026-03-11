@@ -43,6 +43,7 @@ Run integration, e2e, and performance tests.
 Distinguish test bugs (fix immediately) from implementation bugs (log as findings).
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T5-qa-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
@@ -61,6 +62,7 @@ Auto-fix Critical/High issues with regression tests.
 Document Medium/Low for remediation plan.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6a-security-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
@@ -81,6 +83,7 @@ READ-ONLY: produce findings only, do NOT modify source code.
 ADVERSARIAL STANCE: Your job is to find where this code breaks, not confirm it works. Assume every function has an edge case, every endpoint accepts bad input, every concurrent operation has a race condition. Hunt for the bugs the author can't see.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6b-code-reviewer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
   mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
