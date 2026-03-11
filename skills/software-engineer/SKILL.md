@@ -164,10 +164,10 @@ Agent(
     "Read API contract at api/openapi/{service}.yaml. "
     "Follow ${CLAUDE_SKILL_DIR}/phases/02-service-implementation.md. "
     "Write output to services/{service_name}/.",
-  subagent_type="general-purpose",
-  mode="bypassPermissions",
-  run_in_background=True  # all services build simultaneously
+  subagent_type="general-purpose"
 )
+# Multiple foreground Agent calls in the same message execute concurrently.
+# Do NOT use run_in_background — it breaks the orchestrator's execution chain.
 ```
 
 4. Wait for all service agents to complete

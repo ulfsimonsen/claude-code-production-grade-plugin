@@ -25,6 +25,10 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/freshness-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/ux-protocol.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/input-validation.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/tool-efficiency.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
 
 <IMPORTANT>
 This skill ENHANCES Claude Code's development capabilities. Without it, Claude Code produces code files. With it, Claude Code produces complete production-ready systems — architecture, tested code, security audit, CI/CD, and documentation.
@@ -130,7 +134,7 @@ All modes share these behaviors:
 - Read `.production-grade.yaml` for path overrides
 - Read existing workspace state if present
 - Engagement mode + parallelism: ask ONLY if mode involves 3+ skills. For 1-2 skill modes, use Standard engagement + Sequential execution (overhead of asking isn't worth it).
-- **Cleanup:** After mode completion (or gate rejection), run `TeamDelete(team_name="production-grade")` if a team was created. Never leave orphaned agents.
+- **Cleanup:** After mode completion (or gate rejection), write the pipeline-status marker (`echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status`). For multi-skill modes that used TaskCreate, no additional cleanup is needed — agents terminate when their work is done.
 
 ### Non-Full-Build Visual Output
 
@@ -331,13 +335,13 @@ AskUserQuestion(questions=[{
 6. **If skip** → continue pipeline with current version
 7. **If update** → execute in sequence:
    ```bash
-   git clone --depth 1 https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git /tmp/pg-update
+   git clone --depth 1 https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git "$TMPDIR/pg-update"
    ```
-   - Read new SHA: `git -C /tmp/pg-update rev-parse HEAD`
+   - Read new SHA: `git -C "$TMPDIR/pg-update" rev-parse HEAD`
    - Create cache dir: `mkdir -p ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}`
-   - Copy files: `cp -r /tmp/pg-update/skills /tmp/pg-update/.claude-plugin /tmp/pg-update/README.md /tmp/pg-update/VISION.md ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}/`
+   - Copy files: `cp -r "$TMPDIR/pg-update/skills" "$TMPDIR/pg-update/.claude-plugin" "$TMPDIR/pg-update/hooks" "$TMPDIR/pg-update/README.md" "$TMPDIR/pg-update/VISION.md" ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}/`
    - Update `~/.claude/plugins/installed_plugins.json` → set `version` to remote version, `installPath` to new cache dir, `gitCommitSha` to new SHA, `lastUpdated` to current ISO timestamp
-   - Clean up: `rm -rf /tmp/pg-update`
+   - Clean up: `rm -rf "$TMPDIR/pg-update"`
    - Print: `✓ Updated to v{remote_version}. Re-invoke /production-grade to use the new version.`
    - **STOP** — do not continue pipeline. The current session loaded the old SKILL.md; the user must re-invoke to pick up new content.
 
@@ -537,10 +541,8 @@ Use the cost estimation table from the visual-identity protocol to look up the r
 
 9. **Research the domain** — use WebSearch before asking the user anything (skip if polymath already researched).
 
-10. **Create team and task graph:**
-```python
-TeamCreate(team_name="production-grade")
-```
+10. **Create task graph:**
+
 Create all 13 tasks with dependencies (see Task Dependency Graph). Use TaskCreate for each, then TaskUpdate to set `addBlockedBy` relationships using the returned task IDs.
 
 11. **Begin Phase 1** — read `${CLAUDE_SKILL_DIR}/phases/define.md` and start immediately. Do NOT ask "should I proceed?"
@@ -850,12 +852,12 @@ Create tasks with TaskCreate, then set dependencies with TaskUpdate using the re
 
 | Task | Blocked By | Notes |
 |------|-----------|-------|
-| T7 | T5, T6a, T6b | IaC + CI/CD — needs HARDEN output |
-| T8 | T5, T6a, T6b | Remediation — needs HARDEN findings |
+| T7 | T5b, T6c, T6d | IaC + CI/CD — needs HARDEN execution output (Wave B) |
+| T8 | T5b, T6c, T6d | Remediation — needs HARDEN findings (Wave B) |
 | T9 | T7, T8 | SRE — production readiness, needs infra |
 | T10 | T7, T8 | Conditional on AI/ML usage |
-| T11 | T9 | Docs — needs all prior output |
-| T12 | T9 | Skills — needs all prior output |
+| T11 | T9, T10 | Docs — needs all prior output (T10 skipped = auto-completed) |
+| T12 | T9, T10 | Skills — needs all prior output (T10 skipped = auto-completed) |
 | T13 | T11, T12 | Final step |
 
 ### Dynamic Task Generation
@@ -872,8 +874,7 @@ Each subtask is dispatched as a foreground agent (multiple foreground agents in 
 Agent(
   prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow ${CLAUDE_SKILL_DIR}/../software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
   subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — see Model Tier Strategy
-  mode="bypassPermissions"
+  model="sonnet"  # Executor tier — see Model Tier Strategy
 )
 ```
 
@@ -902,9 +903,9 @@ Each phase loads its dispatcher file for task management and agent spawning.
 |-------|------------------------------|
 | software-engineer | Shared foundations first (sequential), then 1 Agent per service (Phase 2b: parallel). Quality over speed — foundations ensure consistency. |
 | frontend-engineer | UI Primitives first (sequential), then Layout + Features parallel (Phase 3b), then Pages parallel (Phase 4). Primitives are foundational atoms. |
-| qa-engineer | 4 parallel Agents: unit, integration, e2e, performance tests |
+| qa-engineer | 5 parallel Agents: unit, integration, contract, e2e, performance tests |
 | security-engineer | 4 parallel Agents: code audit, auth review, data security, supply chain |
-| code-reviewer | 3 parallel Agents: arch conformance, code quality, performance review |
+| code-reviewer | 4 parallel Agents: arch conformance, code quality, performance review, test quality |
 | devops | 3 parallel Agents: IaC, CI/CD, container orchestration |
 | sre | 3 parallel Agents: chaos engineering, incident management, capacity planning |
 | technical-writer | 2 parallel Agents: API reference, developer guides |
@@ -923,8 +924,7 @@ Skill(skill="production-grade:product-manager")
 Agent(
   prompt="You are the Backend Engineer. Read architecture at...",
   subagent_type="general-purpose",
-  model="sonnet",  # See Model Tier Strategy below
-  mode="bypassPermissions"
+  model="sonnet"  # See Model Tier Strategy below
 )
 ```
 
@@ -1057,7 +1057,7 @@ When HARDEN skills find Critical/High issues:
 | T2: Architect | `product-manager/BRD/` | `api/`, `schemas/`, `docs/architecture/` | `solution-architect/` |
 | T3a: Backend | `api/`, `schemas/`, `docs/architecture/` | `services/`, `libs/shared/` | `software-engineer/` |
 | T3b: Frontend | `api/`, `product-manager/BRD/` | `frontend/` | `frontend-engineer/` |
-| T4: DevOps | `services/`, `docs/architecture/` | Dockerfiles at root | `devops/containers/` |
+| T4: DevOps | `services/`, `docs/architecture/` | Dockerfiles at root | `devops/` |
 | T5: QA | `services/`, `frontend/`, `api/` | `tests/` | `qa-engineer/` |
 | T6a: Security | All implementation code | — | `security-engineer/` |
 | T6b: Review | All implementation + architecture | — | `code-reviewer/` |
@@ -1190,10 +1190,10 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 | Transition | Re-read from disk |
 |-----------|-------------------|
-| **DEFINE → BUILD** | `product-manager/BRD/brd.md`, `solution-architect/system-design.md`, `docs/architecture/architecture-decision-records/*.md` (list), `api/openapi/*.yaml` (list), `.orchestrator/settings.md`, `.orchestrator/receipts/T1-*.json`, `.orchestrator/receipts/T2-*.json` |
-| **BUILD → HARDEN** | All DEFINE artifacts above + directory listing of `services/`, `frontend/`, `libs/shared/`, `.orchestrator/receipts/T3*.json`, `.orchestrator/receipts/T4*.json` |
-| **HARDEN → SHIP** | `security-engineer/findings/critical.md`, `security-engineer/findings/high.md`, `code-reviewer/findings/critical.md`, `code-reviewer/findings/high.md`, `qa-engineer/` test results, `.orchestrator/receipts/T5*.json`, `.orchestrator/receipts/T6*.json` |
-| **SHIP → SUSTAIN** | `infrastructure/` listing, `.github/workflows/` listing, `.orchestrator/receipts/T7*.json` through `.orchestrator/receipts/T10*.json` |
+| **DEFINE → BUILD** | `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`, `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts, `docs/architecture/architecture-decision-records/*.md` (list), `api/openapi/*.yaml` (list), `Claude-Production-Grade-Suite/.orchestrator/settings.md`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-*.json` |
+| **BUILD → HARDEN** | All DEFINE artifacts above + directory listing of `services/`, `frontend/`, `libs/shared/`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T3*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T4*.json` |
+| **HARDEN → SHIP** | `Claude-Production-Grade-Suite/security-engineer/remediation/remediation-plan.md`, `Claude-Production-Grade-Suite/security-engineer/code-audit/`, `Claude-Production-Grade-Suite/code-reviewer/` findings, `Claude-Production-Grade-Suite/qa-engineer/` test results, `Claude-Production-Grade-Suite/.orchestrator/receipts/T5*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T6*.json` |
+| **SHIP → SUSTAIN** | `infrastructure/` listing, `.github/workflows/` listing, `Claude-Production-Grade-Suite/.orchestrator/receipts/T7*.json` through `Claude-Production-Grade-Suite/.orchestrator/receipts/T10*.json` |
 
 **How:** Use `Glob` to list files, `Read` to load content. If a file doesn't exist, skip it — don't error. Then create agent task prompts using the freshly-read data, not compressed memory.
 
@@ -1201,30 +1201,25 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 ## Pipeline Cleanup
 
-**Immediately after printing the final summary**, write a pipeline status marker and clean up:
+**Immediately after printing the final summary**, write a pipeline status marker:
 
 ```bash
-# Write pipeline-status marker BEFORE TeamDelete — this tells the session guard hook
+# Write pipeline-status marker — this tells the session guard hook
 # and the TeammateIdle hook that the pipeline is done.
 echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
 ```
 
-```python
-TeamDelete(team_name="production-grade")
-```
+This signals pipeline completion. All foreground agents have already terminated when their work returned to the orchestrator.
 
-This shuts down all agents and frees resources. Do NOT leave agents idle — the pipeline is complete, there is no further work.
-
-**This step is MANDATORY.** Without it, agents remain alive indefinitely consuming resources. The cleanup must happen regardless of:
+**This step is MANDATORY.** The status marker must be written regardless of:
 - Which execution mode was used (Full Build, Feature, Harden, etc.)
 - Whether the pipeline succeeded or was cancelled at a gate
 - Whether the user approved or rejected the final gate
 
-**If the user rejects at any gate** (Gate 1, 2, or 3), write the status marker and run `TeamDelete` before stopping:
+**If the user rejects at any gate** (Gate 1, 2, or 3), write the status marker before stopping:
 ```bash
 echo "rejected" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
 ```
-Never leave orphaned agents.
 
 ## Common Mistakes
 
@@ -1248,7 +1243,7 @@ Never leave orphaned agents.
 | Skipping pipeline dashboard reprint | Dashboard reprints at every phase transition and gate |
 | Using emoji for status | Unicode symbols only (`● ○ ✓ ✗ ⧖`) — no emoji |
 | Missing wave announcements | Print Tier 2 box before and after every parallel wave |
-| Not calling TeamDelete after completion | ALWAYS run `TeamDelete(team_name="production-grade")` after final summary or gate rejection. Orphaned agents idle forever. |
+| Not writing pipeline-status marker after completion | ALWAYS write `echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status` after final summary or gate rejection. |
 | Opening a gate without verifying receipts | Read receipts and verify artifacts exist on disk BEFORE presenting any gate. No receipt = task didn't complete properly. |
 | Skipping re-anchor at phase transitions | Re-read workspace artifacts from disk at every transition. Your compressed memory of the architecture spec is lossy after 20+ minutes. |
 | Trusting agent metrics without receipt verification | Gate metrics come from verified receipt data, not from agent memory or task status. |

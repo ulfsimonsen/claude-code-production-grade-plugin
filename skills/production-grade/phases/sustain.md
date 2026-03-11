@@ -26,7 +26,7 @@ After T13 completes, print the final summary template from the orchestrator.
 ## Re-Anchor
 
 Before creating SUSTAIN agent tasks, re-read from disk:
-- All receipts from `.orchestrator/receipts/` (complete pipeline history for compound learning)
+- All receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/` (complete pipeline history for compound learning)
 - `infrastructure/` listing, `.github/workflows/` listing
 - `docs/architecture/` listing
 
@@ -53,7 +53,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/technical-writer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T11-technical-writer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -70,7 +69,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/skill-maker/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```
@@ -180,7 +178,6 @@ AskUserQuestion(questions=[{
 ```python
 TaskUpdate(taskId=t13_id, status="completed")
 Bash("echo 'complete' > Claude-Production-Grade-Suite/.orchestrator/pipeline-status")
-TeamDelete(team_name="production-grade")
 ```
 
 ## Pipeline Complete

@@ -144,18 +144,16 @@ Agent(
   prompt="Build layout components (Sidebar, Header, PageLayout, etc.) following ${CLAUDE_SKILL_DIR}/phases/03-components.md. "
     "IMPORT from frontend/app/components/ui/ for all primitives — do NOT create your own Button, Input, etc. "
     "Write to frontend/app/components/layout/.",
-  subagent_type="general-purpose",
-  mode="bypassPermissions",
-  run_in_background=True
+  subagent_type="general-purpose"
 )
 Agent(
   prompt="Build feature components (DataTable, FileUpload, RichEditor, etc.) following ${CLAUDE_SKILL_DIR}/phases/03-components.md. "
     "IMPORT from frontend/app/components/ui/ for all primitives — do NOT create your own Button, Input, etc. "
     "Write to frontend/app/components/features/.",
-  subagent_type="general-purpose",
-  mode="bypassPermissions",
-  run_in_background=True
+  subagent_type="general-purpose"
 )
+# Multiple foreground Agent calls in the same message execute concurrently.
+# Do NOT use run_in_background — it breaks the orchestrator's execution chain.
 ```
 
 5. Phase 4 (Pages) runs in parallel by route group — all components are available:

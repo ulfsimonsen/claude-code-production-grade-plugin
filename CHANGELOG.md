@@ -2,6 +2,35 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.2] — 2026-03-12
+
+### Fixed
+- **Phantom `mode="bypassPermissions"` on Agent calls** — removed from all 15 Agent dispatch calls across 7 files (SKILL.md, build.md, harden.md, ship.md, sustain.md, software-engineer, frontend-engineer). Not a valid parameter on the Agent tool; permission mode is a session-level setting, not per-agent.
+- **Phantom `TeamCreate`/`TeamDelete` calls** — removed from SKILL.md (step 10, pipeline cleanup) and sustain.md. These tools do not exist; cleanup now relies on the `pipeline-status` marker and the TeammateIdle hook.
+- **`run_in_background=True` on skill-internal Agent calls** — removed from software-engineer and frontend-engineer SKILL.md. Background agents break the orchestrator's execution chain; multiple foreground Agent calls in the same message already execute concurrently.
+- **Grep parameter order in tool-efficiency protocol** — `Grep("className", pattern="*.ts")` → `Grep(pattern="className", glob="*.ts")`. First positional argument is `pattern`, file filter is `glob`.
+- **Bash `cat` in input-validation protocol** — `cat .production-grade.yaml` → `Read(".production-grade.yaml")` to follow the tool-efficiency protocol's own Rule 3.
+- **Missing protocol auto-loads in SKILL.md** — added 4 missing `!cat` directives for `ux-protocol.md`, `input-validation.md`, `tool-efficiency.md`, `conflict-resolution.md` in the frontmatter.
+- **Missing settings auto-load in skill-maker** — added `!cat Claude-Production-Grade-Suite/.orchestrator/settings.md` to frontmatter so engagement mode is available.
+- **`system-design.md` references** — replaced 6 references to nonexistent `solution-architect/system-design.md` with `solution-architect/` workspace artifacts across build.md, define.md, harden.md, ship.md, and SKILL.md re-anchoring table.
+- **Receipt paths missing workspace prefix** — 7 receipt paths like `.orchestrator/receipts/T1-*.json` fixed to `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-*.json` across define.md, build.md, harden.md, ship.md, sustain.md.
+- **Post-wave task dependency IDs** — T7/T8 blocked by `T5, T6a, T6b` (Wave A analysis tasks) → `T5b, T6c, T6d` (Wave B execution tasks). T11/T12 blocked by `T9` → `T9, T10` (T10 auto-completes when skipped).
+- **Security engineer auto-fixing code in HARDEN** — removed "Auto-fix Critical/High issues" from T6a prompt. Security writes findings only; T8 Remediation handles fixes in SHIP phase to prevent merge conflicts with parallel QA agents.
+- **Security findings paths** — replaced `security-engineer/findings/critical.md`, `findings/high.md` with actual output directories (`code-audit/`, `auth-review/`, `remediation/`) across harden.md, ship.md, and SKILL.md.
+- **DevOps workspace path** — `devops/containers/` → `devops/` in SKILL.md context bridging table and build.md T4 prompt.
+- **`multiSelect: False` (Python bool) in build.md** — changed to `false` (JSON bool).
+- **QA agent count** — `4 parallel Agents` → `5 parallel Agents` (unit, integration, contract, e2e, performance).
+- **Code reviewer agent count** — `3 parallel Agents` → `4 parallel Agents` (arch conformance, code quality, performance, test quality).
+- **PM output file list** — `research-notes.md, constraints.md` → `INDEX.md` in define.md.
+- **SHIP re-verification ordering** — restructured ship.md: split single worktree merge-back section into PARALLEL #5 merge → re-verification → PARALLEL #6 → PARALLEL #6 merge. Previously re-verification ran after T9/T10 instead of between the two parallel pairs.
+- **T10 auto-detection missing implementation** — added explicit Grep instruction with pattern, glob, and output_mode for LLM/ML import scanning.
+- **TeammateIdle hook comment** — referenced `TeamDelete` as primary cleanup; updated to reference `pipeline-status` marker.
+- **Auto-update temp path** — `/tmp/pg-update` → `$TMPDIR/pg-update` for sandbox compatibility.
+- **Auto-update missing `hooks/`** — `cp -r` now includes `hooks/` directory alongside `skills/` and `.claude-plugin/`.
+
+### Changed
+- **Pipeline cleanup simplified** — removed `TeamDelete` from cleanup flow. Foreground agents terminate when their work returns to the orchestrator; the `pipeline-status` marker signals completion to the TeammateIdle hook.
+
 ## [5.7.1] — 2026-03-11
 
 ### Fixed

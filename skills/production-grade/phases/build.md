@@ -34,10 +34,10 @@ Each agent's completion line MUST include concrete numbers.
 
 Before creating any agent tasks, re-read key artifacts from disk:
 - `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`
-- `Claude-Production-Grade-Suite/solution-architect/system-design.md`
+- `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (working-notes.md, analysis/*.md)
 - `docs/architecture/architecture-decision-records/*.md` (Glob to list, Read key ADRs)
 - `api/openapi/*.yaml` (Glob to list)
-- `.orchestrator/receipts/T1-*.json`, `.orchestrator/receipts/T2-*.json`
+- `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-*.json`
 
 Use this freshly-read data when writing agent task prompts below — not your compressed memory of DEFINE phase.
 
@@ -71,7 +71,7 @@ else:
         {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
         {"label": "Chat about this", "description": "Free-form input"}
       ],
-      "multiSelect": False
+      "multiSelect": false
     }])
     # If auto-commit: git add -A && git commit -m "production-grade: pre-BUILD checkpoint"
     # If skip: set use_worktrees = False
@@ -95,7 +95,7 @@ Agent(
 
 Read these inputs:
 - Claude-Production-Grade-Suite/product-manager/BRD/brd.md (user stories, acceptance criteria)
-- Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture pattern, service boundaries)
+- Claude-Production-Grade-Suite/solution-architect/ workspace artifacts (architecture pattern, service boundaries)
 - docs/architecture/architecture-decision-records/*.md (all architecture decisions)
 - api/openapi/*.yaml (all API contracts)
 - schemas/ (data models)
@@ -129,8 +129,7 @@ Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/wave
 
 Plans must be detailed enough that an agent can implement WITHOUT making architectural decisions. Every function gets explicit steps. No "implement business logic" — specify the logic.""",
   subagent_type="general-purpose",
-  model="opus",  # Planner tier — always opus
-  mode="bypassPermissions"
+  model="opus"  # Planner tier — always opus
 )
 ```
 
@@ -159,7 +158,6 @@ TDD enforced: write test → watch fail → implement → watch pass → refacto
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 
@@ -187,7 +185,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/frontend-engineer/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```
@@ -225,12 +222,11 @@ Use the Skill tool to invoke 'production-grade:devops' to load your complete met
 Read services from: services/
 Read .production-grade.yaml for paths and preferences.
 Write Dockerfiles per service, docker-compose.yml at project root.
-Write workspace artifacts to: Claude-Production-Grade-Suite/devops/containers/
+Write workspace artifacts to: Claude-Production-Grade-Suite/devops/
 Validate: docker build succeeds for each service, docker-compose up starts all.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T4-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```
@@ -261,10 +257,10 @@ After merging, all agent outputs are unified in the working directory.
 
 When all BUILD tasks complete:
 1. **Merge worktree branches** (if worktrees enabled) — see Worktree Merge-Back above.
-2. **Verify receipts:** Read all BUILD receipts from `.orchestrator/receipts/` (T3a, T3b, T4). Verify all listed artifacts exist on disk.
+2. **Verify receipts:** Read all BUILD receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/` (T3a, T3b, T4). Verify all listed artifacts exist on disk.
 3. **Re-anchor:** Re-read from disk before transitioning to HARDEN:
    - Directory listing of `services/`, `frontend/`, `libs/shared/` (what was actually built)
-   - `Claude-Production-Grade-Suite/solution-architect/system-design.md` (architecture reference for HARDEN agents)
+   - `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (architecture reference for HARDEN agents)
 4. Verify all services compile and start
 5. Verify docker-compose brings up the full stack
 6. Log BUILD completion to workspace

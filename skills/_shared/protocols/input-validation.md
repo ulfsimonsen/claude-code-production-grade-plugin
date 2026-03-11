@@ -4,9 +4,9 @@
 
 ## Step 1: Read Configuration
 
-```bash
+```
 # Read project config if present
-cat .production-grade.yaml 2>/dev/null
+Read(".production-grade.yaml")
 ```
 
 If `.production-grade.yaml` exists, use its `paths.*` values for all file lookups. If not, use the default paths documented in each skill.

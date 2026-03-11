@@ -41,11 +41,11 @@ On PARALLEL #6 completion:
 ## Re-Anchor
 
 Before creating SHIP agent tasks, re-read key artifacts from disk:
-- `Claude-Production-Grade-Suite/security-engineer/findings/` (findings for remediation)
-- `Claude-Production-Grade-Suite/code-reviewer/findings/critical.md`, `high.md`
-- `Claude-Production-Grade-Suite/solution-architect/system-design.md` (architecture for infra)
+- `Claude-Production-Grade-Suite/security-engineer/` findings (code-audit/, auth-review/, remediation/)
+- `Claude-Production-Grade-Suite/code-reviewer/` findings
+- `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (architecture for infra)
 - Directory listing of `services/`, `infrastructure/` (what exists)
-- All HARDEN receipts from `.orchestrator/receipts/`
+- All HARDEN receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`
 
 Use this freshly-read data when writing agent task prompts below.
 
@@ -59,10 +59,10 @@ Agent(
   prompt="""You are the SHIP Planner. Your job: read HARDEN findings and architecture artifacts, then produce detailed, unambiguous execution plans for the SHIP agents.
 
 Read these inputs:
-- Claude-Production-Grade-Suite/security-engineer/findings/ (all security findings)
-- Claude-Production-Grade-Suite/code-reviewer/findings/ (all review findings)
+- Claude-Production-Grade-Suite/security-engineer/ (all security findings — code-audit/, auth-review/, remediation/)
+- Claude-Production-Grade-Suite/code-reviewer/ (all review findings)
 - Claude-Production-Grade-Suite/qa-engineer/ (test results, failure reports)
-- Claude-Production-Grade-Suite/solution-architect/system-design.md (architecture for infra planning)
+- Claude-Production-Grade-Suite/solution-architect/ workspace artifacts (architecture for infra planning)
 - docs/architecture/architecture-decision-records/*.md (architecture decisions)
 - Directory listing of services/, frontend/, infrastructure/ (what exists)
 - .production-grade.yaml (path overrides, framework preferences)
@@ -87,8 +87,7 @@ Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/ship
 
 Plans must be detailed enough that an agent can implement WITHOUT making judgment calls about severity or architecture.""",
   subagent_type="general-purpose",
-  model="opus",  # Planner tier — always opus
-  mode="bypassPermissions"
+  model="opus"  # Planner tier — always opus
 )
 ```
 
@@ -118,7 +117,6 @@ Validate: terraform validate, pipeline syntax lint.
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T7-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
@@ -143,7 +141,6 @@ Medium/Low findings: document but do not block (plan marks these explicitly).
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T8-remediation.json with task, agent, phase, status, artifacts (files modified), metrics (findings_fixed, findings_remaining), effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```
@@ -170,13 +167,14 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/sre/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T9-sre.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 
 # T10: Data Scientist (conditional — auto-detect LLM/ML usage)
-# Scan imports for: openai, anthropic, langchain, transformers, torch, tensorflow
-# If detected OR features.ai_ml is true:
+# Before launching T10, run: Grep(pattern="(openai|anthropic|langchain|transformers|torch|tensorflow)",
+#   glob="*.{py,ts,js,go,rs}", output_mode="count", head_limit=1)
+# If matches > 0 OR features.ai_ml is true in .production-grade.yaml → launch T10:
+# If no matches AND features.ai_ml is not true → skip: TaskUpdate(taskId=t10_id, status="completed")
 TaskUpdate(taskId=t10_id, status="in_progress")
 Agent(
   prompt="""You are the Data Scientist.
@@ -189,27 +187,21 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/data-scientist/
 When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T10-data-scientist.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
-  mode="bypassPermissions",
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 # If NOT detected AND features.ai_ml is false:
 #   TaskUpdate(taskId=t10_id, status="completed")  # Skip
 ```
 
-## Worktree Merge-Back
+## PARALLEL #5 Worktree Merge-Back
 
-If worktrees were used, merge each SHIP agent's branch back after each parallel pair completes:
+If worktrees were used, merge PARALLEL #5 branches back **before** re-verification and PARALLEL #6:
 
 Collect worktree branch names from each Agent result — the result text includes the branch name (e.g., `branch: production-grade-agent-XXXXX`). Parse and store these when processing each Agent's return.
 
 ```python
-# After PARALLEL #5 (T7 + T8):
+# After PARALLEL #5 (T7 + T8) — merge BEFORE re-verification:
 for branch in ship_p5_worktree_branches:  # [t7_branch, t8_branch]
-  Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
-  Bash(f"git branch -d {branch}")
-
-# After PARALLEL #6 (T9 + T10):
-for branch in ship_p6_worktree_branches:  # [t9_branch, t10_branch]
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
   Bash(f"git branch -d {branch}")
 # If merge conflicts: git merge --abort, escalate to user
@@ -217,7 +209,7 @@ for branch in ship_p6_worktree_branches:  # [t9_branch, t10_branch]
 
 ## Re-Verification After Remediation
 
-After T8 (Remediation) completes and its worktree is merged, re-scan the affected files to verify fixes:
+After T8 (Remediation) completes and its PARALLEL #5 worktree is merged, re-scan the affected files to verify fixes. This runs **between PARALLEL #5 merge and PARALLEL #6 launch** so T9 (SRE) sees verified code.
 
 ```python
 # Only runs if T8 remediated Critical/High findings
@@ -236,8 +228,8 @@ For each file listed in the receipt's artifacts:
   4. For each finding: mark as VERIFIED (fixed) or UNRESOLVED (still present)
 
 Read original findings from:
-- Claude-Production-Grade-Suite/security-engineer/findings/
-- Claude-Production-Grade-Suite/code-reviewer/findings/
+- Claude-Production-Grade-Suite/security-engineer/ (code-audit/, auth-review/, remediation/)
+- Claude-Production-Grade-Suite/code-reviewer/
 
 Write verification receipt to:
 Claude-Production-Grade-Suite/.orchestrator/receipts/T8-verification.json
@@ -245,15 +237,28 @@ with: task, agent, phase, status, findings_verified, findings_unresolved, artifa
 
 If any Critical finding is UNRESOLVED after remediation, flag it clearly in the receipt.""",
   subagent_type="general-purpose",
-  model="opus",  # Verification requires judgment
-  mode="bypassPermissions"
+  model="opus"  # Verification requires judgment
 )
+```
+
+**After re-verification completes, proceed to PARALLEL #6 (T9 + T10).**
+
+## PARALLEL #6 Worktree Merge-Back
+
+After PARALLEL #6 (T9 + T10) completes, merge their worktree branches:
+
+```python
+# After PARALLEL #6 (T9 + T10):
+for branch in ship_p6_worktree_branches:  # [t9_branch, t10_branch]
+  Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
+  Bash(f"git branch -d {branch}")
+# If merge conflicts: git merge --abort, escalate to user
 ```
 
 ## Receipt Verification Before Gate 3
 
-After T9 (and T10 if applicable) completes:
-1. **Verify all SHIP receipts:** Read `.orchestrator/receipts/T7-devops.json`, `T8-remediation.json`, `T8-verification.json`, `T9-sre.json`, `T10-data-scientist.json` (if applicable). Verify all listed artifacts exist.
+After T9 (and T10 if applicable) completes and worktrees are merged:
+1. **Verify all SHIP receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T7-devops.json`, `T8-remediation.json`, `T8-verification.json`, `T9-sre.json`, `T10-data-scientist.json` (if applicable). Verify all listed artifacts exist.
 2. **Verify remediation chain:** For each Critical/High finding from HARDEN, check that `T8-verification.json` marks it as VERIFIED. If any Critical finding is UNRESOLVED, flag before Gate 3.
 3. **Aggregate metrics** from all receipts for Gate 3 display — use verified receipt data, not memory.
 

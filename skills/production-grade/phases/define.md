@@ -39,9 +39,9 @@ The product-manager skill will:
 1. Research domain via WebSearch
 2. Conduct CEO interview (3-5 questions via AskUserQuestion with multiSelect)
 3. Write BRD to `Claude-Production-Grade-Suite/product-manager/BRD/`
-4. Outputs: `brd.md`, `research-notes.md`, `constraints.md`
+4. Outputs: `brd.md`, `INDEX.md`
 
-**On completion:** The product-manager writes a receipt to `.orchestrator/receipts/T1-product-manager.json`, then:
+**On completion:** The product-manager writes a receipt to `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-product-manager.json`, then:
 ```python
 TaskUpdate(taskId=t1_id, status="completed")
 ```
@@ -70,7 +70,7 @@ The solution-architect skill will:
 5. Write deliverables to **project root**: `api/`, `schemas/`, `docs/architecture/`
 6. Write workspace artifacts to `Claude-Production-Grade-Suite/solution-architect/`
 
-**On completion:** The solution-architect writes a receipt to `.orchestrator/receipts/T2-solution-architect.json`, then:
+**On completion:** The solution-architect writes a receipt to `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-solution-architect.json`, then:
 ```python
 TaskUpdate(taskId=t2_id, status="completed")
 ```
@@ -87,10 +87,10 @@ After Gate 2 approval:
 1. **Verify receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-product-manager.json` and `T2-solution-architect.json`. Verify all listed artifacts exist on disk.
 2. **Re-anchor:** Re-read from disk before transitioning:
    - `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`
-   - `Claude-Production-Grade-Suite/solution-architect/system-design.md`
+   - `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (working-notes.md, analysis/*.md)
    - `docs/architecture/architecture-decision-records/*.md` (list files)
    - `api/openapi/*.yaml` (list files)
-   - `.orchestrator/settings.md`
+   - `Claude-Production-Grade-Suite/.orchestrator/settings.md`
 3. Verify architecture outputs exist at project root (`api/`, `schemas/`, `docs/architecture/`)
 4. Log decisions to `Claude-Production-Grade-Suite/.orchestrator/decisions-log.md`
 5. Read `phases/build.md` and begin BUILD phase — use freshly-read artifacts when creating agent task prompts

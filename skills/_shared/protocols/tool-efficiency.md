@@ -30,7 +30,7 @@ For code analysis, use `Glob` to discover files and `Grep` to find specific symb
 | Need | Tool | Token Cost |
 |------|------|-----------|
 | Find files by name/pattern | `Glob("**/*.ts")` | Low (~100-300 tokens) |
-| Find symbols across codebase | `Grep("className", pattern="*.ts")` | Low (~200-500 tokens) |
+| Find symbols across codebase | `Grep(pattern="className", glob="*.ts")` | Low (~200-500 tokens) |
 | Specific function in known file | `Read(file, offset=N, limit=M)` | Medium (~200-1000 tokens) |
 | Full file content | `Read(file)` | High (~500-5000 tokens) |
 
