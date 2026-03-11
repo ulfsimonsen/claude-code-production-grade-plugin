@@ -61,22 +61,22 @@ if "Worktrees: enabled" in settings or "Worktrees: disabled" in settings:
 else:
   # Check for clean git state (worktrees require committed state)
   result = Bash("git status --porcelain 2>/dev/null | head -5")
-if result.strip():
-  # Dirty repo — ask user
-  AskUserQuestion(questions=[{
-    "question": "Parallel agents work best with worktree isolation, but you have uncommitted changes.",
-    "header": "Worktree Isolation",
-    "options": [
-      {"label": "Auto-commit and use worktrees (Recommended)", "description": "Commit current state, isolate each agent in its own worktree"},
-      {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
-      {"label": "Chat about this", "description": "Free-form input"}
-    ],
-    "multiSelect": False
-  }])
-  # If auto-commit: git add -A && git commit -m "production-grade: pre-BUILD checkpoint"
-  # If skip: set use_worktrees = False
-else:
-  use_worktrees = True
+  if result.strip():
+    # Dirty repo — ask user
+    AskUserQuestion(questions=[{
+      "question": "Parallel agents work best with worktree isolation, but you have uncommitted changes.",
+      "header": "Worktree Isolation",
+      "options": [
+        {"label": "Auto-commit and use worktrees (Recommended)", "description": "Commit current state, isolate each agent in its own worktree"},
+        {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
+        {"label": "Chat about this", "description": "Free-form input"}
+      ],
+      "multiSelect": False
+    }])
+    # If auto-commit: git add -A && git commit -m "production-grade: pre-BUILD checkpoint"
+    # If skip: set use_worktrees = False
+  else:
+    use_worktrees = True
 ```
 
 Store the worktree decision in `Claude-Production-Grade-Suite/.orchestrator/settings.md` by appending:
@@ -120,7 +120,7 @@ Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/wave
    - Form validations (which fields, what rules)
    - Navigation wiring (every link, button, redirect)
 
-3. **T4a-containers-plan.md** — For each service:
+3. **T4-containers-plan.md** — For each service:
    - Base image and version
    - Build stages (dependencies, build, runtime)
    - Exposed ports, health check path
@@ -192,22 +192,34 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 )
 ```
 
+## Merge T3a/T3b Worktree Branches Before T4
+
+If worktrees were used for PARALLEL #1, merge T3a and T3b branches back **before** launching T4, so T4 sees the committed code:
+
+```python
+# Merge T3a/T3b worktree branches — T4 needs their output
+for branch in [t3a_branch, t3b_branch]:  # collected from Agent results (see note below)
+  if branch:  # t3b_branch is None if frontend was skipped
+    Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
+    Bash(f"git branch -d {branch}")
+# If merge conflicts: git merge --abort, escalate to user via AskUserQuestion
+```
+
 ## PARALLEL #2: T4 After T3a + T3b Complete
 
-T4 begins containerization after PARALLEL #1 completes:
+T4 begins containerization after PARALLEL #1 completes and its branches are merged:
 
 **IMPORTANT:** T4 MUST run as a foreground agent (no `run_in_background`). The orchestrator blocks until T4 returns — then naturally continues to worktree merge-back. Using a background agent here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
 
 ```python
-# NOTE: Merge PARALLEL #1 worktree branches (T3a, T3b) BEFORE starting T4,
-# so T4 sees the committed code. See Worktree Merge-Back section below —
-# run that merge-back here for T3a/T3b branches, then launch T4.
 TaskUpdate(taskId=t4_id, status="in_progress")
 Agent(
   prompt="""You are the DevOps Containerization Engineer.
-Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T4a-containers-plan.md
-Implement EXACTLY what the plan specifies — base images, build stages, ports, health checks, compose entries.
-Do not deviate from the plan. Do not make infrastructure decisions. The plan is your specification.
+Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T4-containers-plan.md
+If the plan file does not exist (Model-Optimization disabled), read architecture from
+docs/architecture/ and service structure from services/ to determine containerization needs.
+Implement base images, build stages, ports, health checks, compose entries.
+If a plan exists, follow it EXACTLY — do not deviate or make infrastructure decisions.
 
 Use the Skill tool to invoke 'production-grade:devops' to load your complete methodology and follow it.
 Read services from: services/
@@ -227,18 +239,15 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 
 If worktrees were used, merge each agent's branch back to the working branch after the wave completes:
 
+**How to collect worktree branch names from Agent results:**
+
+When an Agent call uses `isolation="worktree"`, the Agent tool's return value includes the worktree branch name in the result text. Parse the result for the branch name — it appears in the format: `worktree path: /path/to/worktree` and `branch: production-grade-agent-XXXXX`. Store these when processing each Agent's return.
+
 ```python
-# Collect worktree branches from Agent results.
-# Each Agent call that used isolation="worktree" returns a result containing
-# the worktree branch name. Collect these into a list:
-worktree_branches = []
-# For T3a: worktree_branches.append(t3a_result.branch)
-# For T3b: worktree_branches.append(t3b_result.branch)  # if frontend enabled
-# For T4:  worktree_branches.append(t4_result.branch)
-# Merge each branch in sequence (should be conflict-free — agents write to different directories).
-for branch in worktree_branches:
-  Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
-  Bash(f"git branch -d {branch}")  # Clean up merged branch
+# T4 worktree merge (T3a/T3b branches were already merged above before T4 launched)
+if t4_branch:
+  Bash(f"git merge --no-ff {t4_branch} -m 'production-grade: merge {t4_branch}'")
+  Bash(f"git branch -d {t4_branch}")
 
 # If any merge has conflicts:
 #   1. Run: git merge --abort

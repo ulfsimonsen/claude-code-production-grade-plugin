@@ -154,8 +154,8 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 
 ```python
 # T9 (SRE — Production Readiness, SOLE SLO AUTHORITY)
-# Note: If using the two-wave model from SKILL.md, this is T9b (execution).
-# T9a (SLO definitions) ran during Wave A in BUILD phase.
+# T9 handles the full SRE scope: SLO definitions + execution (readiness review,
+# chaos engineering, capacity planning). All SRE work happens here in SHIP.
 TaskUpdate(taskId=t9_id, status="in_progress")
 Agent(
   prompt="""You are the SRE — SOLE authority on SLO definitions, error budgets, runbooks, capacity planning.
@@ -200,24 +200,61 @@ When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrat
 
 If worktrees were used, merge each SHIP agent's branch back after each parallel pair completes:
 
+Collect worktree branch names from each Agent result — the result text includes the branch name (e.g., `branch: production-grade-agent-XXXXX`). Parse and store these when processing each Agent's return.
+
 ```python
 # After PARALLEL #5 (T7 + T8):
-for branch in ship_p5_worktree_branches:
+for branch in ship_p5_worktree_branches:  # [t7_branch, t8_branch]
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
   Bash(f"git branch -d {branch}")
 
 # After PARALLEL #6 (T9 + T10):
-for branch in ship_p6_worktree_branches:
+for branch in ship_p6_worktree_branches:  # [t9_branch, t10_branch]
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
   Bash(f"git branch -d {branch}")
 # If merge conflicts: git merge --abort, escalate to user
 ```
 
+## Re-Verification After Remediation
+
+After T8 (Remediation) completes and its worktree is merged, re-scan the affected files to verify fixes:
+
+```python
+# Only runs if T8 remediated Critical/High findings
+# Read T8 receipt to get list of files modified
+t8_receipt = Read("Claude-Production-Grade-Suite/.orchestrator/receipts/T8-remediation.json")
+# Extract affected_files from t8_receipt.artifacts
+
+# Re-scan: the ORIGINAL finding agents verify their findings are resolved
+Agent(
+  prompt="""You are the Remediation Verifier.
+Read the T8 remediation receipt: Claude-Production-Grade-Suite/.orchestrator/receipts/T8-remediation.json
+For each file listed in the receipt's artifacts:
+  1. Read the file
+  2. Check that each Critical/High finding from the original HARDEN reports is resolved
+  3. Re-run relevant security checks (OWASP patterns) and code quality checks
+  4. For each finding: mark as VERIFIED (fixed) or UNRESOLVED (still present)
+
+Read original findings from:
+- Claude-Production-Grade-Suite/security-engineer/findings/
+- Claude-Production-Grade-Suite/code-reviewer/findings/
+
+Write verification receipt to:
+Claude-Production-Grade-Suite/.orchestrator/receipts/T8-verification.json
+with: task, agent, phase, status, findings_verified, findings_unresolved, artifacts, effort.
+
+If any Critical finding is UNRESOLVED after remediation, flag it clearly in the receipt.""",
+  subagent_type="general-purpose",
+  model="opus",  # Verification requires judgment
+  mode="bypassPermissions"
+)
+```
+
 ## Receipt Verification Before Gate 3
 
 After T9 (and T10 if applicable) completes:
-1. **Verify all SHIP receipts:** Read `.orchestrator/receipts/T7-devops.json`, `T8-remediation.json`, `T9-sre.json`, `T10-data-scientist.json` (if applicable). Verify all listed artifacts exist.
-2. **Verify remediation chain:** For each Critical/High finding from HARDEN, check that a remediation receipt AND a verification receipt exist. If any Critical finding lacks verification, flag before Gate 3.
+1. **Verify all SHIP receipts:** Read `.orchestrator/receipts/T7-devops.json`, `T8-remediation.json`, `T8-verification.json`, `T9-sre.json`, `T10-data-scientist.json` (if applicable). Verify all listed artifacts exist.
+2. **Verify remediation chain:** For each Critical/High finding from HARDEN, check that `T8-verification.json` marks it as VERIFIED. If any Critical finding is UNRESOLVED, flag before Gate 3.
 3. **Aggregate metrics** from all receipts for Gate 3 display — use verified receipt data, not memory.
 
 ## Gate 3 — Production Readiness

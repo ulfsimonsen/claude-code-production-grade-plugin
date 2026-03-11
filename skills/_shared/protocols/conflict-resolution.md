@@ -30,7 +30,7 @@ When multiple skills analyze the same code and produce overlapping findings:
 2. **Deduplicate by location**: Findings targeting the same `file:line` are merged. The authoritative skill's finding wins.
 3. **Cross-reference, don't duplicate**: code-reviewer should write "See security-engineer findings for OWASP analysis" instead of performing its own OWASP review.
 
-## Feedback Loops (HARDEN → BUILD)
+## Feedback Loops (HARDEN → SHIP Remediation)
 
 When HARDEN phase skills find issues that require code changes:
 

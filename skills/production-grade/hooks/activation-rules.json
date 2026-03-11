@@ -111,6 +111,8 @@
     }
   ],
   "hook_config": {
+    "active": false,
+    "status": "planned — not yet wired in hooks/hooks.json",
     "event": "UserPromptSubmit",
     "matching_strategy": "keyword_then_intent",
     "max_recommendations_per_prompt": 2,

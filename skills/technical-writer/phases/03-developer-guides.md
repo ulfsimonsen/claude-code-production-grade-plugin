@@ -60,7 +60,7 @@ Generate `docs/guides/contributing.md`:
 
 Generate `docs/guides/testing-guide.md`:
 
-1. **Testing philosophy** — Testing strategy extracted from `Claude-Production-Grade-Suite/qa-engineer/test-plan.md`
+1. **Testing philosophy** — Testing strategy extracted from `Claude-Production-Grade-Suite/qa-engineer/test-plan.md` (if available; if QA has not run, derive testing guidance from existing test files and framework conventions)
 2. **Running tests** — Exact commands for each test type (unit, integration, e2e) with expected output
 3. **Writing a new test** — Template and example for each test type
 4. **Coverage requirements** — Minimum thresholds and how to check coverage locally

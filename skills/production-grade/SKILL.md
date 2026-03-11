@@ -894,7 +894,7 @@ Each phase loads its dispatcher file for task management and agent spawning.
 | SHIP | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T7, T8, T9, T10 | #5: T7+T8 parallel, #6: T9+T10 parallel |
 | SUSTAIN | `${CLAUDE_SKILL_DIR}/phases/sustain.md` | T11, T12, T13 | #7 parallel + internal |
 
-**Note:** The Maximum Parallelism task dependency graph below describes a two-wave architecture (Wave A + Wave B) that splits analysis and execution into separate concurrent groups. The dispatchers currently implement the standard phase model above. The two-wave graph is the target for maximum parallelism and may require dispatcher updates to fully realize.
+**Note:** The Maximum Parallelism task dependency graph below describes a two-wave architecture (Wave A + Wave B) that splits analysis and execution into separate concurrent groups. **The dispatchers currently implement the standard phase model in the table above** — BUILD dispatches T3a, T3b, T4; HARDEN dispatches T5, T6a, T6b; SHIP dispatches T7, T8, T9, T10. The two-wave graph (where T5a, T6a, T6b, T9a start during BUILD alongside T3a/T3b) is a target architecture that would require dispatcher updates to fully realize. When reading the graph below, refer to the phase table above for what actually executes today.
 
 **Internal skill parallelism** — each skill spawns its own concurrent agents:
 
@@ -947,18 +947,18 @@ Before each parallel wave that contains sonnet agents, the phase dispatcher spaw
 ```
 Gate 2 approved
   → 1 opus Wave A planner (reads BRD, ADRs, API contracts)
-     writes: plans/wave-a/T3a-backend-plan.md, T3b-frontend-plan.md, T4a-containers-plan.md
+     writes: plans/wave-a/T3a-backend-plan.md, T3b-frontend-plan.md, T4-containers-plan.md
   → 7 agents in parallel:
      - T3a sonnet (reads T3a-backend-plan.md + software-engineer SKILL.md)
      - T3b sonnet (reads T3b-frontend-plan.md + frontend-engineer SKILL.md)
-     - T4a sonnet (reads T4a-containers-plan.md + devops SKILL.md)
+     - T4 sonnet (reads T4-containers-plan.md + devops SKILL.md)
      - T5a opus  (QA test plan — IS a planner, feeds Wave B)
      - T6a opus  (STRIDE model — IS a planner, feeds Wave B)
      - T6b opus  (review checklist — IS a planner, feeds Wave B)
      - T9a opus  (SLO definitions — IS a planner, feeds SHIP)
 ```
 
-**Key insight:** The opus analysis agents in Wave A (T5a, T6a, T6b, T9a) ARE planners — they produce test plans, threat models, and review checklists that sonnet agents execute against in later waves. The wave planner only plans for BUILD agents (T3a, T3b, T4a) which have no upstream analysis agent.
+**Key insight:** The opus analysis agents in Wave A (T5a, T6a, T6b, T9a) ARE planners — they produce test plans, threat models, and review checklists that sonnet agents execute against in later waves. The wave planner only plans for BUILD agents (T3a, T3b, T4) which have no upstream analysis agent.
 
 ### Execution Plan Format
 
@@ -1000,8 +1000,8 @@ Every file gets: export signatures, implementation steps, error handling, depend
 
 | Wave | Planner? | Why |
 |------|----------|-----|
-| **Wave A** | Yes | T3a, T3b, T4a need file-level implementation plans from architecture |
-| **Wave B** | No | T5b reads T5a's test plan. T4b reads T4a's Dockerfiles. T6c, T6d are opus. |
+| **Wave A** | Yes | T3a, T3b, T4 need file-level implementation plans from architecture |
+| **Wave B** | No | T5b reads T5a's test plan. T4b reads T4's Dockerfiles. T6c, T6d are opus. |
 | **SHIP #5** | Yes | T8 needs opus to translate HARDEN findings into unambiguous fix instructions |
 | **SHIP #6** | No | T9, T10 are opus. |
 | **SUSTAIN** | No | T11 reads full workspace as input. T12 is opus. |
@@ -1012,7 +1012,7 @@ Claude-Production-Grade-Suite/.orchestrator/plans/
 ├── wave-a/
 │   ├── T3a-backend-plan.md
 │   ├── T3b-frontend-plan.md
-│   └── T4a-containers-plan.md
+│   └── T4-containers-plan.md
 └── ship/
     ├── T7-infra-plan.md
     └── T8-remediation-plan.md

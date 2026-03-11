@@ -107,8 +107,10 @@ Print pipeline dashboard with HARDEN ● active on phase start. Then print wave 
 
 If worktrees were used, merge each HARDEN agent's branch back after the wave completes:
 
+Collect worktree branch names from each Agent result — the result text includes the branch name (e.g., `branch: production-grade-agent-XXXXX`). Parse and store these when processing each Agent's return.
+
 ```python
-for branch in harden_worktree_branches:
+for branch in harden_worktree_branches:  # [t5_branch, t6a_branch, t6b_branch]
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
   Bash(f"git branch -d {branch}")
 # If merge conflicts: git merge --abort, escalate to user
@@ -119,11 +121,11 @@ for branch in harden_worktree_branches:
 After all HARDEN tasks complete:
 1. **Verify receipts:** Read `.orchestrator/receipts/T5-qa-engineer.json`, `T6a-security-engineer.json`, `T6b-code-reviewer.json`. Verify all listed artifacts exist on disk.
 2. Collect all findings from T5, T6a, T6b workspace folders
-2. Deduplicate by file:line — keep highest severity rating
-3. Filter Critical/High severity findings
-4. If any Critical/High exist → T8 (Remediation in SHIP phase) receives the findings list
-5. Medium/Low → documented but do not block pipeline
-6. Print the checkmark cascade, then findings summary:
+3. Deduplicate by file:line — keep highest severity rating
+4. Filter Critical/High severity findings
+5. If any Critical/High exist → T8 (Remediation in SHIP phase) receives the findings list
+6. Medium/Low → documented but do not block pipeline
+7. Print the checkmark cascade, then findings summary:
 ```
 ┌─ HARDEN COMPLETE ─────────────────────── ⏱ {time} ─┐
 │                                                      │
