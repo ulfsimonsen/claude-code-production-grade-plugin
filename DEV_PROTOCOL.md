@@ -181,9 +181,9 @@ Version lives in 4 places. All must match:
 
 ```
 1. .claude-plugin/plugin.json                                     → version field
-2. ~/nagi_plugins/ulfsimonsen-plugins/.claude-plugin/marketplace.json → plugins[0].version
-3. ~/.claude/plugins/installed_plugins.json                        → production-grade@ulfsimonsen entry
-4. ~/.claude/plugins/cache/ulfsimonsen/production-grade/{version}/ → directory name
+2. ~/dev/claude-plugins/local-marketplace/.claude-plugin/marketplace.json → plugins[0].version
+3. ~/.claude/plugins/installed_plugins.json                        → cc-production-grade@local-marketplace entry
+4. ~/.claude/plugins/cache/local-marketplace/cc-production-grade/{version}/ → directory name
 ```
 
 **Versioning policy:**

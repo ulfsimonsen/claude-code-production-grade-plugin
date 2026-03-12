@@ -2,6 +2,11 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.5] — 2026-03-12
+
+### Fixed
+- **Wrong paths in DEV_PROTOCOL version bumping checklist** — marketplace.json path pointed to `~/nagi_plugins/ulfsimonsen-plugins/`, installed_plugins.json referenced `production-grade@ulfsimonsen`, and cache path used `ulfsimonsen/production-grade/`. Updated all 3 to match actual filesystem: `~/dev/claude-plugins/local-marketplace/`, `cc-production-grade@local-marketplace`, `local-marketplace/cc-production-grade/`.
+
 ## [5.7.4] — 2026-03-12
 
 ### Fixed
