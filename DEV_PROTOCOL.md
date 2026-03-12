@@ -168,23 +168,29 @@ Every task gets Level 1-2. Critical findings get Level 3. Phase transitions get 
 2. Check against differentiators — does this strengthen one? introduce one?
 3. Check against architecture rules — protocols, phase structure, parallelism
 4. Implement — modify existing files, don't create new ones unless necessary
-5. Update version — bump plugin.json, marketplace.json, installed_plugins.json, cache dir
+5. Update version — bump plugin.json and marketplace.json
 6. Update CHANGELOG.md — what changed, what was added, what was fixed
 7. Update README.md — if user-visible behavior changed
-8. Test locally — install and verify the plugin works
-9. Commit and push
+8. Commit and push
+9. Test locally — run `claude plugin marketplace update local-marketplace && claude plugin update cc-production-grade@local-marketplace`, then `/reload-plugins`
 ```
 
 ### Version Bumping Checklist
 
-Version lives in 4 places. All must match:
+Version lives in 2 places that you manually update:
 
 ```
 1. .claude-plugin/plugin.json                                     → version field
 2. ~/dev/claude-plugins/local-marketplace/.claude-plugin/marketplace.json → plugins[0].version
-3. ~/.claude/plugins/installed_plugins.json                        → cc-production-grade@local-marketplace entry
-4. ~/.claude/plugins/cache/local-marketplace/cc-production-grade/{version}/ → directory name
 ```
+
+The CLI handles the rest automatically when you run:
+```
+claude plugin marketplace update local-marketplace
+claude plugin update cc-production-grade@local-marketplace
+```
+
+This updates `~/.claude/plugins/installed_plugins.json` and creates the cache directory at `~/.claude/plugins/cache/local-marketplace/cc-production-grade/{version}/`.
 
 **Versioning policy:**
 - Patch (5.2.x) — bug fixes, wording changes, minor improvements
@@ -525,8 +531,8 @@ You are likely a Claude Code session implementing a change to this plugin. Here 
 3. **Read the skill you're modifying** — its SKILL.md and all its phase files — before changing anything.
 4. **Read the protocols** (`skills/_shared/protocols/`) that the skill loads. Your changes must not violate them.
 5. **Changes propagate.** If you modify a protocol, it affects all 14 skills. If you modify the orchestrator's routing table, it affects what skills run for which requests. Think through the blast radius.
-6. **Version management is manual.** When bumping versions, update all 4 locations listed in Section 4. Miss one and the install breaks.
-7. **Test by installing.** After changes, copy files to `~/.claude/plugins/cache/ulfsimonsen/production-grade/{version}/` and update `~/.claude/plugins/installed_plugins.json`. Then invoke the skill to verify.
+6. **Version bumping is 2 files.** Bump `plugin.json` and `marketplace.json`. The CLI handles `installed_plugins.json` and cache directory.
+7. **Test by installing.** After changes, run `claude plugin marketplace update local-marketplace && claude plugin update cc-production-grade@local-marketplace`, then `/reload-plugins` and invoke the skill to verify.
 8. **The user (Quan) is non-technical.** He is a product/business person. His partner is a senior engineer. Design for both: simple interactions for the user, rigorous output for the engineer.
 9. **Ask before destroying.** If you're about to delete files, remove protocols, change version numbers, or modify the orchestrator — confirm with the user first.
 
