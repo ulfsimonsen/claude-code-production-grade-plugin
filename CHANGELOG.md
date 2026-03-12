@@ -2,6 +2,11 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.7.6] — 2026-03-12
+
+### Fixed
+- **Replace manual auto-update with Claude Code plugin CLI** — removed fragile 38-line update mechanism (git clone to temp, manual cp to cache, manual JSON editing of installed_plugins.json, rm cleanup) that failed in sandbox mode. Replaced with two CLI commands: `claude plugin marketplace update` + `claude plugin update`. Fully sandbox-safe, no temp files, delegates version management to Claude Code's built-in plugin infrastructure.
+
 ## [5.7.5] — 2026-03-12
 
 ### Fixed

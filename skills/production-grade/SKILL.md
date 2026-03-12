@@ -310,42 +310,25 @@ Execute selected skills in dependency order. If user picks conflicting skills, r
 
 ## Auto-Update Check
 
-Run BEFORE any execution (all modes). Silent if current. One prompt max if update exists.
+Run BEFORE any execution (all modes). Uses Claude Code's built-in plugin CLI — no temp files, no manual cache/JSON manipulation, fully sandbox-safe.
 
-**Step 0 — version check:**
+**Step 0 — update check:**
 
-1. Read `~/.claude/plugins/installed_plugins.json` → find the `production-grade@ulfsimonsen` entry → extract `version` (this is your local version)
-2. WebFetch `https://raw.githubusercontent.com/ulfsimonsen/claude-code-production-grade-plugin/main/.claude-plugin/plugin.json` → extract `version` (this is the remote version)
-3. **If WebFetch fails** (offline, timeout, 404) → silently continue. Never block the pipeline over an update check.
-4. **If remote ≤ local** → continue silently (user sees nothing)
-5. **If remote > local** → prompt:
-
-```python
-AskUserQuestion(questions=[{
-  "question": "production-grade v{remote} is available (you have v{local})",
-  "header": "Update Available",
-  "options": [
-    {"label": "Update to v{remote} (Recommended)", "description": "Auto-update and restart pipeline"},
-    {"label": "Skip — continue with v{local}", "description": "Use current version"}
-  ],
-  "multiSelect": false
-}])
-```
-
-6. **If skip** → continue pipeline with current version
-7. **If update** → execute in sequence:
+1. Read local version from `.claude-plugin/plugin.json` in the plugin's install path
+2. Run the marketplace and plugin update commands:
    ```bash
-   git clone --depth 1 https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git "$TMPDIR/pg-update"
+   claude plugin marketplace update local-marketplace
+   claude plugin update cc-production-grade@local-marketplace
    ```
-   - Read new SHA: `git -C "$TMPDIR/pg-update" rev-parse HEAD`
-   - Create cache dir: `mkdir -p ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}`
-   - Copy files: `cp -r "$TMPDIR/pg-update/skills" "$TMPDIR/pg-update/.claude-plugin" "$TMPDIR/pg-update/hooks" "$TMPDIR/pg-update/README.md" "$TMPDIR/pg-update/VISION.md" ~/.claude/plugins/cache/ulfsimonsen/production-grade/{remote_version}/`
-   - Update `~/.claude/plugins/installed_plugins.json` → set `version` to remote version, `installPath` to new cache dir, `gitCommitSha` to new SHA, `lastUpdated` to current ISO timestamp
-   - Clean up: `rm -rf "$TMPDIR/pg-update"`
-   - Print: `✓ Updated to v{remote_version}. Re-invoke /production-grade to use the new version.`
-   - **STOP** — do not continue pipeline. The current session loaded the old SKILL.md; the user must re-invoke to pick up new content.
+3. **If `plugin update` reports a new version was installed** → print:
+   ```
+   ✓ Updated to v{new_version}. Run /reload-plugins, then re-invoke /production-grade.
+   ```
+   **STOP** — do not continue pipeline. The current session loaded the old SKILL.md; the user must reload and re-invoke to pick up new content.
+4. **If already up to date** → continue silently (user sees nothing)
+5. **If either command fails** → print a warning and continue with the current version. Never block the pipeline over an update check.
 
-**If any update step fails**, print a warning and continue with the current version. Never let the updater break the pipeline.
+**Note for users who installed from a remote marketplace:** If the marketplace source is a git repo, `marketplace update` fetches the latest catalog. If it's a local path, it re-reads from disk. `plugin update` then pulls the newest version if available. Users with a local clone of the repo should `git pull` first to get upstream changes.
 
 ## Full Build Pipeline
 
