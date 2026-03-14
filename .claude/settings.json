@@ -1,4 +1,27 @@
 {
+  "worktree": {
+    "sparsePaths": [
+      "services/",
+      "frontend/",
+      "libs/",
+      "api/",
+      "schemas/",
+      "docs/",
+      "tests/",
+      "infrastructure/",
+      ".github/",
+      "Claude-Production-Grade-Suite/",
+      ".production-grade.yaml",
+      "CLAUDE.md",
+      "package.json",
+      "pyproject.toml",
+      "go.mod",
+      "Cargo.toml",
+      "tsconfig.json",
+      "docker-compose.yml",
+      "Dockerfile*"
+    ]
+  },
   "sandbox": {
     "enabled": true,
     "autoAllow": true,

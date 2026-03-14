@@ -2,6 +2,36 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.8.0] — 2026-03-14
+
+### Changed
+- **4-wave architecture replaces 5-phase model** — pipeline now executes as Wave A (9 agents: 2 foreground build + 7 background analysis), Wave B (5 foreground agents execute against code using analysis plans), Wave C (3 agents: remediation + SRE execution + data scientist), Wave D (2 agents: ops guide + final assembly). Reduces serial steps from 7 to 4 after Gate 2. Background analysis agents run alongside build agents — code is written and merged faster while analysis runs on the non-critical path.
+- **Corrected 5 false task dependencies** — T7 (IaC) no longer waits for HARDEN findings (moved to Wave B, needs architecture + services only). T9 split into T9a (SLO definitions, Wave A background) + T9b (chaos/capacity, Wave C). T10 (Data Scientist) unblocked from T7/T8 (needs code only). T11 split into T11a (API ref, Wave A background) + T11b (ops guide, Wave D). T12 (Skill Maker) unblocked from T9/T10 (moved to Wave A background).
+- **Background agents for analysis tasks** — T4a, T5a, T6a, T6b, T9a, T11a, T12 now run as `run_in_background=True` without worktree isolation. They write to `Claude-Production-Grade-Suite/` workspace dirs only. Safe since Claude Code 2.1.76 preserves partial results when background agents are killed.
+- **Minimum Claude Code version** bumped to 2.1.76+ (from 2.1.72+). Required for PostCompact hook, background agent partial results, stale worktree auto-cleanup, worktree sparse paths, and token estimation fix.
+
+### Added
+- **PostCompact hook** — new `PostCompact` hook (`hooks/post-compact-guard.sh`) fires after context compaction completes. Injects pipeline state summary (current wave, last completed task, next dispatcher) into the fresh post-compaction context. Survives compaction because it's injected after, not before. Replaces the `compact` matcher in SessionStart which fired pre-compaction and could be compressed.
+- **Receipt timestamps** — `completed_at` (ISO-8601) field added to receipt protocol. Enables per-agent elapsed time tracking, bottleneck identification in compound learning (T13), and real `⏱` timing values in the final summary instead of streaming estimates.
+- **Worktree sparse checkout** — `worktree.sparsePaths` added to `.claude/settings.json` excluding `node_modules/`, `dist/`, build artifacts from worktree clones. Users can override via `.production-grade.yaml`. Speeds up worktree creation for large repos.
+- **Wave B readiness check** — before launching Wave B, the dispatcher verifies that all required background analysis outputs (test plan, STRIDE model, review checklist, Dockerfiles) exist on disk. Falls back to inline analysis if a background agent failed.
+- **Context bridging table** updated with split task entries (T4a/T4b, T5a/T5b, T6a/T6c, T6b/T6d, T9a/T9b, T11a/T11b).
+- **5 new common mistakes** — false dependency patterns (T7 waiting for HARDEN, T12 waiting for SRE, T11 fully blocked on SRE), background agents incorrectly using worktrees, split task routing.
+
+### Fixed
+- **SessionStart hook handled compaction incorrectly** — `compact` matcher in SessionStart fired before compaction, so re-orientation message could be compressed. Moved to PostCompact hook. SessionStart matcher changed from `startup|clear|compact` to `startup|clear`.
+- **Worktree known issues overstated** — stale worktrees from interrupted runs are auto-cleaned in 2.1.76+. Updated SKILL.md known issues and common mistakes table. Simplified merge-back failure comments in all dispatchers.
+- **Re-anchoring table used old phase names** — updated from DEFINE→BUILD→HARDEN→SHIP→SUSTAIN to DEFINE→Wave A→Wave B→Wave C→Wave D with corrected artifact lists per transition.
+
+### Improved (from Claude Code 2.1.75/2.1.76 upstream)
+- **1M context default for Opus 4.6** — Max, Team, Enterprise plans get full 1M context without extra usage. Fewer compaction events during Full Build mode.
+- **Token estimation fix** — prevents premature compaction from over-counting thinking/tool_use blocks. Long pipeline runs are more reliable.
+- **Auto-compaction circuit breaker** — stops retrying after 3 consecutive failures instead of looping indefinitely.
+- **Stale worktree auto-cleanup** — worktrees from interrupted parallel runs are automatically cleaned up.
+- **Worktree startup performance** — reads git refs directly, skips redundant `git fetch`.
+- **Background agent partial results** — killing a background agent preserves partial results in context. Enables the background analysis agent pattern.
+- **Bash `!` fix** — `jq 'select(.x != .y)'` and similar commands with `!` in quoted args now work correctly. Affects QA and DevOps agents.
+
 ## [5.7.6] — 2026-03-12
 
 ### Fixed

@@ -1,6 +1,6 @@
-# HARDEN Phase — Dispatcher
+# Wave B — Dispatcher
 
-This phase manages tasks T5 (QA), T6a (Security), T6b (Code Review). All three run in parallel (PARALLEL #3 and #4).
+This phase manages Wave B: T4b (container build), T5b (QA execution), T6c (security audit), T6d (code review), T7 (IaC + CI/CD). All 5 foreground with worktree. These agents execute against code using Wave A analysis plans.
 
 ## Authority Boundaries — CRITICAL
 
@@ -12,7 +12,7 @@ Enforce these boundaries strictly:
 
 ## Re-Anchor
 
-Before creating HARDEN agent tasks, re-read key artifacts from disk:
+Before creating Wave B agent tasks, re-read key artifacts from disk:
 - `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (working-notes.md, analysis/*.md)
 - `docs/architecture/architecture-decision-records/*.md` (Glob to list)
 - Directory listing of `services/`, `frontend/`, `libs/shared/` (what BUILD actually produced)
@@ -20,116 +20,176 @@ Before creating HARDEN agent tasks, re-read key artifacts from disk:
 
 Use this freshly-read data when writing agent task prompts below.
 
-## PARALLEL #3 + #4: T5 + T6a + T6b
+## Wave B Readiness Check
 
-All three start together:
-
-Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
-
-**IMPORTANT:** T5, T6a, and T6b MUST run as foreground agents (no `run_in_background`). All three Agent calls in the same message still execute concurrently, but the orchestrator blocks until all return — then naturally continues to worktree merge-back and post-HARDEN verification. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
+Before launching Wave B, verify that background analysis outputs from Wave A exist on disk. These agents ran in background during Wave A — their outputs are required for Wave B agents.
 
 ```python
-# T5: QA Testing
-TaskUpdate(taskId=t5_id, status="in_progress")
-Agent(
-  prompt="""You are the QA Engineer.
-Use the Skill tool to invoke 'production-grade:qa-engineer' to load your complete methodology and follow it.
-Read implementation: services/, frontend/ (if exists), api/
-Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Read .production-grade.yaml for paths.tests and paths.services.
-Write tests to project root: tests/
-Write workspace artifacts to: Claude-Production-Grade-Suite/qa-engineer/
-Run integration, e2e, and performance tests.
-Distinguish test bugs (fix immediately) from implementation bugs (log as findings).
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T5-qa-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
-  subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  isolation="worktree"  # Omit if Worktrees: disabled
-)
+# Required analysis outputs — Wave B agents read these
+readiness = {
+  "T5a test plan": "Claude-Production-Grade-Suite/qa-engineer/test-plan.md",
+  "T6a STRIDE model": "Claude-Production-Grade-Suite/security-engineer/threat-model/",
+  "T6b review checklist": "Claude-Production-Grade-Suite/code-reviewer/checklist.md",
+  "T4a Dockerfiles": "Claude-Production-Grade-Suite/devops/dockerfiles/",
+}
 
-# T6a: Security Audit (SOLE OWASP AUTHORITY)
-TaskUpdate(taskId=t6a_id, status="in_progress")
-Agent(
-  prompt="""You are the Security Engineer — SOLE authority on OWASP, STRIDE, PII, encryption.
-Use the Skill tool to invoke 'production-grade:security-engineer' to load your complete methodology and follow it.
-No other skill performs security review. This is YOUR exclusive domain.
-Read all implementation code: services/, frontend/, infrastructure/
-Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Perform STRIDE threat modeling + OWASP Top 10 audit + dependency scan.
-Write findings to: Claude-Production-Grade-Suite/security-engineer/ (organized by phase: threat-model/, code-audit/, auth-review/, data-security/, supply-chain/)
-Document all findings with severity. Do NOT auto-fix code — write findings only. Critical/High fixes are handled by T8 (Remediation) in the SHIP phase to avoid merge conflicts with parallel QA agents.
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6a-security-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
-  subagent_type="general-purpose",
-  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
-  isolation="worktree"  # Omit if Worktrees: disabled
-)
-
-# T6b: Code Review (NO OWASP — architecture + quality only)
-TaskUpdate(taskId=t6b_id, status="in_progress")
-Agent(
-  prompt="""You are the Code Reviewer — architecture conformance and code quality ONLY.
-Use the Skill tool to invoke 'production-grade:code-reviewer' to load your complete methodology and follow it.
-DO NOT perform OWASP, STRIDE, or any security review — security-engineer is sole authority.
-Cross-reference: "See security-engineer findings for security context."
-Read architecture: docs/architecture/, api/
-Read implementation: services/, frontend/
-Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Review: SOLID/DRY/KISS, performance, N+1 queries, resource leaks, test quality.
-Write findings to: Claude-Production-Grade-Suite/code-reviewer/
-READ-ONLY: produce findings only, do NOT modify source code.
-ADVERSARIAL STANCE: Your job is to find where this code breaks, not confirm it works. Assume every function has an edge case, every endpoint accepts bad input, every concurrent operation has a race condition. Hunt for the bugs the author can't see.
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T6b-code-reviewer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
-  subagent_type="general-purpose",
-  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
-  isolation="worktree"  # Omit if Worktrees: disabled
-)
+# Check each exists on disk
+for name, path in readiness.items():
+  exists = Glob(path) or Read(path)  # Glob for dirs, Read for files
+  if not exists:
+    # Background agent still running or failed
+    print(f"  ⧖ Waiting for {name}...")
+    # Wait briefly, then re-check. If still missing after ~60s,
+    # fall back to inline analysis (Wave B agent does its own analysis)
 ```
+
+For optional outputs (T9a SLOs, T11a API ref, T12 skills), don't wait — these aren't needed by Wave B agents.
 
 ## Visual Output
 
 Print pipeline dashboard with HARDEN ● active on phase start. Then print wave announcement:
 ```
-┌─ HARDEN ─────────────────────────────── 3 agents ─┐
-│                                                     │
-│  T5   QA Engineer          implementing tests       │
-│  T6a  Security Engineer    code audit + dep scan    │
-│  T6b  Code Reviewer        arch + quality review    │
-│                                                     │
-│  All agents launched. Working autonomously...       │
-└─────────────────────────────────────────────────────┘
+┌─ WAVE B ──────────────────────────────── 5 agents ─┐
+│                                                      │
+│  T4b  DevOps       build containers (code + T4a)     │
+│  T5b  QA Engineer  implement tests (code + T5a plan) │
+│  T6c  Security     code audit (code + T6a STRIDE)    │
+│  T6d  Code Review  review code (code + T6b checklist)│
+│  T7   DevOps IaC   Terraform + CI/CD (code + arch)   │
+│                                                      │
+│  All agents launched. Working autonomously...        │
+└──────────────────────────────────────────────────────┘
+```
+
+## FOREGROUND: T4b + T5b + T6c + T6d + T7
+
+Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
+
+**IMPORTANT:** All 5 agents MUST run as foreground agents (no `run_in_background`). All 5 Agent calls in the same message execute concurrently, but the orchestrator blocks until all return — then continues to worktree merge-back and Wave C.
+
+```python
+# T4b: DevOps — build containers from code + T4a Dockerfiles
+TaskUpdate(taskId=t4b_id, status="in_progress")
+Agent(
+  prompt="""You are the DevOps Container Builder.
+Read Dockerfiles from Claude-Production-Grade-Suite/devops/dockerfiles/ (written by T4a).
+Read docker-compose draft from Claude-Production-Grade-Suite/devops/compose-draft.yml.
+Read actual service code from services/ and frontend/ to finalize build contexts.
+Build and validate containers: docker build succeeds for each service.
+Write final Dockerfiles to project root (per service) and docker-compose.yml.
+Write workspace artifacts to: Claude-Production-Grade-Suite/devops/
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T4b-devops-build.json.""",
+  subagent_type="general-purpose",
+  model="sonnet",  # Executor tier
+  isolation="worktree"  # Omit if Worktrees: disabled
+)
+
+# T5b: QA — implement tests from T5a test plan
+TaskUpdate(taskId=t5b_id, status="in_progress")
+Agent(
+  prompt="""You are the QA Engineer — Test Implementer.
+Read your test plan: Claude-Production-Grade-Suite/qa-engineer/test-plan.md (written by T5a).
+Use the Skill tool to invoke 'production-grade:qa-engineer' to load your methodology.
+Implement the tests specified in the plan against actual code in services/ and frontend/.
+Read protocols from: Claude-Production-Grade-Suite/.protocols/
+Read .production-grade.yaml for paths.tests and paths.services.
+Write tests to project root: tests/
+Write workspace artifacts to: Claude-Production-Grade-Suite/qa-engineer/
+Run all tests. Distinguish test bugs (fix immediately) from implementation bugs (log as findings).
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T5b-qa-engineer.json.""",
+  subagent_type="general-purpose",
+  model="sonnet",  # Executor tier
+  isolation="worktree"  # Omit if Worktrees: disabled
+)
+
+# T6c: Security — code audit using T6a STRIDE model (SOLE OWASP AUTHORITY)
+TaskUpdate(taskId=t6c_id, status="in_progress")
+Agent(
+  prompt="""You are the Security Engineer — Code Auditor. SOLE authority on OWASP, STRIDE, PII, encryption.
+Read your STRIDE threat model: Claude-Production-Grade-Suite/security-engineer/threat-model/ (written by T6a).
+Use the Skill tool to invoke 'production-grade:security-engineer' to load your methodology.
+Audit all implementation code in services/, frontend/, infrastructure/ against the threat model.
+Perform dependency scanning, auth flow review, data security review.
+Write findings to: Claude-Production-Grade-Suite/security-engineer/code-audit/, auth-review/, data-security/, supply-chain/
+Do NOT auto-fix code — write findings only. Critical/High fixes handled by T8 in Wave C.
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6c-security-audit.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier
+  isolation="worktree"  # Omit if Worktrees: disabled
+)
+
+# T6d: Code Review — execute review using T6b checklist (NO OWASP)
+TaskUpdate(taskId=t6d_id, status="in_progress")
+Agent(
+  prompt="""You are the Code Reviewer — architecture conformance and code quality ONLY.
+Read your review checklist: Claude-Production-Grade-Suite/code-reviewer/checklist.md (written by T6b).
+Use the Skill tool to invoke 'production-grade:code-reviewer' to load your methodology.
+DO NOT perform OWASP, STRIDE, or any security review — security-engineer is sole authority.
+Read architecture: docs/architecture/, api/
+Read implementation: services/, frontend/
+Review against checklist: SOLID/DRY/KISS, performance, N+1 queries, resource leaks, test quality.
+Write findings to: Claude-Production-Grade-Suite/code-reviewer/
+READ-ONLY: produce findings only, do NOT modify source code.
+ADVERSARIAL STANCE: assume code is wrong until proven right.
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6d-code-reviewer.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Deep analysis tier
+  isolation="worktree"  # Omit if Worktrees: disabled
+)
+
+# T7: DevOps IaC + CI/CD (needs architecture + service structure, NOT HARDEN findings)
+TaskUpdate(taskId=t7_id, status="in_progress")
+Agent(
+  prompt="""You are the DevOps Engineer — IaC and CI/CD.
+Read architecture from docs/architecture/ and service structure from services/.
+Read .production-grade.yaml for paths and preferences.
+Use the Skill tool to invoke 'production-grade:devops' to load your methodology.
+Write Terraform/Pulumi modules for infrastructure provisioning.
+Write CI/CD pipeline configs (.github/workflows/ or equivalent).
+Write monitoring dashboard configs.
+DO NOT define SLOs — add placeholder: "SLO thresholds defined by SRE."
+DO NOT write runbooks — SRE writes runbooks to docs/runbooks/.
+Write to project root: infrastructure/, .github/workflows/
+Write workspace artifacts to: Claude-Production-Grade-Suite/devops/
+Validate: terraform validate, pipeline syntax lint.
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T7-devops-iac.json.""",
+  subagent_type="general-purpose",
+  model="sonnet",  # Executor tier
+  isolation="worktree"  # Omit if Worktrees: disabled
+)
 ```
 
 ## Worktree Merge-Back
 
-If worktrees were used, merge each HARDEN agent's branch back after the wave completes:
-
-Collect worktree branch names from each Agent result — the result text includes the branch name (e.g., `branch: production-grade-agent-XXXXX`). Parse and store these when processing each Agent's return.
+After all 5 Wave B agents complete, merge their worktree branches:
 
 ```python
-for branch in harden_worktree_branches:  # [t5_branch, t6a_branch, t6b_branch]
+for branch in wave_b_worktree_branches:  # [t4b, t5b, t6c, t6d, t7]
   Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
   Bash(f"git branch -d {branch}")
-# If merge conflicts: git merge --abort, escalate to user
+# Stale worktrees auto-cleaned (2.1.76+). Merge conflicts escalated to user.
 ```
 
-## Post-HARDEN: Receipt Verification & Remediation Preparation
+## Post-Wave B: Receipt Verification & Findings Summary
 
-After all HARDEN tasks complete:
-1. **Verify receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T5-qa-engineer.json`, `T6a-security-engineer.json`, `T6b-code-reviewer.json`. Verify all listed artifacts exist on disk.
-2. Collect all findings from T5, T6a, T6b workspace folders
+After all Wave B tasks complete:
+1. **Verify receipts:** Read all Wave B receipts (T4b, T5b, T6c, T6d, T7). Verify all listed artifacts exist on disk.
+2. Collect all findings from T5b, T6c, T6d workspace folders
 3. Deduplicate by file:line — keep highest severity rating
 4. Filter Critical/High severity findings
-5. If any Critical/High exist → T8 (Remediation in SHIP phase) receives the findings list
+5. If any Critical/High exist → T8 (Remediation in Wave C) receives the findings list
 6. Medium/Low → documented but do not block pipeline
 7. Print the checkmark cascade, then findings summary:
 ```
-┌─ HARDEN COMPLETE ─────────────────────── ⏱ {time} ─┐
+┌─ WAVE B COMPLETE ─────────────────────── ⏱ {time} ─┐
 │                                                      │
-│  ✓ QA Engineer          {N} tests, {M} passing       │
-│  ✓ Security Engineer    {N} findings ({M} Crit/High) │
-│  ✓ Code Reviewer        {N} findings ({M} Crit/High) │
+│  ✓ DevOps             {N} containers built           │
+│  ✓ QA Engineer        {N} tests, {M} passing         │
+│  ✓ Security Engineer  {N} findings ({M} Crit/High)   │
+│  ✓ Code Reviewer      {N} findings ({M} Crit/High)   │
+│  ✓ DevOps IaC         {N} Terraform modules          │
 │                                                      │
-│  3/3 complete                                        │
+│  5/5 complete                                        │
 └──────────────────────────────────────────────────────┘
 
 ━━━ Findings ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -145,12 +205,13 @@ After all HARDEN tasks complete:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## Handoff to SHIP
+## Handoff to Wave C
 
 **Re-anchor:** Before transitioning, re-read from disk:
-- `Claude-Production-Grade-Suite/security-engineer/` findings (code-audit/, auth-review/, remediation/)
+- `Claude-Production-Grade-Suite/security-engineer/` findings (code-audit/, auth-review/)
 - `Claude-Production-Grade-Suite/code-reviewer/` findings
 - `Claude-Production-Grade-Suite/qa-engineer/` test results
-- All HARDEN receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`
+- `infrastructure/` listing (what T7 created)
+- All Wave B receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`
 
-Read `phases/ship.md` and begin SHIP phase — use freshly-read findings data for remediation agent prompt.
+Read `phases/ship.md` and begin Wave C — use freshly-read findings data for remediation agent prompt.

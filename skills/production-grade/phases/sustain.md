@@ -1,95 +1,110 @@
-# SUSTAIN Phase — Dispatcher
+# Wave D — Dispatcher
 
-This phase manages tasks T11 (Technical Writer), T12 (Skill Maker), and T13 (Compound Learning + Final Assembly). Features PARALLEL #7.
+This phase manages Wave D: T11b (Technical Writer — ops guide) and T13 (Compound Learning + Final Assembly). Also collects T12 (Skill Maker) results from Wave A background if completed.
 
 ## Visual Output
 
-Print pipeline dashboard with SUSTAIN ● active on phase start, then:
-
+Print pipeline dashboard with SUSTAIN ● active on phase start:
 ```
-  → Starting SUSTAIN phase (documentation + skills)
-```
-
-On PARALLEL #7 completion:
-```
-┌─ SUSTAIN COMPLETE ────────────────────────── ⏱ {time} ─┐
-│                                                          │
-│  ✓ Technical Writer    {N} docs (API ref, dev guide...)  │
-│  ✓ Skill Maker         {N} project-specific skills       │
-│                                                          │
-│  → Final assembly and compound learning                  │
-└──────────────────────────────────────────────────────────┘
+  → Starting Wave D (ops guide + final assembly)
 ```
 
-After T13 completes, print the final summary template from the orchestrator.
+On completion:
+```
+┌─ WAVE D COMPLETE ─────────────────────── ⏱ {time} ─┐
+│                                                      │
+│  ✓ Technical Writer  ops guide ({N} docs)            │
+│  ✓ Skill Maker       {N} project-specific skills     │
+│  ✓ Assembly          final validation complete       │
+│                                                      │
+│  → Presenting final summary                          │
+└──────────────────────────────────────────────────────┘
+```
 
 ## Re-Anchor
 
-Before creating SUSTAIN agent tasks, re-read from disk:
+Before creating Wave D agent tasks, re-read from disk:
 - All receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/` (complete pipeline history for compound learning)
+- `Claude-Production-Grade-Suite/sre/` output (T9b — needed for ops guide)
 - `infrastructure/` listing, `.github/workflows/` listing
 - `docs/architecture/` listing
+- Check for T12 receipt: `Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json` — if it exists, T12 completed during Wave A background. If not, T12 is still running or failed.
+- Check for T11a receipt: `Claude-Production-Grade-Suite/.orchestrator/receipts/T11a-techwriter-api.json` — API ref should be done from Wave A background.
 
-## PARALLEL #7: T11 + T12
-
-Read `Claude-Production-Grade-Suite/.orchestrator/settings.md` to check if `Worktrees: enabled`. If enabled, add `isolation="worktree"` to each Agent call below.
-
-**IMPORTANT:** T11 and T12 MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to T13. Using background agents here causes the orchestrator turn to end before T13 can fire.
+## Collect Background Agent Results
 
 ```python
-# T11: Technical Writer
-TaskUpdate(taskId=t11_id, status="in_progress")
-Agent(
-  prompt="""You are the Technical Writer.
-Use the Skill tool to invoke 'production-grade:technical-writer' to load your complete methodology and follow it.
-Read ALL workspace folders at Claude-Production-Grade-Suite/ for full project context.
-Read all project deliverables: api/, services/, frontend/, infrastructure/, tests/, docs/.
-Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Read .production-grade.yaml for paths and preferences.
-Generate: API reference (from OpenAPI specs), developer guides, operational guide, architecture guide, contributing guide.
-If features.documentation_site is true: scaffold Docusaurus site.
-Write docs to project root: docs/
-Write workspace artifacts to: Claude-Production-Grade-Suite/technical-writer/
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T11-technical-writer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
-  subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  isolation="worktree"  # Omit if Worktrees: disabled
-)
+# Check T12 (Skill Maker) — launched as background in Wave A
+t12_receipt = Read("Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json")
+if t12_receipt:
+  # T12 completed — skills are staged at Claude-Production-Grade-Suite/skill-maker/skills/
+  t12_complete = True
+else:
+  # T12 still running or failed — wait briefly, then proceed without
+  print("  ⧖ T12 (Skill Maker) not yet complete — will check again after T11b")
+  t12_complete = False
 
-# T12: Skill Maker
-TaskUpdate(taskId=t12_id, status="in_progress")
+# Check T11a (API ref) — launched as background in Wave A
+t11a_receipt = Read("Claude-Production-Grade-Suite/.orchestrator/receipts/T11a-techwriter-api.json")
+if t11a_receipt:
+  print("  ✓ T11a API reference available from Wave A")
+```
+
+## T11b: Technical Writer — Ops Guide
+
+T11b writes the operational guide, which needs SRE output (T9b) and infrastructure (T7). The API reference (T11a) was already written in Wave A background.
+
+```python
+TaskUpdate(taskId=t11b_id, status="in_progress")
 Agent(
-  prompt="""You are the Skill Maker.
-Use the Skill tool to invoke 'production-grade:skill-maker' to load your complete methodology and follow it.
-Analyze the completed project for recurring patterns: API routes, DB queries, auth checks, deployment procedures, testing patterns, domain-specific workflows.
-Read protocols from: Claude-Production-Grade-Suite/.protocols/
-Generate 3-5 project-specific skills as SKILL.md files.
-Stage skills to: Claude-Production-Grade-Suite/skill-maker/skills/ (sandbox blocks direct writes to .claude/skills/)
-Write workspace artifacts to: Claude-Production-Grade-Suite/skill-maker/
-After staging, provide the user with install instructions (copy to .claude/skills/ or package as plugin).
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
+  prompt="""You are the Technical Writer — Operations Guide.
+Use the Skill tool to invoke 'production-grade:technical-writer' to load your methodology.
+Read SRE output from: Claude-Production-Grade-Suite/sre/ (SLOs, chaos scenarios, runbooks)
+Read infrastructure from: infrastructure/, .github/workflows/
+Read architecture from: docs/architecture/
+Read .production-grade.yaml for paths and preferences.
+
+Note: API reference and developer guides were already written by T11a in Wave A.
+Read T11a output from: Claude-Production-Grade-Suite/technical-writer/api-reference/ and guides/
+Your job: write the OPERATIONAL guide only — deployment procedures, monitoring, incident response, runbook index.
+
+If features.documentation_site is true: update the Docusaurus scaffold with ops guide section.
+Write ops guide to project root: docs/ops-guide/
+Write workspace artifacts to: Claude-Production-Grade-Suite/technical-writer/
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T11b-techwriter-ops.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Deep analysis tier — omit if Model-Optimization: disabled
+  model="sonnet",  # Executor tier
   isolation="worktree"  # Omit if Worktrees: disabled
 )
 ```
 
 ## Worktree Merge-Back
 
-If worktrees were used, merge SUSTAIN agent branches back:
-
 ```python
-for branch in sustain_worktree_branches:
-  Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
-  Bash(f"git branch -d {branch}")
+if t11b_branch:
+  Bash(f"git merge --no-ff {t11b_branch} -m 'production-grade: merge {t11b_branch}'")
+  Bash(f"git branch -d {t11b_branch}")
+# Stale worktrees auto-cleaned (2.1.76+). Merge conflicts escalated to user.
 ```
 
 ## T13: Compound Learning + Final Assembly
 
-After T11 and T12 complete (and worktree branches are merged):
+After T11b completes (and worktree branch is merged):
 
 ```python
 TaskUpdate(taskId=t13_id, status="in_progress")
+```
+
+### Collect T12 (if not already done)
+
+```python
+if not t12_complete:
+  t12_receipt = Read("Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json")
+  if t12_receipt:
+    t12_complete = True
+  else:
+    # T12 didn't complete — log and proceed without custom skills
+    print("  ⚠ T12 (Skill Maker) did not complete — skipping custom skills")
 ```
 
 ### Compound Learning
@@ -110,6 +125,7 @@ Write to `Claude-Production-Grade-Suite/.orchestrator/compound-learnings.md`:
 
 ### Time Sinks
 - [phases that took longest, what slowed them down]
+- **Use receipt timestamps:** Read `completed_at` from each receipt in `Claude-Production-Grade-Suite/.orchestrator/receipts/`. Compute per-wave wall-clock time as `max(completed_at) - min(completed_at)` within each wave's receipts. Identify the slowest agent per wave and the longest wave overall. Report actual elapsed times, not estimates.
 
 ### Skip Next Time
 - [unnecessary steps for this project type]
@@ -135,15 +151,7 @@ This project was built with the production-grade plugin. The `Claude-Production-
   2. "Work directly without the plugin" — "Make changes freely. Good for quick fixes, experiments, or when you know exactly what you're changing. You can always invoke /production-grade later if needed."
   3. "Chat about this" — "Let's discuss what I'm planning and figure out the best approach together."
 
-If the user chooses production-grade, invoke `/production-grade` — it auto-routes to the right mode:
-- Adding features → Feature mode
-- Refactoring / architecture → Architect mode
-- Code review → Review mode
-- Adding tests → Test mode
-- Security hardening → Harden mode
-- Deployment changes → Ship mode
-- Brainstorming → Explore mode
-- Performance → Optimize mode
+If the user chooses production-grade, invoke `/production-grade` for their request — it auto-routes to the right mode (Feature, Review, Test, Harden, Ship, Architect, Explore, Optimize).
 
 If the user chooses to work directly, respect that choice fully — no further reminders this session. They can always invoke `/production-grade` manually if they change their mind.
 
@@ -171,7 +179,7 @@ AskUserQuestion(questions=[{
 }])
 ```
 
-2. **Install staged skills** — if T12 produced skills, inform user:
+2. **Install staged skills** — if T12 completed, inform user:
 ```
 Skills staged to Claude-Production-Grade-Suite/skill-maker/skills/
 To install: cp -r Claude-Production-Grade-Suite/skill-maker/skills/* .claude/skills/

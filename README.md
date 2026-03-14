@@ -33,6 +33,8 @@
 ## Release Timeline
 
 ```
+2026-03-14  v5.8  ●━━━ 4-wave architecture, PostCompact hook, receipt timestamps, sparse worktrees (Claude Code 2.1.76+)
+                  │
 2026-03-11  v5.7  ●━━━ Claude Code 2.1.72+ compatibility — planner-executor, model tiers, parallel resilience
                   │
 2026-03-09  v5.6  ●━━━ Fix worktree change loss — foreground agents across all phase dispatchers
@@ -355,7 +357,7 @@ git clone https://github.com/ulfsimonsen/claude-code-production-grade-plugin.git
 claude --plugin-dir /path/to/claude-code-production-grade-plugin
 ```
 
-**Requirements:** Claude Code 2.1.72+ (with plugin support), Docker & Docker Compose, Git.
+**Requirements:** Claude Code 2.1.76+ (with plugin support), Docker & Docker Compose, Git.
 
 **Recommended settings:**
 - **Effort level:** The plugin's session guard automatically sets `CLAUDE_CODE_EFFORT_LEVEL=high` for production-grade projects. This ensures Sonnet 4.6 and Opus 4.6 don't abbreviate critical pipeline steps (gate verification, receipt writing, re-anchoring). No manual configuration needed.

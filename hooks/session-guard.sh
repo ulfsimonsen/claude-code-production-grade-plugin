@@ -33,12 +33,15 @@ if [ -n "$CLAUDE_ENV_FILE" ] && [ -w "$CLAUDE_ENV_FILE" ]; then
   echo 'export CLAUDE_CODE_EFFORT_LEVEL=high' >> "$CLAUDE_ENV_FILE"
 fi
 
-# During compaction, clear, or resume, check if a pipeline is actively running.
+# During clear or resume, check if a pipeline is actively running.
 # If so, output a short re-orientation message instead of the full guard.
 # "resume" added per Claude Code 2.1.73 — SessionStart hooks now fire once
 # (not twice) on --resume/--continue. Active pipelines should re-orient, not
 # re-prompt.
-if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ] || [ "$SOURCE" = "resume" ]; then
+# Note: "compact" is handled by the PostCompact hook (post-compact-guard.sh)
+# since 2.1.76. PostCompact fires AFTER compaction, so the re-orientation
+# message survives intact instead of being compressed.
+if [ "$SOURCE" = "clear" ] || [ "$SOURCE" = "resume" ]; then
   if [ -f "$SUITE_DIR/.orchestrator/settings.md" ]; then
     # Check if pipeline already completed (pipeline-status marker)
     if [ -f "$SUITE_DIR/.orchestrator/pipeline-status" ]; then

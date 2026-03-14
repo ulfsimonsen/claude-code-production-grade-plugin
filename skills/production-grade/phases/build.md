@@ -1,30 +1,39 @@
-# BUILD Phase — Dispatcher
+# Wave A — Dispatcher
 
-This phase manages tasks T3a (Backend), T3b (Frontend), and T4 (DevOps Containerization). Features PARALLEL #1 and #2.
+This phase manages Wave A: T3a/T3b (foreground code-writing) + T4a/T5a/T6a/T6b/T9a/T11a/T12 (background analysis). Up to 9 concurrent agents.
 
 ## Visual Output
 
 Print pipeline dashboard with BUILD ● active on phase start. Then print Wave A announcement:
 ```
-┌─ BUILD ──────────────────────────────── {N} agents ─┐
+┌─ WAVE A ──────────────────────────────── 9 agents ─┐
 │                                                      │
+│  FOREGROUND (worktree):                              │
 │  T3a  Software Engineer    {services from arch}      │
 │  T3b  Frontend Engineer    {pages from BRD}          │
 │                                                      │
-│  Agents launched. Working autonomously...            │
+│  BACKGROUND (analysis):                              │
+│  T4a  DevOps               Dockerfiles + CI skeleton │
+│  T5a  QA Engineer          test plan from BRD        │
+│  T6a  Security Engineer    STRIDE threat model       │
+│  T6b  Code Reviewer        conformance checklist     │
+│  T9a  SRE                  SLO definitions           │
+│  T11a Technical Writer     API ref draft             │
+│  T12  Skill Maker          pattern analysis          │
+│                                                      │
+│  All agents launched. Working autonomously...        │
 └──────────────────────────────────────────────────────┘
 ```
 
-When Wave A completes, print the checkmark cascade:
+When foreground agents (T3a/T3b) complete, print:
 ```
-┌─ BUILD COMPLETE ──────────────────────── ⏱ {time} ─┐
+┌─ WAVE A: BUILD COMPLETE ─────────────── ⏱ {time} ─┐
 │                                                      │
 │  ✓ Software Engineer    {N} services, {M} endpoints  │
 │  ✓ Frontend Engineer    {N} pages, {M} components    │
-│  ✓ DevOps               {N} Dockerfiles, 1 compose   │
 │                                                      │
-│  {N}/{N} complete                                    │
-│  → Starting HARDEN phase                             │
+│  Background analysis: {N}/7 complete, {M} still running│
+│  → Merging worktrees, starting Wave B                │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -73,7 +82,7 @@ else:
       ],
       "multiSelect": false
     }])
-    # If auto-commit: git add -A && git commit -m "production-grade: pre-BUILD checkpoint"
+    # If auto-commit: git add -A && git commit -m "production-grade: pre-Wave A checkpoint"
     # If skip: set use_worktrees = False
   else:
     use_worktrees = True
@@ -133,12 +142,12 @@ Plans must be detailed enough that an agent can implement WITHOUT making archite
 )
 ```
 
-## PARALLEL #1: T3a + T3b
+## FOREGROUND: T3a + T3b (code-writing, worktree)
 
 Spawn backend and frontend agents simultaneously as foreground Agents.
-When `use_worktrees` is True, add `isolation="worktree"` to each Agent call. Each agent gets its own isolated copy of the repo — no file race conditions.
+When `use_worktrees` is True, add `isolation="worktree"` to each Agent call.
 
-**IMPORTANT:** T3a and T3b MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message still execute concurrently, but the orchestrator blocks until both return — then naturally continues to worktree merge-back and T4. Using background agents here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
+**IMPORTANT:** T3a and T3b MUST run as foreground agents (no `run_in_background`). Both Agent calls in the same message execute concurrently, but the orchestrator blocks until both return — then continues to worktree merge-back. Background agents would lose worktree changes.
 
 ```python
 # T3a: Backend Engineering — executes Wave A plan
@@ -155,7 +164,7 @@ Read .production-grade.yaml for paths and preferences.
 Write services to project root: services/, libs/shared/
 Write workspace artifacts to: Claude-Production-Grade-Suite/software-engineer/
 TDD enforced: write test → watch fail → implement → watch pass → refactor.
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
+When complete, write a receipt JSON (including completed_at timestamp) to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, completed_at, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   isolation="worktree"  # Remove this line if use_worktrees is False
@@ -182,92 +191,157 @@ For Phase 5 (Design & Polish), the plan may include style guidance — follow it
 
 Write frontend to project root: frontend/
 Write workspace artifacts to: Claude-Production-Grade-Suite/frontend-engineer/
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
+When complete, write a receipt JSON (including completed_at timestamp) to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, completed_at, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
   model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```
 
-## Merge T3a/T3b Worktree Branches Before T4
+## BACKGROUND: Analysis Agents (no worktree, workspace-only writes)
 
-If worktrees were used for PARALLEL #1, merge T3a and T3b branches back **before** launching T4, so T4 sees the committed code:
+Launch these IN THE SAME MESSAGE as T3a/T3b above. They run concurrently with the foreground agents but don't block the orchestrator's execution chain when foreground agents return.
+
+**These agents write ONLY to `Claude-Production-Grade-Suite/` workspace directories — no project root writes, no worktree needed, no merge-back required.** As of Claude Code 2.1.76, killing a background agent preserves its partial results in context.
 
 ```python
-# Merge T3a/T3b worktree branches — T4 needs their output
-for branch in [t3a_branch, t3b_branch]:  # collected from Agent results (see note below)
+# T4a: DevOps analysis — Dockerfiles + CI skeleton from architecture
+TaskUpdate(taskId=t4a_id, status="in_progress")
+Agent(
+  prompt="""You are the DevOps Containerization Analyst.
+Read architecture from docs/architecture/ and API specs from api/.
+Read .production-grade.yaml for preferences.
+Write Dockerfiles (one per service) and docker-compose.yml skeleton based on architecture.
+Write to Claude-Production-Grade-Suite/devops/dockerfiles/ and Claude-Production-Grade-Suite/devops/compose-draft.yml.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T4a-devops-analysis.json.""",
+  subagent_type="general-purpose",
+  model="sonnet",
+  run_in_background=True
+)
+
+# T5a: QA test plan from BRD + architecture
+TaskUpdate(taskId=t5a_id, status="in_progress")
+Agent(
+  prompt="""You are the QA Test Planner.
+Read BRD from Claude-Production-Grade-Suite/product-manager/BRD/brd.md.
+Read architecture from docs/architecture/ and API specs from api/.
+Write a comprehensive test plan covering unit, integration, contract, e2e, and performance tests.
+Map each user story to specific test scenarios with expected inputs/outputs.
+Write to Claude-Production-Grade-Suite/qa-engineer/test-plan.md.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T5a-qa-plan.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Analysis tier — test plan requires judgment
+  run_in_background=True
+)
+
+# T6a: Security STRIDE threat model from architecture
+TaskUpdate(taskId=t6a_id, status="in_progress")
+Agent(
+  prompt="""You are the Security Threat Modeler — SOLE authority on STRIDE.
+Read architecture from docs/architecture/, API specs from api/, data models from schemas/.
+Perform STRIDE analysis on each service boundary and data flow.
+Identify threats, rank by severity, map to OWASP Top 10 categories.
+Write to Claude-Production-Grade-Suite/security-engineer/threat-model/.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6a-security-stride.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Analysis tier — threat modeling requires deep judgment
+  run_in_background=True
+)
+
+# T6b: Code Reviewer conformance checklist from architecture
+TaskUpdate(taskId=t6b_id, status="in_progress")
+Agent(
+  prompt="""You are the Code Review Planner — architecture conformance and code quality ONLY.
+DO NOT perform security review — security-engineer is sole authority.
+Read architecture ADRs from docs/architecture/architecture-decision-records/.
+Read API contracts from api/.
+Build a review checklist: SOLID/DRY/KISS patterns, naming conventions, error handling patterns,
+performance anti-patterns to watch for, test quality criteria.
+Write to Claude-Production-Grade-Suite/code-reviewer/checklist.md.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6b-review-checklist.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Analysis tier — checklist design requires judgment
+  run_in_background=True
+)
+
+# T9a: SRE SLO definitions from architecture
+TaskUpdate(taskId=t9a_id, status="in_progress")
+Agent(
+  prompt="""You are the SRE — SOLE authority on SLO/SLI definitions.
+Read architecture from docs/architecture/ and BRD from Claude-Production-Grade-Suite/product-manager/BRD/.
+Define SLIs (latency, availability, error rate) per service.
+Define SLOs with targets based on BRD constraints (scale, user expectations).
+Define error budgets and burn-rate alert thresholds.
+Write to Claude-Production-Grade-Suite/sre/slos.md.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T9a-sre-slos.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Analysis tier — SLO design requires judgment
+  run_in_background=True
+)
+
+# T11a: Technical Writer API ref draft from OpenAPI specs
+TaskUpdate(taskId=t11a_id, status="in_progress")
+Agent(
+  prompt="""You are the Technical Writer — API Reference.
+Read OpenAPI specs from api/openapi/*.yaml.
+Read architecture overview from docs/architecture/.
+Generate API reference documentation: endpoints, request/response schemas, auth requirements, error codes.
+Generate developer quick-start guide from BRD user stories.
+Write to Claude-Production-Grade-Suite/technical-writer/api-reference/ and Claude-Production-Grade-Suite/technical-writer/guides/.
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T11a-techwriter-api.json.""",
+  subagent_type="general-purpose",
+  model="sonnet",  # Executor tier — structured doc generation
+  run_in_background=True
+)
+
+# T12: Skill Maker pattern analysis from architecture
+TaskUpdate(taskId=t12_id, status="in_progress")
+Agent(
+  prompt="""You are the Skill Maker.
+Use the Skill tool to invoke 'production-grade:skill-maker' to load your complete methodology.
+Read architecture from docs/architecture/, API contracts from api/.
+Read BRD from Claude-Production-Grade-Suite/product-manager/BRD/.
+Analyze patterns: API routes, data models, auth flows, deployment patterns.
+Generate 3-5 project-specific skills as SKILL.md files.
+Stage skills to: Claude-Production-Grade-Suite/skill-maker/skills/ (sandbox blocks direct writes to .claude/skills/).
+Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json.""",
+  subagent_type="general-purpose",
+  model="opus",  # Analysis tier — skill design requires deep judgment
+  run_in_background=True
+)
+```
+
+## Merge T3a/T3b Worktree Branches
+
+After foreground agents (T3a/T3b) complete, merge their worktree branches back immediately. Background agents may still be running — that's OK, they write to workspace dirs only.
+
+**How to collect worktree branch names from Agent results:**
+When an Agent call uses `isolation="worktree"`, the result includes the branch name (e.g., `branch: production-grade-agent-XXXXX`). Parse and store these when processing each Agent's return.
+
+```python
+# Merge T3a/T3b worktree branches
+for branch in [t3a_branch, t3b_branch]:  # collected from Agent results
   if branch:  # t3b_branch is None if frontend was skipped
     Bash(f"git merge --no-ff {branch} -m 'production-grade: merge {branch}'")
     Bash(f"git branch -d {branch}")
-# If merge conflicts: git merge --abort, escalate to user via AskUserQuestion
+# Stale worktrees auto-cleaned (2.1.76+). Merge conflicts escalated to user.
 ```
-
-## PARALLEL #2: T4 After T3a + T3b Complete
-
-T4 begins containerization after PARALLEL #1 completes and its branches are merged:
-
-**IMPORTANT:** T4 MUST run as a foreground agent (no `run_in_background`). The orchestrator blocks until T4 returns — then naturally continues to worktree merge-back. Using a background agent here causes the orchestrator turn to end before merge-back can fire, losing worktree changes.
-
-```python
-TaskUpdate(taskId=t4_id, status="in_progress")
-Agent(
-  prompt="""You are the DevOps Containerization Engineer.
-Read your execution plan: Claude-Production-Grade-Suite/.orchestrator/plans/wave-a/T4-containers-plan.md
-If the plan file does not exist (Model-Optimization disabled), read architecture from
-docs/architecture/ and service structure from services/ to determine containerization needs.
-Implement base images, build stages, ports, health checks, compose entries.
-If a plan exists, follow it EXACTLY — do not deviate or make infrastructure decisions.
-
-Use the Skill tool to invoke 'production-grade:devops' to load your complete methodology and follow it.
-Read services from: services/
-Read .production-grade.yaml for paths and preferences.
-Write Dockerfiles per service, docker-compose.yml at project root.
-Write workspace artifacts to: Claude-Production-Grade-Suite/devops/
-Validate: docker build succeeds for each service, docker-compose up starts all.
-When complete, write a receipt JSON to Claude-Production-Grade-Suite/.orchestrator/receipts/T4-devops.json with task, agent, phase, status, artifacts, metrics, effort, verification. Then mark your task as completed.""",
-  subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
-  isolation="worktree"  # Remove this line if use_worktrees is False
-)
-```
-
-## Worktree Merge-Back
-
-If worktrees were used, merge each agent's branch back to the working branch after the wave completes:
-
-**How to collect worktree branch names from Agent results:**
-
-When an Agent call uses `isolation="worktree"`, the Agent tool's return value includes the worktree branch name in the result text. Parse the result for the branch name — it appears in the format: `worktree path: /path/to/worktree` and `branch: production-grade-agent-XXXXX`. Store these when processing each Agent's return.
-
-```python
-# T4 worktree merge (T3a/T3b branches were already merged above before T4 launched)
-if t4_branch:
-  Bash(f"git merge --no-ff {t4_branch} -m 'production-grade: merge {t4_branch}'")
-  Bash(f"git branch -d {t4_branch}")
-
-# If any merge has conflicts:
-#   1. Run: git merge --abort
-#   2. Escalate to user via AskUserQuestion
-#   3. Offer: "Resolve conflicts manually" or "Retry without worktrees"
-```
-
-After merging, all agent outputs are unified in the working directory.
 
 ## Completion
 
-When all BUILD tasks complete:
-1. **Merge worktree branches** (if worktrees enabled) — see Worktree Merge-Back above.
-2. **Verify receipts:** Read all BUILD receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/` (T3a, T3b, T4). Verify all listed artifacts exist on disk.
-3. **Re-anchor:** Re-read from disk before transitioning to HARDEN:
+When foreground BUILD tasks complete and branches are merged:
+1. **Verify foreground receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-*.json`, `T3b-*.json`. Verify listed artifacts exist on disk.
+2. **Check background status:** List background analysis receipts that have appeared. Log which are done and which are still running. Wave B readiness check will verify all required outputs before launching.
+3. **Re-anchor:** Re-read from disk before transitioning to Wave B:
    - Directory listing of `services/`, `frontend/`, `libs/shared/` (what was actually built)
-   - `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts (architecture reference for HARDEN agents)
+   - Background analysis outputs (if available): `Claude-Production-Grade-Suite/qa-engineer/test-plan.md`, `Claude-Production-Grade-Suite/security-engineer/threat-model/`, `Claude-Production-Grade-Suite/code-reviewer/checklist.md`
 4. Verify all services compile and start
-5. Verify docker-compose brings up the full stack
-6. Log BUILD completion to workspace
-7. Read `phases/harden.md` and begin HARDEN phase — use freshly-read data for agent prompts
+5. Log Wave A BUILD completion to workspace
+6. Read `phases/harden.md` and begin Wave B — use freshly-read data for agent prompts
 
 ## Failure Handling
 
 - Build failure after 3 retries → escalate to user via AskUserQuestion
 - Frontend fails but backend succeeds → continue backend-only pipeline
+- Background agent fails → Wave B readiness check detects missing output, falls back to inline analysis
 - Agents self-debug: read errors, fix, retry before escalating
