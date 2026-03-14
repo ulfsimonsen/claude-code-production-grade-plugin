@@ -16,7 +16,7 @@ All notable changes to the Production Grade Plugin.
 - **Worktree sparse checkout** — `worktree.sparsePaths` added to `.claude/settings.json` excluding `node_modules/`, `dist/`, build artifacts from worktree clones. Users can override via `.production-grade.yaml`. Speeds up worktree creation for large repos.
 - **Wave B readiness check** — before launching Wave B, the dispatcher verifies that all required background analysis outputs (test plan, STRIDE model, review checklist, Dockerfiles) exist on disk. Falls back to inline analysis if a background agent failed.
 - **Context bridging table** updated with split task entries (T4a/T4b, T5a/T5b, T6a/T6c, T6b/T6d, T9a/T9b, T11a/T11b).
-- **5 new common mistakes** — false dependency patterns (T7 waiting for HARDEN, T12 waiting for SRE, T11 fully blocked on SRE), background agents incorrectly using worktrees, split task routing.
+- **4 new common mistakes** — false dependency patterns (T7 waiting for HARDEN, T12 waiting for SRE, T11 fully blocked on SRE), background agents incorrectly using worktrees.
 
 ### Fixed
 - **SessionStart hook handled compaction incorrectly** — `compact` matcher in SessionStart fired before compaction, so re-orientation message could be compressed. Moved to PostCompact hook. SessionStart matcher changed from `startup|clear|compact` to `startup|clear`.

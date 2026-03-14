@@ -809,7 +809,9 @@ Between phases and waves, print a concise `→` transition line:
   → Starting DEFINE phase
   → Starting BUILD phase (Wave A: {N} agents)
   → Wave A complete, starting Wave B ({N} agents against written code)
-  → HARDEN complete, {N} Critical findings → entering remediation
+  → Wave B complete, {N} Critical findings → starting Wave C (remediation + SRE)
+  → Wave C complete, presenting Gate 3: Production Readiness
+  → Gate 3 approved, starting Wave D (ops guide + final assembly)
   → All phases complete, presenting final summary
 ```
 
@@ -1015,7 +1017,7 @@ Agent(
 )
 ```
 
-### Model Tier Strategy (requires Claude Code 2.1.72+)
+### Model Tier Strategy (requires Claude Code 2.1.76+)
 
 The `model` parameter on the Agent tool enables per-agent model selection. The orchestrator uses a **planner-executor pattern**: opus agents plan, sonnet agents execute against those plans.
 
