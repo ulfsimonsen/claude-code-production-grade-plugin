@@ -18,6 +18,7 @@ Every agent writes a JSON receipt as its LAST action before `TaskUpdate(status="
   "agent": "code-reviewer",
   "phase": "HARDEN",
   "status": "complete",
+  "completed_at": "2026-03-14T15:42:07Z",
   "artifacts": [
     "Claude-Production-Grade-Suite/code-reviewer/review-report.md",
     "Claude-Production-Grade-Suite/code-reviewer/findings/critical.md",
@@ -46,6 +47,7 @@ Every agent writes a JSON receipt as its LAST action before `TaskUpdate(status="
 | `agent` | string | Skill name (product-manager, software-engineer, etc.) |
 | `phase` | string | Pipeline phase (DEFINE, BUILD, HARDEN, SHIP, SUSTAIN) |
 | `status` | string | Always `"complete"` — only write receipt on success |
+| `completed_at` | string | ISO-8601 UTC timestamp of when the agent finished. Generate with `Bash('date -u +%Y-%m-%dT%H:%M:%SZ')`. Enables per-agent timing and bottleneck analysis. |
 | `artifacts` | string[] | Every file the agent created or modified. Each path MUST exist on disk at time of writing. |
 | `metrics` | object | Key-value pairs with concrete numbers. At least one metric required. No empty objects. |
 | `effort` | object | Tracking: `files_read` (int), `files_written` (int), `tool_calls` (int). Count your actual tool invocations during this task. |
@@ -86,6 +88,7 @@ All three must exist for a Critical/High finding to be considered resolved. The 
   "agent": "security-engineer",
   "phase": "SHIP",
   "status": "complete",
+  "completed_at": "2026-03-14T16:08:33Z",
   "artifacts": [],
   "metrics": {
     "original_critical": 3,
@@ -123,3 +126,4 @@ At every phase transition and before every gate, the orchestrator:
 | Skipping receipt because "it's a small task" | Every task gets a receipt, regardless of size |
 | Writing receipt but not checking artifacts exist | Verify each artifact path before writing receipt |
 | `"effort": {}` or missing effort field | Count files_read, files_written, tool_calls from your actual work |
+| `"completed_at": "done"` or missing | Must be ISO-8601 datetime from `date -u +%Y-%m-%dT%H:%M:%SZ` |

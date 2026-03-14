@@ -503,7 +503,9 @@ Maximum parallelism with worktree isolation is the recommended default — paral
 
 **Worktree requirements:** Git repo must have a clean state (no uncommitted changes). If dirty, the BUILD phase dispatcher will prompt the user to auto-commit or skip worktrees. See `phases/build.md` for the pre-flight check.
 
-**Known limitation:** Worktree isolation + permission prompts can cause agents to be blocked on file operations (GitHub #29110). If agents report permission errors in worktrees, the dispatcher should fall back to shared directory mode. Agents must commit their work before returning — worktrees are auto-cleaned if no commits are made, which can silently lose work.
+**Known limitation:** Worktree isolation + permission prompts can cause agents to be blocked on file operations (GitHub #29110). If agents report permission errors in worktrees, the dispatcher should fall back to shared directory mode. Foreground agents must commit their work before returning — worktrees are auto-cleaned if no commits are made, which can silently lose work. As of 2.1.76, stale worktrees from interrupted parallel runs are automatically cleaned up.
+
+**Sparse checkout (Claude Code 2.1.76+):** The plugin sets `worktree.sparsePaths` in `.claude/settings.json` to exclude `node_modules/`, `dist/`, `.next/`, and other build artifacts from worktree clones. This speeds up worktree creation for large repos. The default set covers standard project directories (`services/`, `frontend/`, `api/`, `docs/`, `tests/`, `infrastructure/`, `Claude-Production-Grade-Suite/`, etc.). Users with monorepos or non-standard structures can override via `worktree.sparsePaths` in `.production-grade.yaml`. Note: `worktree.sparsePaths` is a session-level setting — all agents get the same sparse paths. Security agents (T6a/T6c) that need full repo access should note this limitation.
 
 **Show pre-pipeline cost estimate** after both selections:
 ```
@@ -712,37 +714,90 @@ Dynamic task generation with two-wave parallelism. The orchestrator reads the ar
 
 ### Wave Announcements
 
-**When launching a wave**, print a Tier 2 box listing all agents and their tasks:
+**When launching a wave**, print a Tier 2 box listing all agents. Mark foreground vs background:
 ```
-┌─ WAVE A ──────────────────────────────────── {N} agents ─┐
-│                                                           │
-│  T3a  Software Engineer    {service list from architecture}│
-│  T3b  Frontend Engineer    {page groups from BRD}         │
-│  T4a  DevOps               Dockerfiles + CI skeleton      │
-│  T5a  QA Engineer          test plan from BRD             │
-│  T6a  Security Engineer    STRIDE threat model            │
-│  T6b  Code Reviewer        conformance checklist          │
-│  T9a  SRE                  SLO definitions                │
-│                                                           │
-│  All agents launched. Working autonomously...             │
-└───────────────────────────────────────────────────────────┘
+┌─ WAVE A ──────────────────────────────── 9 agents ─┐
+│                                                      │
+│  FOREGROUND (worktree):                              │
+│  T3a  Software Engineer    {services from arch}      │
+│  T3b  Frontend Engineer    {pages from BRD}          │
+│                                                      │
+│  BACKGROUND (analysis):                              │
+│  T4a  DevOps               Dockerfiles + CI skeleton │
+│  T5a  QA Engineer          test plan from BRD        │
+│  T6a  Security Engineer    STRIDE threat model       │
+│  T6b  Code Reviewer        conformance checklist     │
+│  T9a  SRE                  SLO definitions           │
+│  T11a Technical Writer     API ref draft             │
+│  T12  Skill Maker          pattern analysis          │
+│                                                      │
+│  All agents launched. Working autonomously...        │
+└──────────────────────────────────────────────────────┘
 ```
 
-**When a wave completes**, print the checkmark cascade — the peak visual moment:
+**When foreground agents complete** (T3a/T3b), print merge-back and transition:
 ```
-┌─ WAVE A COMPLETE ─────────────────────────── ⏱ {time} ─┐
-│                                                          │
-│  ✓ Software Engineer    {N} services, {M} endpoints      │
-│  ✓ Frontend Engineer    {N} page groups, {M} components  │
-│  ✓ DevOps               {N} Dockerfiles, 1 compose       │
-│  ✓ QA Engineer          test plan: {N} test cases        │
-│  ✓ Security Engineer    STRIDE: {N} threats identified   │
-│  ✓ Code Reviewer        checklist: {N} checkpoints       │
-│  ✓ SRE                  {N} SLOs, {M} alert rules        │
-│                                                          │
-│  {N}/{N} complete                                        │
-│  → Starting Wave B ({M} agents against written code)     │
-└──────────────────────────────────────────────────────────┘
+┌─ WAVE A: BUILD COMPLETE ─────────────── ⏱ {time} ─┐
+│                                                      │
+│  ✓ Software Engineer    {N} services, {M} endpoints  │
+│  ✓ Frontend Engineer    {N} pages, {M} components    │
+│                                                      │
+│  Background analysis: {N}/7 complete, {M} still running│
+│  → Merging worktrees, starting Wave B                │
+└──────────────────────────────────────────────────────┘
+```
+
+**Wave B launch** (5 foreground agents against code):
+```
+┌─ WAVE B ──────────────────────────────── 5 agents ─┐
+│                                                      │
+│  T4b  DevOps       build containers (code + T4a)     │
+│  T5b  QA Engineer  implement tests (code + T5a plan) │
+│  T6c  Security     code audit (code + T6a STRIDE)    │
+│  T6d  Code Review  review code (code + T6b checklist)│
+│  T7   DevOps IaC   Terraform + CI/CD (code + arch)   │
+│                                                      │
+│  All agents launched. Working autonomously...        │
+└──────────────────────────────────────────────────────┘
+```
+
+**Wave B completion:**
+```
+┌─ WAVE B COMPLETE ─────────────────────── ⏱ {time} ─┐
+│                                                      │
+│  ✓ DevOps             {N} containers built           │
+│  ✓ QA Engineer        {N} tests, {M} passing         │
+│  ✓ Security Engineer  {N} findings ({M} Crit/High)   │
+│  ✓ Code Reviewer      {N} findings ({M} Crit/High)   │
+│  ✓ DevOps IaC         {N} Terraform modules          │
+│                                                      │
+│  5/5 complete                                        │
+│  → Starting Wave C (remediation + SRE + data sci)    │
+└──────────────────────────────────────────────────────┘
+```
+
+**Wave C** (3 agents: remediation, SRE execution, data scientist):
+```
+┌─ WAVE C COMPLETE ─────────────────────── ⏱ {time} ─┐
+│                                                      │
+│  ✓ Remediation    {N} Critical/{M} High fixed        │
+│  ✓ SRE            {N} SLOs, {M} alerts, {K} runbooks │
+│  ✓ Data Scientist {N} optimizations (or skipped)     │
+│                                                      │
+│  → Presenting Gate 3: Production Readiness           │
+└──────────────────────────────────────────────────────┘
+```
+
+**Wave D** (ops guide + final assembly):
+```
+┌─ WAVE D COMPLETE ─────────────────────── ⏱ {time} ─┐
+│                                                      │
+│  ✓ Technical Writer  ops guide ({N} docs)            │
+│  ✓ Skill Maker       {N} project-specific skills     │
+│  ✓ Assembly          final validation complete       │
+│                                                      │
+│  → Presenting final summary                          │
+└──────────────────────────────────────────────────────┘
 ```
 
 Every agent completion line MUST include concrete numbers. No `✓ QA Engineer — complete`. The numbers prove the system did real work.
@@ -754,7 +809,9 @@ Between phases and waves, print a concise `→` transition line:
   → Starting DEFINE phase
   → Starting BUILD phase (Wave A: {N} agents)
   → Wave A complete, starting Wave B ({N} agents against written code)
-  → HARDEN complete, {N} Critical findings → entering remediation
+  → Wave B complete, {N} Critical findings → starting Wave C (remediation + SRE)
+  → Wave C complete, presenting Gate 3: Production Readiness
+  → Gate 3 approved, starting Wave D (ops guide + final assembly)
   → All phases complete, presenting final summary
 ```
 
@@ -765,68 +822,78 @@ T1: product-manager (BRD)
     ↓ [GATE 1]
 T2: solution-architect (Architecture)
     ↓ [GATE 2]
-    ↓ parallelism preference
-┌────────────── WAVE A: BUILD + ANALYSIS (all parallel) ──────────────┐
+    ↓ Wave A Planner (opus)
+┌────────────── WAVE A: BUILD + ANALYSIS (9 agents) ──────────────────┐
 │                                                                      │
-│  BUILD (needs architecture):                                         │
+│  FOREGROUND (worktree, merge-back required):                         │
 │    T3a: software-engineer ──── spawns N agents (1 per service)       │
 │    T3b: frontend-engineer ──── spawns N agents (1 per page group)    │
 │                                                                      │
-│  ANALYSIS (needs architecture only, starts alongside build):         │
+│  BACKGROUND (no worktree, workspace-only writes):                    │
 │    T4a: devops — Dockerfiles + CI skeleton                           │
 │    T5a: qa-engineer — test plan + test scaffolds                     │
 │    T6a: security-engineer — STRIDE threat model                      │
 │    T6b: code-reviewer — arch conformance + review checklist          │
 │    T9a: sre — SLO definitions + alert rules                         │
+│    T11a: technical-writer — API ref draft from OpenAPI specs         │
+│    T12: skill-maker — pattern analysis from architecture             │
 │                                                                      │
-│  Up to 7+ concurrent agents in Wave A                                │
+│  Up to 9 concurrent agents (2 foreground + 7 background)             │
 └──────────────────────────────────────────────────────────────────────┘
-    ↓ (wait for T3a + T3b code to be written)
-┌────────────── WAVE B: EXECUTION against code (all parallel) ────────┐
+    ↓ (T3a + T3b complete → merge-back. Background agents may still run.)
+    ↓ Readiness check: verify background analysis outputs exist
+┌────────────── WAVE B: EXECUTION against code (5 agents) ────────────┐
 │                                                                      │
 │    T4b: devops — build + push containers                             │
-│    T5b: qa-engineer — implement tests (spawns N: unit/integ/e2e/perf)│
-│    T6c: security-engineer — code audit + dep scan (spawns N phases)  │
-│    T6d: code-reviewer — actual review (spawns N: arch/quality/perf)  │
+│    T5b: qa-engineer — implement tests (from T5a plan)                │
+│    T6c: security-engineer — code audit (from T6a STRIDE model)       │
+│    T6d: code-reviewer — review code (from T6b checklist)             │
+│    T7: devops — IaC + CI/CD (needs code + arch, NOT HARDEN findings) │
 │                                                                      │
-│  Up to 4 concurrent agents, each spawning 3-4 internal agents        │
+│  5 foreground agents with worktree isolation                         │
 └──────────────────────────────────────────────────────────────────────┘
-    ↓
-T7: devops (IaC + CI/CD) ──────────┐
-T8: remediation (HARDEN fixes) ────┘ PARALLEL
-    ↓
-T9: sre (production readiness) ───┐
-T10: data-scientist (conditional) ─┘ PARALLEL
-    ↓ [GATE 3]
-T11: technical-writer (spawns N: API ref / dev guide / ops guide) ──┐
-T12: skill-maker ──────────────────────────────────────────────────┘ PARALLEL
-    ↓
-T13: Compound Learning + Assembly
+    ↓ merge-back
+┌────────────── WAVE C: REMEDIATION + SRE (3 agents) ─────────────────┐
+│                                                                      │
+│    T8: remediation (HARDEN fixes — needs T5b+T6c+T6d findings)       │
+│    T9b: sre execution (chaos + capacity — needs T7 infra + T9a SLOs) │
+│    T10: data-scientist (conditional — needs T3a code only)           │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+    ↓ merge-back → verification → [GATE 3]
+┌────────────── WAVE D: FINAL ASSEMBLY (2 agents) ────────────────────┐
+│                                                                      │
+│    T11b: technical-writer — ops guide (needs T9b SRE output)         │
+│    T13: compound learning + assembly (collect T12 if done)           │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Standard mode:** Collapses waves — Wave A runs build only, Wave B runs all harden sequentially. No internal skill parallelism.
+**Standard mode:** Collapses waves — Wave A runs build only (no background analysis), Wave B runs harden sequentially, Wave C runs ship sequentially. No internal skill parallelism.
 
-**Sequential mode:** One task at a time. Original 13-task serial execution.
+**Sequential mode:** One task at a time. Original task serial execution.
 
 ### Task Dependencies (Maximum Parallelism)
 
 Create tasks with TaskCreate, then set dependencies with TaskUpdate using the returned IDs.
 
-**Wave A tasks** — all depend on T2 (architecture), no dependencies on each other:
+**Wave A tasks** — all depend on T2 (architecture), no dependencies on each other. T3a/T3b run as foreground (worktree, need merge-back). All others run as background (no worktree, write to `Claude-Production-Grade-Suite/` workspace dirs only):
 
-| Task | Blocked By | Notes |
-|------|-----------|-------|
-| T1 | — | First task, no blockers |
-| T2 | T1 | Needs BRD |
-| T3a | T2 | Backend — spawns 1 Agent per service from architecture |
-| T3b | T2 | Frontend — spawns 1 Agent per page group from BRD |
-| T4a | T2 | DevOps analysis — Dockerfiles + CI skeleton |
-| T5a | T2 | QA test plan — from BRD + architecture |
-| T6a | T2 | Security threat model — STRIDE from architecture |
-| T6b | T2 | Review prep — arch conformance checklist |
-| T9a | T2 | SRE — SLO definitions from architecture + monitoring |
+| Task | Blocked By | Mode | Notes |
+|------|-----------|------|-------|
+| T1 | — | Skill | First task, no blockers |
+| T2 | T1 | Skill | Needs BRD |
+| T3a | T2 | Foreground | Backend — spawns 1 Agent per service from architecture |
+| T3b | T2 | Foreground | Frontend — spawns 1 Agent per page group from BRD |
+| T4a | T2 | Background | DevOps analysis — Dockerfiles + CI skeleton |
+| T5a | T2 | Background | QA test plan — from BRD + architecture |
+| T6a | T2 | Background | Security threat model — STRIDE from architecture |
+| T6b | T2 | Background | Review prep — arch conformance checklist |
+| T9a | T2 | Background | SRE — SLO definitions from architecture |
+| T11a | T2 | Background | Technical Writer — API ref draft from OpenAPI specs |
+| T12 | T2 | Background | Skill Maker — pattern analysis from architecture |
 
-**Wave B tasks** — depend on T3a/T3b (code) + their Wave A analysis:
+**Wave B tasks** — depend on T3a/T3b (code) + their Wave A analysis. All foreground with worktree. Readiness check verifies background analysis outputs exist before launch:
 
 | Task | Blocked By | Notes |
 |------|-----------|-------|
@@ -834,18 +901,22 @@ Create tasks with TaskCreate, then set dependencies with TaskUpdate using the re
 | T5b | T3a, T3b, T5a | Implement tests — needs code + test plan |
 | T6c | T3a, T3b, T6a | Code audit — needs code + threat model |
 | T6d | T3a, T3b, T6b | Code review — needs code + checklist |
+| T7 | T3a, T4a | IaC + CI/CD — needs service structure + Dockerfiles (NOT HARDEN findings) |
 
-**Post-wave tasks:**
+**Wave C tasks** — depend on Wave B findings/infra:
 
 | Task | Blocked By | Notes |
 |------|-----------|-------|
-| T7 | T5b, T6c, T6d | IaC + CI/CD — needs HARDEN execution output (Wave B) |
-| T8 | T5b, T6c, T6d | Remediation — needs HARDEN findings (Wave B) |
-| T9 | T7, T8 | SRE — production readiness, needs infra |
-| T10 | T7, T8 | Conditional on AI/ML usage |
-| T11 | T9, T10 | Docs — needs all prior output (T10 skipped = auto-completed) |
-| T12 | T9, T10 | Skills — needs all prior output (T10 skipped = auto-completed) |
-| T13 | T11, T12 | Final step |
+| T8 | T5b, T6c, T6d | Remediation — needs HARDEN findings |
+| T9b | T7, T9a | SRE execution — chaos, capacity, readiness (needs infra + SLO defs, NOT remediation) |
+| T10 | T3a | Data Scientist — conditional on AI/ML usage (needs code only, not infra) |
+
+**Wave D tasks** — final assembly:
+
+| Task | Blocked By | Notes |
+|------|-----------|-------|
+| T11b | T9b | Technical Writer — ops guide (needs SRE output) |
+| T13 | T11b, T12 | Compound Learning + Assembly (T12 may have completed in Wave A background) |
 
 ### Dynamic Task Generation
 
@@ -856,12 +927,22 @@ After Gate 2 (architecture approved), the orchestrator reads the architecture ou
 3. **Generate Wave A TaskList** — All T3a subtasks + T3b subtasks + T4a + T5a + T6a + T6b + T9a. No cross-dependencies.
 4. **On Wave A completion** — Generate Wave B TaskList with dependencies on Wave A outputs.
 
-Each subtask is dispatched as a foreground agent (multiple foreground agents in the same message execute concurrently):
+Each code-writing subtask is dispatched as a **foreground** agent. Analysis-only tasks use **background** agents:
 ```python
+# Foreground — code-writing agent (worktree, merge-back required)
 Agent(
   prompt="You are the Software Engineer. Implement the {service_name} service. Read architecture at docs/architecture/ and API contract at api/openapi/{service}.yaml. Follow ${CLAUDE_SKILL_DIR}/../software-engineer/phases/02-service-implementation.md. Write output to services/{service_name}/.",
   subagent_type="general-purpose",
-  model="sonnet"  # Executor tier — see Model Tier Strategy
+  model="sonnet",  # Executor tier — see Model Tier Strategy
+  isolation="worktree"
+)
+
+# Background — analysis-only agent (no worktree, writes to workspace only)
+Agent(
+  prompt="You are the QA Engineer. Write a test plan from BRD and architecture. Write output to Claude-Production-Grade-Suite/qa-engineer/test-plan.md.",
+  subagent_type="general-purpose",
+  model="opus",
+  run_in_background=True  # Safe since v2.1.76 — partial results preserved on kill
 )
 ```
 
@@ -870,19 +951,35 @@ Agent(
 - **T3b (Frontend):** Skip if `.production-grade.yaml` has `features.frontend: false`
 - **T10 (Data Scientist):** Auto-detect by scanning for `openai`, `anthropic`, `langchain`, `transformers`, `torch`, `tensorflow` imports. If not detected and `features.ai_ml: false`, mark as completed immediately.
 
+### Worktree Sparse Paths Override
+
+The plugin sets default `worktree.sparsePaths` in `.claude/settings.json` (excludes `node_modules/`, `dist/`, build artifacts). Users can override via `.production-grade.yaml`:
+
+```yaml
+worktree:
+  sparsePaths:
+    - "packages/api/"
+    - "packages/web/"
+    - "libs/"
+    - "infrastructure/"
+    - "Claude-Production-Grade-Suite/"
+    - "*.json"
+    - "*.yaml"
+```
+
+If present, the orchestrator reads this at bootstrap and the paths apply to all worktree agents. Note: this is a session-level setting — all agents get the same sparse paths. Security agents (T6a/T6c) that scan the full codebase may miss files outside the sparse set. If full checkout is needed, omit this key or set `worktree.sparsePaths: ["*"]`.
+
 ## Phase Execution
 
 Each phase loads its dispatcher file for task management and agent spawning.
 
-| Phase | File | Tasks | Parallel Strategy |
-|-------|------|-------|-------------------|
+| Phase | Dispatcher | Tasks | Strategy |
+|-------|-----------|-------|----------|
 | DEFINE | `${CLAUDE_SKILL_DIR}/phases/define.md` | T1, T2 | Sequential (gates) |
-| BUILD | `${CLAUDE_SKILL_DIR}/phases/build.md` | T3a, T3b, T4 | #1: T3a+T3b parallel, then #2: T4 |
-| HARDEN | `${CLAUDE_SKILL_DIR}/phases/harden.md` | T5, T6a, T6b | All 3 parallel, skills spawn internal agents |
-| SHIP | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T7, T8, T9, T10 | #5: T7+T8 parallel, #6: T9+T10 parallel |
-| SUSTAIN | `${CLAUDE_SKILL_DIR}/phases/sustain.md` | T11, T12, T13 | #7 parallel + internal |
-
-**Note:** The Maximum Parallelism task dependency graph below describes a two-wave architecture (Wave A + Wave B) that splits analysis and execution into separate concurrent groups. **The dispatchers currently implement the standard phase model in the table above** — BUILD dispatches T3a, T3b, T4; HARDEN dispatches T5, T6a, T6b; SHIP dispatches T7, T8, T9, T10. The two-wave graph (where T5a, T6a, T6b, T9a start during BUILD alongside T3a/T3b) is a target architecture that would require dispatcher updates to fully realize. When reading the graph below, refer to the phase table above for what actually executes today.
+| Wave A | `${CLAUDE_SKILL_DIR}/phases/build.md` | T3a, T3b (foreground) + T4a, T5a, T6a, T6b, T9a, T11a, T12 (background) | Up to 9 concurrent: 2 code-writing + 7 analysis |
+| Wave B | `${CLAUDE_SKILL_DIR}/phases/harden.md` | T4b, T5b, T6c, T6d, T7 | 5 foreground agents execute against code using Wave A analysis plans |
+| Wave C | `${CLAUDE_SKILL_DIR}/phases/ship.md` | T8, T9b, T10 | 3 foreground: remediation + SRE execution + data scientist |
+| Wave D | `${CLAUDE_SKILL_DIR}/phases/sustain.md` | T11b, T13 (+ T12 collection) | Ops guide + final assembly. T12 may already be done from Wave A background |
 
 **Internal skill parallelism** — each skill spawns its own concurrent agents:
 
@@ -906,7 +1003,12 @@ Each phase loads its dispatcher file for task management and agent spawning.
 Skill(skill="production-grade:product-manager")
 ```
 
-**Agent Tool** — for parallel, concurrent tasks (multiple foreground agents in the same message run concurrently — the orchestrator blocks until all return, preserving the execution chain for merge-back and subsequent phases):
+**Agent Tool** — for parallel, concurrent tasks. Two dispatch modes:
+
+- **Foreground** (default) — orchestrator blocks until agent returns. Required for code-writing agents that use `isolation="worktree"` (merge-back needs the result). Multiple foreground agents in the same message execute concurrently.
+- **Background** (`run_in_background=True`) — orchestrator continues immediately. Safe for analysis-only agents that write to `Claude-Production-Grade-Suite/` workspace dirs (no worktree, no code changes, no merge-back). As of Claude Code 2.1.76, killing a background agent preserves partial results in context. Use for Wave A analysis agents (T4a, T5a, T6a, T6b, T9a, T11a, T12).
+
+Foreground example:
 ```python
 Agent(
   prompt="You are the Backend Engineer. Read architecture at...",
@@ -915,7 +1017,7 @@ Agent(
 )
 ```
 
-### Model Tier Strategy (requires Claude Code 2.1.72+)
+### Model Tier Strategy (requires Claude Code 2.1.76+)
 
 The `model` parameter on the Agent tool enables per-agent model selection. The orchestrator uses a **planner-executor pattern**: opus agents plan, sonnet agents execute against those plans.
 
@@ -1044,16 +1146,22 @@ When HARDEN skills find Critical/High issues:
 | T2: Architect | `product-manager/BRD/` | `api/`, `schemas/`, `docs/architecture/` | `solution-architect/` |
 | T3a: Backend | `api/`, `schemas/`, `docs/architecture/` | `services/`, `libs/shared/` | `software-engineer/` |
 | T3b: Frontend | `api/`, `product-manager/BRD/` | `frontend/` | `frontend-engineer/` |
-| T4: DevOps | `services/`, `docs/architecture/` | Dockerfiles at root | `devops/` |
-| T5: QA | `services/`, `frontend/`, `api/` | `tests/` | `qa-engineer/` |
-| T6a: Security | All implementation code | — | `security-engineer/` |
-| T6b: Review | All implementation + architecture | — | `code-reviewer/` |
-| T7: DevOps IaC | Architecture, implementation | `infrastructure/`, `.github/workflows/` | `devops/` |
-| T8: Remediation | HARDEN findings | Fixes in `services/`, `frontend/` | — |
-| T9: SRE | All prior outputs | `docs/runbooks/` | `sre/` |
-| T10: Data Sci | Implementation (LLM usage) | — | `data-scientist/` |
-| T11: Tech Writer | ALL workspace + project | `docs/` | `technical-writer/` |
-| T12: Skill Maker | ALL workspace | — (staged to `skill-maker/skills/`, sandbox blocks `.claude/skills/`) | `skill-maker/` |
+| T4a: DevOps (analysis) | `docs/architecture/` | Dockerfiles at root | `devops/` |
+| T4b: DevOps (build) | `services/`, T4a Dockerfiles | — | `devops/` |
+| T5a: QA (plan) | `product-manager/BRD/`, `api/`, `docs/architecture/` | — | `qa-engineer/test-plan.md` |
+| T5b: QA (implement) | `services/`, `frontend/`, T5a test plan | `tests/` | `qa-engineer/` |
+| T6a: Security (STRIDE) | `docs/architecture/`, `api/` | — | `security-engineer/threat-model/` |
+| T6c: Security (audit) | All implementation code, T6a threat model | — | `security-engineer/code-audit/` |
+| T6b: Review (checklist) | `docs/architecture/`, `api/` | — | `code-reviewer/checklist.md` |
+| T6d: Review (execute) | All implementation + T6b checklist | — | `code-reviewer/` |
+| T7: DevOps IaC | Architecture, `services/`, T4a Dockerfiles | `infrastructure/`, `.github/workflows/` | `devops/` |
+| T8: Remediation | Wave B findings (T5b, T6c, T6d) | Fixes in `services/`, `frontend/` | — |
+| T9a: SRE (SLOs) | `docs/architecture/`, `product-manager/BRD/` | — | `sre/slos.md` |
+| T9b: SRE (execution) | T7 infra, T9a SLOs, test results | `docs/runbooks/` | `sre/chaos/`, `sre/capacity/` |
+| T10: Data Sci | Implementation code (LLM usage) | — | `data-scientist/` |
+| T11a: Tech Writer (API ref) | `api/`, `services/`, `frontend/` | `docs/api-reference/`, `docs/guides/` | `technical-writer/` |
+| T11b: Tech Writer (ops) | T9b SRE output, `infrastructure/` | `docs/ops-guide/` | `technical-writer/` |
+| T12: Skill Maker | Architecture, implementation, T6d review | — (staged to `skill-maker/skills/`) | `skill-maker/` |
 
 **Deliverables** go to project root (respecting `.production-grade.yaml` path overrides). **Workspace artifacts** go to `Claude-Production-Grade-Suite/<skill-name>/`.
 
@@ -1161,10 +1269,16 @@ Every agent follows:
 
 **Cost aggregation for final summary:**
 
-Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each receipt, extract the `effort` field (files_read, files_written, tool_calls). Sum across all agents to produce:
+Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each receipt, extract:
+- `effort` field (files_read, files_written, tool_calls) — sum across all agents for totals
+- `completed_at` field (ISO-8601) — compute per-wave elapsed time as `max(completed_at) - min(completed_at)` within each wave's receipts. Use these for the `⏱` timing values in the final summary instead of streaming-estimated times.
+
+Produce:
 - Total agents used (count of unique receipt files)
 - Total tool calls (sum of all effort.tool_calls)
 - Total files processed (sum of all effort.files_read + effort.files_written, deduplicated)
+- Per-wave timing from receipt timestamps (Wave A: Xm Ys, Wave B: Xm Ys, etc.)
+- Total elapsed: earliest `completed_at` (T1) to latest `completed_at` (T13)
 - Estimated tokens: use the cost estimation table from visual-identity protocol, adjusted by actual effort metrics. If actual tool_calls significantly exceed the estimate range, scale up proportionally.
 
 Read `Claude-Production-Grade-Suite/.orchestrator/rework-log.md` to get total rework cycles across all gates.
@@ -1177,10 +1291,10 @@ At every phase transition, re-read key workspace artifacts FROM DISK before crea
 
 | Transition | Re-read from disk |
 |-----------|-------------------|
-| **DEFINE → BUILD** | `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`, `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts, `docs/architecture/architecture-decision-records/*.md` (list), `api/openapi/*.yaml` (list), `Claude-Production-Grade-Suite/.orchestrator/settings.md`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-*.json` |
-| **BUILD → HARDEN** | All DEFINE artifacts above + directory listing of `services/`, `frontend/`, `libs/shared/`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T3*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T4*.json` |
-| **HARDEN → SHIP** | `Claude-Production-Grade-Suite/security-engineer/remediation/remediation-plan.md`, `Claude-Production-Grade-Suite/security-engineer/code-audit/`, `Claude-Production-Grade-Suite/code-reviewer/` findings, `Claude-Production-Grade-Suite/qa-engineer/` test results, `Claude-Production-Grade-Suite/.orchestrator/receipts/T5*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T6*.json` |
-| **SHIP → SUSTAIN** | `infrastructure/` listing, `.github/workflows/` listing, `Claude-Production-Grade-Suite/.orchestrator/receipts/T7*.json` through `Claude-Production-Grade-Suite/.orchestrator/receipts/T10*.json` |
+| **DEFINE → Wave A** | `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`, `Claude-Production-Grade-Suite/solution-architect/` workspace artifacts, `docs/architecture/architecture-decision-records/*.md` (list), `api/openapi/*.yaml` (list), `Claude-Production-Grade-Suite/.orchestrator/settings.md`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-*.json` |
+| **Wave A → Wave B** | All DEFINE artifacts above + directory listing of `services/`, `frontend/`, `libs/shared/`, background analysis outputs (`Claude-Production-Grade-Suite/qa-engineer/test-plan.md`, `security-engineer/threat-model/`, `code-reviewer/checklist.md`, `sre/slos.md`), `Claude-Production-Grade-Suite/.orchestrator/receipts/T3*.json` |
+| **Wave B → Wave C** | `Claude-Production-Grade-Suite/security-engineer/code-audit/`, `Claude-Production-Grade-Suite/code-reviewer/` findings, `Claude-Production-Grade-Suite/qa-engineer/` test results, `infrastructure/` listing, `Claude-Production-Grade-Suite/.orchestrator/receipts/T5*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T6*.json`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T7*.json` |
+| **Wave C → Wave D** | `Claude-Production-Grade-Suite/sre/` output, `docs/runbooks/`, `Claude-Production-Grade-Suite/.orchestrator/receipts/T8*.json` through `Claude-Production-Grade-Suite/.orchestrator/receipts/T10*.json` |
 
 **How:** Use `Glob` to list files, `Read` to load content. If a file doesn't exist, skip it — don't error. Then create agent task prompts using the freshly-read data, not compressed memory.
 
@@ -1231,7 +1345,11 @@ Never leave orphaned agents.
 | One-size-fits-all architecture | Architecture is derived from constraints (scale, team, budget, compliance). A 100-user internal tool does NOT need microservices + K8s. |
 | Writing stubs | No `// TODO: implement` in production code |
 | Hardcoded paths | Read `.production-grade.yaml` for path overrides |
-| Sequential when parallel possible | Maximum parallelism: two-wave execution + internal skill agents. Every independent unit gets its own agent |
+| Sequential when parallel possible | Maximum parallelism: 4-wave execution + internal skill agents. Every independent unit gets its own agent |
+| T7 (IaC) waiting for HARDEN | T7 needs architecture + service structure, NOT security findings. Launch T7 in Wave B alongside HARDEN agents |
+| T12 (Skill Maker) waiting for SRE | T12 analyzes code patterns, not SRE output. Launch as background in Wave A |
+| T11 (docs) fully blocked on SRE | Split: T11a (API ref) only needs OpenAPI specs (Wave A background). T11b (ops guide) needs SRE (Wave D) |
+| Background analysis agents using worktrees | Background agents write to `Claude-Production-Grade-Suite/` only — no worktree needed, no merge-back. Use `run_in_background=True` without `isolation="worktree"` |
 | Duplicating security review | code-reviewer references security-engineer findings |
 | `✓ Analysis complete` without numbers | Every completion line MUST include concrete counts |
 | Skipping pipeline dashboard reprint | Dashboard reprints at every phase transition and gate |
@@ -1245,14 +1363,14 @@ Never leave orphaned agents.
 | Duplicating framework control flow in UI | Don't link to `/api/auth/signin` — link to the protected destination and let middleware redirect. See boundary-safety protocol pattern 2. |
 | Global interceptors without conditional logic | Auth callbacks, API interceptors, and error handlers must branch on input. A hardcoded return value breaks every flow that passes through. See boundary-safety protocol pattern 4. |
 | Testing individual hops but not full user journeys | Auth test that checks "token issued" but never checks "user lands on dashboard" misses the real bugs. E2E must trace complete cross-system flows. |
-| Running parallel agents without worktree isolation | When parallelism is Maximum, use `isolation="worktree"` on all Agent calls. Agents sharing a working directory risk file race conditions. Skip worktrees only if repo is dirty and user declines auto-commit. |
-| Not merging worktree branches after wave completes | After each parallel wave, merge all worktree branches back to the working branch before the next phase reads their outputs. See phase dispatchers for merge-back instructions. |
+| Running parallel code-writing agents without worktree isolation | Use `isolation="worktree"` on foreground code-writing agents. Background analysis agents don't need worktrees — they write to `Claude-Production-Grade-Suite/` only. Skip worktrees only if repo is dirty and user declines auto-commit. |
+| Not merging worktree branches after wave completes | After each parallel wave, merge all foreground worktree branches back before the next wave reads their outputs. Stale worktrees from interrupted runs are auto-cleaned (2.1.76+). |
 | Stopping pipeline on gate rejection | Gates are self-healing. On rejection, loop back to the relevant agent for rework (max 2 cycles), re-verify, re-present. Only stop if user explicitly cancels or rework limit reached. |
 | Not tracking rework cycles | Log every rework cycle to `.orchestrator/rework-log.md` with gate number, concerns, and changes. Rework count appears in gate ceremony header and final summary. |
 | Missing effort tracking in receipts | Every receipt must include an `effort` field with files_read, files_written, tool_calls. These aggregate into the cost dashboard in the final summary. |
-| All agents running on Opus | Use model tiers: `model="opus"` for planners + analysis, `model="sonnet"` for executors. Saves 30-50% on full pipeline. Requires Claude Code 2.1.72+. |
+| All agents running on Opus | Use model tiers: `model="opus"` for planners + analysis, `model="sonnet"` for executors. Saves 30-50% on full pipeline. Requires Claude Code 2.1.76+. |
 | Omitting `model` when Model-Optimization is enabled | Read `settings.md` → if Model-Optimization is enabled (default), every Agent call MUST include the `model` parameter from the tier table. |
 | Worktree agents blocked on file operations | Known issue (GitHub #29110): `isolation="worktree"` + permission prompts can block agents on Write/Edit/Bash. If agents report permission errors in worktrees, fall back to shared directory (`Worktrees: disabled`). |
-| Worktree cleanup deleting uncommitted work | Worktrees are auto-cleaned if the agent makes no commits. Agents MUST commit their work before returning. Phase dispatchers verify commits exist before merge-back. If worktree branches are empty after agent completion, warn the user. |
+| Worktree cleanup deleting uncommitted work | Worktrees are auto-cleaned if the agent makes no commits. Foreground agents MUST commit before returning. As of 2.1.76, stale worktrees from interrupted runs are also auto-cleaned — the remaining concern is uncommitted work loss. |
 | `TeamDelete` hanging on unresponsive agents | Known issue (GitHub #31788): no timeout/force-kill. If `TeamDelete` blocks for >60s, warn user and move on. The `pipeline-status` marker + TeammateIdle hook handle cleanup. |
 | Skill-maker writing to `.claude/skills/` | Sandbox blocks writes to `.claude/skills/` (v2.1.38). Stage skills to `Claude-Production-Grade-Suite/skill-maker/skills/` and provide install instructions. |
