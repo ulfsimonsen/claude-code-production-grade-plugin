@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T11b.schema.json",
+  "title": "T11b — Tech Writer Ops Receipt",
+  "description": "Validates the technical-writer receipt for operations documentation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["ops_docs"],
+  "required_artifact_patterns": ["docs/ops-guide/**"]
+}

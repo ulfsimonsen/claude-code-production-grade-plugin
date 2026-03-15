@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T6b.schema.json",
+  "title": "T6b — Code Review Checklist Receipt",
+  "description": "Validates the code-reviewer receipt for checklist creation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["checklist_items"],
+  "required_artifact_patterns": ["**/code-reviewer/checklist.md"]
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T5a.schema.json",
+  "title": "T5a — QA Plan Receipt",
+  "description": "Validates the qa-engineer receipt for test planning.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["test_scenarios"],
+  "required_artifact_patterns": ["**/qa-engineer/test-plan.md"]
+}

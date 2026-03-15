@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T9b.schema.json",
+  "title": "T9b — SRE Execution Receipt",
+  "description": "Validates the sre receipt for observability execution.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["slos", "alerts", "runbooks"],
+  "min_values": {
+    "slos": 1
+  }
+}

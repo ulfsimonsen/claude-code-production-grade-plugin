@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T6d.schema.json",
+  "title": "T6d — Code Review Execution Receipt",
+  "description": "Validates the code-reviewer receipt for review execution.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["findings"],
+  "min_values": {
+    "findings": 0
+  }
+}

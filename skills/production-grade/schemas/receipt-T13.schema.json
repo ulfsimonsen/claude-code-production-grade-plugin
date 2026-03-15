@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T13.schema.json",
+  "title": "T13 — Assembly Receipt",
+  "description": "Validates the assembly receipt for final project assembly.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["files_assembled"],
+  "min_values": {
+    "files_assembled": 0
+  }
+}

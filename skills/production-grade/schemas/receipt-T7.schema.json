@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T7.schema.json",
+  "title": "T7 — DevOps IaC Receipt",
+  "description": "Validates the devops receipt for infrastructure-as-code.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["terraform_modules", "ci_workflows"],
+  "required_artifact_patterns": ["infrastructure/**"]
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T11a.schema.json",
+  "title": "T11a — Tech Writer API Receipt",
+  "description": "Validates the technical-writer receipt for API documentation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["api_docs"],
+  "required_artifact_patterns": ["**/technical-writer/api-reference/**"]
+}

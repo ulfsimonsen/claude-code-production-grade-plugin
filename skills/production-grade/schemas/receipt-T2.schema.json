@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T2.schema.json",
+  "title": "T2 — Solution Architect Receipt",
+  "description": "Validates the solution-architect receipt for architecture artifacts.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["adrs", "endpoints"],
+  "required_artifact_patterns": ["**/architecture-decision-records/*.md", "**/openapi/*.yaml"],
+  "min_values": {
+    "adrs": 1,
+    "endpoints": 1
+  }
+}

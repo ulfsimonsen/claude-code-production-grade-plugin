@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T8.schema.json",
+  "title": "T8 — Remediation Receipt",
+  "description": "Validates the remediation receipt for fixing critical and high findings.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["critical_fixed", "high_fixed"],
+  "min_values": {
+    "critical_fixed": 0,
+    "high_fixed": 0
+  }
+}

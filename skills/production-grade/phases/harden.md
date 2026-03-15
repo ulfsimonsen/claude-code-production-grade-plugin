@@ -215,3 +215,49 @@ After all Wave B tasks complete:
 - All Wave B receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`
 
 Read `phases/ship.md` and begin Wave C — use freshly-read findings data for remediation agent prompt.
+
+## Context Bridging (Wave B)
+
+| Task | Reads From | Writes To (Project Root) | Writes To (Workspace) |
+|------|-----------|--------------------------|----------------------|
+| T4b: DevOps | `services/`, T4a Dockerfiles | — | `devops/` |
+| T5b: QA | `services/`, `frontend/`, T5a test plan | `tests/` | `qa-engineer/` |
+| T6c: Security | All code, T6a threat model | — | `security-engineer/code-audit/` |
+| T6d: Review | All code, T6b checklist | — | `code-reviewer/` |
+| T7: IaC | Architecture, `services/`, T4a Dockerfiles | `infrastructure/`, `.github/workflows/` | `devops/` |
+
+## Wave B Task Dependencies
+
+| Task | Blocked By | Notes |
+|------|-----------|-------|
+| T4b | T3a, T4a | Build containers — needs code + Dockerfiles |
+| T5b | T3a, T3b, T5a | Implement tests — needs code + test plan |
+| T6c | T3a, T3b, T6a | Code audit — needs code + threat model |
+| T6d | T3a, T3b, T6b | Code review — needs code + checklist |
+| T7 | T3a, T4a | IaC — needs service structure + Dockerfiles (NOT HARDEN findings) |
+
+## State Management
+
+On entering Wave B:
+```python
+state["current_phase"] = "HARDEN"
+state["current_wave"] = "B"
+state["phase_file_loaded"] = true
+state["tasks_active"] = ["T4b", "T5b", "T6c", "T6d", "T7"]
+```
+
+On Wave B completion:
+```python
+state["current_wave"] = "C"
+state["phase_file_loaded"] = false
+state["tasks_active"] = ["T8", "T9b", "T10"]
+```
+
+## Common Mistakes (HARDEN Phase)
+
+| Mistake | Fix |
+|---------|-----|
+| Code reviewer doing OWASP review | security-engineer is sole OWASP authority |
+| T7 waiting for HARDEN findings | T7 needs architecture + service structure, NOT security findings |
+| Duplicating security review | code-reviewer references security-engineer findings |
+| code-reviewer modifying source code | code-reviewer is READ-ONLY — findings and patch files only |

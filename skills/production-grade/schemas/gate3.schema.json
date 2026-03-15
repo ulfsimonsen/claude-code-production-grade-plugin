@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gate3.schema.json",
+  "title": "Gate 3 — Production Readiness",
+  "description": "Gate 3: Production Readiness — all receipts valid, critical_remaining == 0",
+  "receipts_required": [
+    "T1", "T2", "T3a",
+    "T4a", "T4b",
+    "T5a", "T5b",
+    "T6a", "T6b", "T6c", "T6d",
+    "T7", "T8",
+    "T9a", "T9b",
+    "T11a", "T11b",
+    "T13"
+  ],
+  "optional_receipts": ["T3b", "T10", "T12"],
+  "critical_check": true
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T4b.schema.json",
+  "title": "T4b — DevOps Build Receipt",
+  "description": "Validates the devops receipt for container builds.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["containers"],
+  "min_values": {
+    "containers": 1
+  }
+}

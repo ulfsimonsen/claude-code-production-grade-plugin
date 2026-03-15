@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T1.schema.json",
+  "title": "T1 — Product Manager Receipt",
+  "description": "Validates the product-manager receipt for BRD creation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["user_stories", "acceptance_criteria"],
+  "required_artifact_patterns": ["**/BRD/brd.md"],
+  "min_values": {
+    "user_stories": 1,
+    "acceptance_criteria": 1
+  }
+}

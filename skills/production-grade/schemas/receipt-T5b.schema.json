@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T5b.schema.json",
+  "title": "T5b — QA Implementation Receipt",
+  "description": "Validates the qa-engineer receipt for test implementation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["tests", "passing"],
+  "required_artifact_patterns": ["tests/**"],
+  "min_values": {
+    "tests": 1
+  }
+}

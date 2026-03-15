@@ -345,3 +345,153 @@ When foreground BUILD tasks complete and branches are merged:
 - Frontend fails but backend succeeds → continue backend-only pipeline
 - Background agent fails → Wave B readiness check detects missing output, falls back to inline analysis
 - Agents self-debug: read errors, fix, retry before escalating
+
+## Task Dependency Graph
+
+Create tasks with TaskCreate, then set dependencies with TaskUpdate using the returned IDs.
+
+**Wave A tasks** — all depend on T2 (architecture), no dependencies on each other:
+
+| Task | Blocked By | Mode | Notes |
+|------|-----------|------|-------|
+| T3a | T2 | Foreground | Backend — spawns 1 Agent per service from architecture |
+| T3b | T2 | Foreground | Frontend — spawns 1 Agent per page group from BRD |
+| T4a | T2 | Background | DevOps analysis — Dockerfiles + CI skeleton |
+| T5a | T2 | Background | QA test plan — from BRD + architecture |
+| T6a | T2 | Background | Security threat model — STRIDE from architecture |
+| T6b | T2 | Background | Review prep — arch conformance checklist |
+| T9a | T2 | Background | SRE — SLO definitions from architecture |
+| T11a | T2 | Background | Technical Writer — API ref draft from OpenAPI specs |
+| T12 | T2 | Background | Skill Maker — pattern analysis from architecture |
+
+### Dynamic Task Generation
+
+After Gate 2, the orchestrator reads architecture output to determine work units:
+1. **Count services** — Read `docs/architecture/` service list. For each, create a subtask under T3a.
+2. **Count pages** — Read BRD user stories. Group into page clusters. For each group, create a subtask under T3b.
+3. **Generate Wave A TaskList** — All T3a subtasks + T3b subtasks + background tasks.
+
+### Conditional Tasks
+
+- **T3b (Frontend):** Skip if `.production-grade.yaml` has `features.frontend: false`
+- **T10 (Data Scientist):** Auto-detect by scanning for `openai`, `anthropic`, `langchain`, `transformers`, `torch`, `tensorflow` imports. Skip if not detected and `features.ai_ml: false`.
+
+## Model Tier Strategy
+
+Per-agent model selection (requires Claude Code 2.1.76+). Uses a **planner-executor pattern**: opus plans, sonnet executes.
+
+**Principle:** Sonnet needs unambiguous instructions. Opus reasons about WHAT to build; sonnet implements exactly what opus specified.
+
+| Role | Model | Tasks | What It Does |
+|------|-------|-------|-------------|
+| **Planner** | `opus` | Wave Planners | Reads architecture + BRD, writes file-level execution plans |
+| **Analysis** | `opus` | T5a, T6a, T6b, T9a, T10, T12 | Judgment: threat modeling, code review, SLO design |
+| **Executor** | `sonnet` | T3a, T3b, T4, T5b, T7, T8, T11 | Implements exactly what the plan specifies |
+
+Before each parallel wave with sonnet agents, spawn a single **opus wave planner**. Plans stored at `Claude-Production-Grade-Suite/.orchestrator/plans/`.
+
+**Key insight:** The opus analysis agents in Wave A (T5a, T6a, T6b, T9a) ARE planners — they produce outputs that sonnet agents execute against in later waves.
+
+### Execution Plan Format
+
+Plans must be unambiguous enough for sonnet to implement without making decisions:
+
+```markdown
+# Execution Plan: T3a Backend Engineer
+
+## Overview
+Architecture: modular monolith (ADR-001)
+Language: TypeScript / Node.js / Express
+Database: PostgreSQL with Prisma ORM
+
+## services/order-service/src/handlers/create-order.ts
+- Export: handleCreateOrder(req: CreateOrderRequest): Promise<OrderResponse>
+- Middleware: authMiddleware, validateBody(CreateOrderSchema)
+- Steps:
+  1. Extract idempotencyKey from req.headers...
+  [every step explicit, no "implement business logic"]
+```
+
+### Which Waves Get Planners
+
+| Wave | Planner? | Why |
+|------|----------|-----|
+| Wave A | Yes | T3a, T3b, T4 need file-level plans from architecture |
+| Wave B | No | T5b reads T5a plan. T4b reads T4 Dockerfiles. T6c, T6d are opus. |
+| Wave C | Yes | T8 needs opus to translate findings into fix instructions |
+| Wave D | No | T11 reads full workspace. T12 is opus. |
+
+### Settings
+
+Enabled by default. To disable: add `Model-Optimization: disabled` to settings.md. When disabled, omit `model` from Agent calls and skip wave planners.
+
+## Workspace Architecture
+
+```
+Claude-Production-Grade-Suite/
+├── .protocols/              # Shared protocols (written at bootstrap)
+├── .orchestrator/           # Pipeline state, receipts, plans
+│   ├── state.json           # Current pipeline state (phase, wave, tasks)
+│   ├── receipts/            # Task completion receipts (validated by hooks)
+│   ├── plans/               # Wave planner outputs
+│   ├── settings.md          # Engagement, parallelism, worktree choices
+│   └── pre-compact-snapshot.json  # PreCompact hook output
+├── product-manager/         # BRD, research
+├── solution-architect/      # Architecture artifacts
+├── software-engineer/       # Backend logs/artifacts
+├── frontend-engineer/       # Frontend logs/artifacts
+├── qa-engineer/             # Test artifacts
+├── security-engineer/       # Security findings
+├── code-reviewer/           # Quality findings
+├── devops/                  # Infrastructure artifacts
+├── sre/                     # Readiness artifacts
+├── data-scientist/          # AI/ML artifacts (conditional)
+├── technical-writer/        # Documentation artifacts
+└── skill-maker/             # Custom skills
+```
+
+## Context Bridging (Wave A)
+
+| Task | Reads From | Writes To (Project Root) | Writes To (Workspace) |
+|------|-----------|--------------------------|----------------------|
+| T3a: Backend | `api/`, `schemas/`, `docs/architecture/` | `services/`, `libs/shared/` | `software-engineer/` |
+| T3b: Frontend | `api/`, `product-manager/BRD/` | `frontend/` | `frontend-engineer/` |
+| T4a: DevOps | `docs/architecture/` | Dockerfiles at root | `devops/` |
+| T5a: QA | `product-manager/BRD/`, `api/`, `docs/architecture/` | — | `qa-engineer/test-plan.md` |
+| T6a: Security | `docs/architecture/`, `api/` | — | `security-engineer/threat-model/` |
+| T6b: Review | `docs/architecture/`, `api/` | — | `code-reviewer/checklist.md` |
+| T9a: SRE | `docs/architecture/`, `product-manager/BRD/` | — | `sre/slos.md` |
+| T11a: Writer | `api/`, `services/`, `frontend/` | — | `technical-writer/` |
+| T12: Skills | Architecture, implementation | — | `skill-maker/` |
+
+## State Management
+
+On entering Wave A, update state:
+```python
+state["current_phase"] = "BUILD"
+state["current_wave"] = "A"
+state["phase_file_loaded"] = true
+state["tasks_active"] = ["T3a", "T3b", "T4a", "T5a", "T6a", "T6b", "T9a", "T11a", "T12"]
+```
+
+On Wave A completion:
+```python
+state["current_wave"] = "B"
+state["phase_file_loaded"] = false
+state["tasks_active"] = ["T4b", "T5b", "T6c", "T6d", "T7"]
+```
+
+## Common Mistakes (BUILD Phase)
+
+| Mistake | Fix |
+|---------|-----|
+| Sequential when parallel possible | Maximum parallelism: 4-wave execution. Every independent unit gets its own agent |
+| Background analysis agents using worktrees | Background agents write to workspace only — no worktree, use `run_in_background=True` |
+| Running parallel code-writing agents without worktree | Use `isolation="worktree"` on foreground code-writing agents |
+| Not merging worktree branches after wave | Merge all foreground branches before next wave reads outputs |
+| All agents running on Opus | Use model tiers: opus for planners + analysis, sonnet for executors |
+| Omitting `model` when optimization enabled | Every Agent call MUST include `model` from tier table |
+| Worktree agents blocked on file operations | Fall back to shared directory if permission errors (GitHub #29110) |
+| Worktree cleanup deleting uncommitted work | Foreground agents MUST commit before returning |
+| `✓ Analysis complete` without numbers | Every completion line MUST include concrete counts |
+| Missing wave announcements | Print Tier 2 box before and after every parallel wave |

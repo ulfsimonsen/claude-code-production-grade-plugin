@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gate1.schema.json",
+  "title": "Gate 1 — BRD Approval",
+  "description": "Gate 1: BRD Approval — all T1 artifacts must exist on disk",
+  "receipts_required": ["T1"]
+}
