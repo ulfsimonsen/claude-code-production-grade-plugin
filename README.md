@@ -7,10 +7,10 @@
 <p align="center">
   <a href="https://github.com/ulfsimonsen/claude-code-production-grade-plugin"><img src="https://img.shields.io/github/stars/ulfsimonsen/claude-code-production-grade-plugin?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-5.7.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-6.0.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/agents-14-green.svg" alt="14 agents">
-  <img src="https://img.shields.io/badge/protocols-8-red.svg" alt="7 protocols">
-  <img src="https://img.shields.io/badge/execution%20modes-10-purple.svg" alt="10 modes">
+  <img src="https://img.shields.io/badge/protocols-8-red.svg" alt="8 protocols">
+  <img src="https://img.shields.io/badge/execution%20modes-11-purple.svg" alt="11 modes">
 </p>
 
 <h3 align="center">14 AI agents, one install, idea to production.</h3>

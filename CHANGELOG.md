@@ -2,6 +2,29 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [6.0.0] — 2026-03-16
+
+### Added
+- **Auto engagement mode** — Fully autonomous execution with ZERO user interaction throughout the entire development cycle. The user invokes `/production-grade auto` (or says "autonomous", "hands-off", "walk away") and the pipeline runs start-to-finish without a single `AskUserQuestion` call. Triggered via request classification, engagement mode selection, or `/production-grade auto` shorthand.
+- **Branch isolation** — Auto mode always creates an isolated branch (`auto/production-grade/{project-slug}-{timestamp}`) before any work. Dirty repos are auto-committed. The user's working branch is never modified. Final summary includes `git merge` instructions for review-then-merge workflow.
+- **Permissions pre-flight** — Auto mode checks `.claude/settings.json` for all required tool permissions (`Write(*)`, `Edit(*)`, `Bash(git *)`, `Agent(*)`, etc.) before starting. If any are missing, it prints exact JSON to add and stops — the only interaction point in the entire Auto pipeline.
+- **Auto-derive PM and Architect** — In Auto mode, T1 (Product Manager) and T2 (Solution Architect) spawn as `Agent` calls with auto-derive prompts instead of invoking Skills (which would try to interview the user). PM auto-derives BRD from the user's request + WebSearch. Architect auto-derives architecture from BRD.
+- **Gate auto-approval** — All 3 pipeline gates (BRD, Architecture, Production Readiness) auto-approve with `[AUTO-APPROVED]` ceremony. Receipts are still verified and artifacts checked on disk — failures are logged but never block. No rework loops in Auto mode.
+- **Auto decisions log** — Every autonomous decision is logged to `Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md` with reasoning. The final summary prints the complete decisions log so users can review what was decided on their behalf.
+- **Known issues tracking** — Unresolved Critical/High findings that survive remediation are collected as known issues in the Auto mode final summary, with severity, description, and file:line references.
+- **Auto mode test suite** — 57 structural consistency tests (`tests/test-auto-mode.sh`) verifying Auto mode instructions are present and cross-referenced correctly across all 6 modified files: SKILL.md, define.md, build.md, ship.md, sustain.md, ux-protocol.md.
+
+### Changed
+- **Engagement mode expanded** — Settings format now includes `auto` as a valid engagement level: `Engagement: [auto|express|standard|thorough|meticulous]`. All phase dispatchers check for `Engagement: auto` and bypass all interaction when detected.
+- **UX Protocol Rule 6** — Added `Auto` row to the engagement mode table with "Total autonomy" posture. Documented Auto vs Express differences (Express still fires 3 gates; Auto fires zero). Updated gate/escalation exceptions for Auto mode.
+- **Gate ceremonies** — All 3 gate sections (define.md Gate 1/2, ship.md Gate 3) restructured into `Auto Mode — Gate N Auto-Approve` and `Standard Mode — Gate N (non-Auto)` subsections for clarity.
+- **Build phase** — Worktree pre-flight auto-commits dirty repos in Auto mode without asking. Frontend style selection auto-selects in Auto/Express modes. Failure handling logs and proceeds in Auto mode instead of escalating.
+- **Sustain phase** — Assembly step restructured into `Auto Mode Assembly` (auto-integrate, no question) and `Standard Mode Assembly` (AskUserQuestion). Auto mode does not switch branches after completion — leaves user on the auto branch for review.
+- **Execution modes count** — Increased from 10 to 11 (Auto mode added). README badges updated.
+
+### Fixed
+- **CDPATH bug in test framework** — `framework.sh` and `run-all.sh` now redirect `cd` stdout to `/dev/null`, preventing `CDPATH`-triggered double-path output from breaking `PROJECT_ROOT`/`SCRIPT_DIR` resolution. Previously caused all tests to fail in shells with `CDPATH` set.
+
 ## [5.9.0] — 2026-03-16
 
 ### Added
