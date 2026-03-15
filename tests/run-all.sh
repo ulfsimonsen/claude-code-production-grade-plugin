@@ -2,7 +2,7 @@
 # Run all test suites for production-grade plugin
 set -o pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 TOTAL_SUITES=0
 PASSED_SUITES=0
 FAILED_SUITES=0

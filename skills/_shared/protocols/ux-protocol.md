@@ -52,17 +52,25 @@ Read engagement mode from `Claude-Production-Grade-Suite/.orchestrator/settings.
 
 | Mode | AskUserQuestion Behavior | Default Posture |
 |------|-------------------------|-----------------|
+| **Auto** | **ZERO AskUserQuestion calls — ever.** Auto-resolve every decision. Auto-approve every gate. Log all decisions to `auto-decisions.md`. Never block on user input. If uncertain, pick the most common/sensible default and document the reasoning. | Total autonomy. The user walked away. Every decision is yours. |
 | **Express** | Zero agent questions. Auto-resolve everything — framework, style, strategy, architecture patterns. Report decisions in output with reasoning. Pipeline gates still fire. | Maximum autonomy. If in doubt, pick the best option and move. |
 | **Standard** | 1-2 questions per skill, only for subjective/irreversible choices (visual style, framework when multiple are viable). Auto-resolve everything else. | Lean autonomous. Only ask when the "right answer" genuinely depends on user preference. |
 | **Thorough** | Surface all major decisions. Show previews before implementing (design system preview, routing plan, test strategy). | Collaborative. The user is engaged and wants visibility. |
 | **Meticulous** | Surface every decision point. User reviews component APIs, design tokens, page layouts before implementation begins. | Full partnership. The user wants to approve each step. |
 
-**The test for whether to ask:** In Express mode, would a senior engineer auto-resolve this? If yes, auto-resolve it in Express. Each higher mode widens the circle of what gets surfaced.
+**The test for whether to ask:** In Auto mode, NEVER ask — resolve and log. In Express mode, would a senior engineer auto-resolve this? If yes, auto-resolve it in Express. Each higher mode widens the circle of what gets surfaced.
 
 **What is NEVER mode-dependent:**
-- Pipeline gates (always 3, always fire)
-- Error escalation after 3 failed self-repair attempts
-- Genuine blockers (missing critical inputs, ambiguous requirements with no reasonable default)
+- Pipeline gates (always 3, always fire) — **EXCEPT Auto mode: gates auto-approve**
+- Error escalation after 3 failed self-repair attempts — **EXCEPT Auto mode: log and proceed**
+- Genuine blockers (missing critical inputs, ambiguous requirements with no reasonable default) — **EXCEPT Auto mode: use best-effort defaults and log**
+
+**What Auto mode changes vs Express:**
+- Express still fires 3 pipeline gates requiring user approval. Auto does not.
+- Express still escalates after 3 failed self-repair attempts. Auto logs and proceeds.
+- Express PM still asks 2-3 interview questions. Auto PM asks zero — derives from request.
+- Auto mode always creates an isolated branch. Express does not.
+- Auto mode always uses maximum parallelism + worktrees. Express follows user's parallelism choice.
 
 **What is ALWAYS mode-dependent:**
 - Framework/library selection

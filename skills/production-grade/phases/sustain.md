@@ -164,6 +164,42 @@ Optionally also append key project patterns (tech stack, conventions, common com
 
 ### Final Assembly
 
+#### Auto Mode Assembly
+
+If `Engagement: auto` in settings.md:
+
+1. **Auto-integrate** — skip the question, integrate all code to project root immediately:
+   ```
+   ✓ Auto: integrated all code to project root
+   ```
+   Append to `Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md`:
+   `[T13] Auto-integrated all deliverables to project root — default for Auto mode`
+
+2. **Install staged skills** — if T12 completed, log the staging location:
+   ```
+   ✓ Skills staged to Claude-Production-Grade-Suite/skill-maker/skills/
+     To install: cp -r Claude-Production-Grade-Suite/skill-maker/skills/* .claude/skills/
+   ```
+
+3. **Run final validation:** `docker-compose up`, `make test`, `terraform validate`, health checks. Log results. If validation fails, log but do not block.
+
+4. **Present Auto Mode final summary** (see SKILL.md Auto Mode — Final Summary Additions):
+   - Read `Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md` for the decisions log
+   - Read all receipts for metrics and any `completed_with_errors` tasks
+   - Collect unresolved findings as known issues
+   - Print the Auto-specific summary with branch info, decisions log, and known issues
+
+5. **Write pipeline status marker and clean up team:**
+   ```python
+   TaskUpdate(taskId=t13_id, status="completed")
+   Bash("echo 'complete' > Claude-Production-Grade-Suite/.orchestrator/pipeline-status")
+   TeamDelete(team_name="production-grade")
+   ```
+
+   Do NOT switch branches — leave user on the auto branch for review.
+
+#### Standard Mode Assembly (non-Auto)
+
 1. **Integration decision** — ask user via AskUserQuestion:
 ```python
 AskUserQuestion(questions=[{

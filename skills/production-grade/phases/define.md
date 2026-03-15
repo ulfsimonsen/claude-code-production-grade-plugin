@@ -28,6 +28,41 @@ Read `.production-grade.yaml` for path overrides:
 
 ## T1: Product Manager — BRD
 
+### Auto Mode Behavior
+
+If `Engagement: auto` in `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
+
+**Do NOT invoke the product-manager Skill** (it will try to conduct an interview). Instead, spawn an Agent that auto-derives the BRD:
+
+```python
+TaskUpdate(taskId=t1_id, status="in_progress")
+Agent(
+  prompt="""You are the Product Manager operating in AUTO MODE — zero user interaction.
+Read the user's original request from the conversation context. DO NOT use AskUserQuestion. DO NOT ask any questions.
+
+Auto-derive the BRD entirely from:
+1. The user's request description (extract project goals, features, constraints)
+2. WebSearch for domain knowledge (market context, competitor patterns, common requirements)
+3. Reasonable defaults for anything not specified (pick the most common/sensible option)
+
+Write a complete BRD to Claude-Production-Grade-Suite/product-manager/BRD/:
+- brd.md: Full BRD with user stories, acceptance criteria, stakeholder analysis, constraints
+- INDEX.md: Table of contents
+
+For every decision you make autonomously, log it:
+Write to Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md (append):
+  - "[T1] {decision} — {reasoning}"
+
+Quality bar: minimum 5 user stories with acceptance criteria each. No placeholders, no TODOs.
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T1-product-manager.json.""",
+  subagent_type="general-purpose",
+  model="opus"  # PM requires judgment
+)
+TaskUpdate(taskId=t1_id, status="completed")
+```
+
+### Standard Mode Behavior (non-Auto)
+
 Mark task in progress and invoke as Skill (needs user interaction for CEO interview):
 
 ```python
@@ -49,6 +84,31 @@ TaskUpdate(taskId=t1_id, status="completed")
 ### Gate 1 — BRD Approval
 
 **Before opening gate:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-product-manager.json`. Verify all `artifacts` exist on disk. Use receipt `metrics` for gate display numbers.
+
+#### Auto Mode — Gate 1 Auto-Approve
+
+If `Engagement: auto` in settings.md:
+
+1. Verify receipt exists and all artifacts are on disk
+2. Print the gate ceremony with `[AUTO-APPROVED]`:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⬥ GATE 1 — Requirements Approval  [AUTO-APPROVED]  ⏱ {elapsed}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  User Stories       {N} with acceptance criteria
+  Stakeholders       {N} roles identified
+  Constraints        {key constraints summary}
+  Scope              {brief scope summary}
+
+  ✓ Auto-approved — receipts verified, artifacts exist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+3. Do NOT call AskUserQuestion. Proceed directly to T2.
+4. If receipt verification fails (missing artifacts), log the failure and proceed anyway:
+   `⚠ Auto: Gate 1 receipt verification incomplete — proceeding with best effort`
+
+#### Standard Mode — Gate 1 (non-Auto)
 
 **Gate 1 Visual Ceremony:**
 
@@ -94,6 +154,44 @@ If user selects "Show BRD details" → display BRD, re-present Gate 1.
 
 ## T2: Solution Architect — Architecture
 
+### Auto Mode Behavior
+
+If `Engagement: auto` in `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
+
+**Do NOT invoke the solution-architect Skill** (it will try to conduct a discovery interview). Instead, spawn an Agent that auto-derives the architecture:
+
+```python
+TaskUpdate(taskId=t2_id, status="in_progress")
+Agent(
+  prompt="""You are the Solution Architect operating in AUTO MODE — zero user interaction.
+Read the BRD from Claude-Production-Grade-Suite/product-manager/BRD/brd.md. DO NOT use AskUserQuestion. DO NOT ask any questions.
+
+Auto-derive the complete architecture from the BRD:
+1. Infer the best architecture pattern (monolith, modular monolith, microservices) from project scale
+2. Select tech stack based on BRD constraints and domain (use WebSearch for current best practices)
+3. Design service boundaries from user stories
+4. Design API contracts (OpenAPI 3.1) from acceptance criteria
+5. Design data model and migrations from domain entities
+6. Write ADRs for every significant decision (minimum 3)
+7. Generate project scaffold (directory structure, package files, config)
+
+Write deliverables to project root: api/, schemas/, docs/architecture/
+Write workspace artifacts to: Claude-Production-Grade-Suite/solution-architect/
+
+For every decision you make autonomously, log it:
+Write to Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md (append):
+  - "[T2] {decision} — {reasoning}"
+
+Quality bar: minimum 3 ADRs, complete OpenAPI specs, data model with migrations. No placeholders, no TODOs.
+When complete, write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T2-solution-architect.json.""",
+  subagent_type="general-purpose",
+  model="opus"  # Architecture requires deep judgment
+)
+TaskUpdate(taskId=t2_id, status="completed")
+```
+
+### Standard Mode Behavior (non-Auto)
+
 ```python
 TaskUpdate(taskId=t2_id, status="in_progress")
 Skill(skill="production-grade:solution-architect")
@@ -115,6 +213,33 @@ TaskUpdate(taskId=t2_id, status="completed")
 ### Gate 2 — Architecture Approval
 
 **Before opening gate:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T2-solution-architect.json`. Verify all `artifacts` exist on disk. Use receipt `metrics` for gate display numbers.
+
+#### Auto Mode — Gate 2 Auto-Approve
+
+If `Engagement: auto` in settings.md:
+
+1. Verify receipt exists and all artifacts are on disk
+2. Print the gate ceremony with `[AUTO-APPROVED]`:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⬥ GATE 2 — Architecture Approval  [AUTO-APPROVED]  ⏱ {elapsed}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Pattern      {architecture pattern}
+  Stack        {language} · {framework} · {database} · {cache}
+  Services     {N} bounded contexts
+  API          {N} endpoints across {M} specs
+  ADRs         {N} architecture decision records
+  Data         {N} entities, {M} migrations
+
+  ✓ Auto-approved — receipts verified, artifacts exist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+3. Do NOT call AskUserQuestion. Proceed directly to BUILD phase.
+4. If receipt verification fails (missing artifacts), log the failure and proceed anyway:
+   `⚠ Auto: Gate 2 receipt verification incomplete — proceeding with best effort`
+
+#### Standard Mode — Gate 2 (non-Auto)
 
 **Gate 2 Visual Ceremony:**
 
@@ -171,7 +296,7 @@ On approval, proceed to BUILD phase.
 
 ## Handoff to BUILD
 
-After Gate 2 approval:
+After Gate 2 approval (or auto-approval):
 1. **Verify receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T1-product-manager.json` and `T2-solution-architect.json`. Verify all listed artifacts exist on disk.
 2. **Re-anchor:** Re-read from disk before transitioning:
    - `Claude-Production-Grade-Suite/product-manager/BRD/brd.md`
@@ -185,8 +310,8 @@ After Gate 2 approval:
 
 ## Failure Handling
 
-- If PM cannot gather enough requirements → escalate to user
-- If Architect finds contradictions in BRD → flag to user, do not silently resolve
+- If PM cannot gather enough requirements → in Auto mode: proceed with best effort and log. In other modes: escalate to user.
+- If Architect finds contradictions in BRD → in Auto mode: resolve with best judgment and log decision. In other modes: flag to user, do not silently resolve.
 - Each skill self-debugs before escalating
 
 ## State Management
@@ -229,8 +354,10 @@ state["tasks_active"] = ["T3a", "T3b", "T4a", "T5a", "T6a", "T6b", "T9a", "T11a"
 |---------|-----|
 | Running BUILD without DEFINE | Architecture decisions must exist first |
 | Opening gate without verifying receipts | Read receipts and verify artifacts exist BEFORE presenting any gate |
-| PM skipping interview in Express mode | Express still asks 2-3 questions minimum |
-| Architect ignoring engagement mode | Express auto-derives, Standard asks 5-7 questions, Thorough 12-15 |
-| Over-asking the user | Respect engagement mode depth |
-| Gate rejection stopping pipeline | Gates are self-healing — rework loop, max 2 cycles |
+| PM skipping interview in Express mode | Express still asks 2-3 questions minimum. Auto asks zero (auto-derives). |
+| Architect ignoring engagement mode | Auto/Express auto-derives, Standard asks 5-7 questions, Thorough 12-15 |
+| Over-asking the user | Respect engagement mode depth. Auto mode = zero questions. |
+| Gate rejection stopping pipeline | Gates are self-healing — rework loop, max 2 cycles. Auto mode = no rejections possible. |
 | Not tracking rework cycles | Log to `.orchestrator/rework-log.md` |
+| Calling AskUserQuestion in Auto mode | Auto mode NEVER calls AskUserQuestion. Check settings.md first. |
+| Invoking PM/Architect Skills in Auto mode | Use Agent with auto-derive prompt, NOT Skill (Skills try to interview) |

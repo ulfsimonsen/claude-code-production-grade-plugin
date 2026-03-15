@@ -180,6 +180,43 @@ After verification completes:
 
 ## Gate 3 — Production Readiness
 
+**Before opening gate:** Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each:
+- Verify `artifacts` exist on disk
+- Extract `metrics` for the gate display
+- For Critical/High findings: verify the remediation chain is complete
+- If any receipt missing, artifact missing, or Critical finding lacks verification → flag before opening gate
+
+### Auto Mode — Gate 3 Auto-Approve
+
+If `Engagement: auto` in settings.md:
+
+1. Verify all receipts and artifacts exist on disk
+2. Collect any unresolved Critical/High findings for the known issues log
+3. Print the gate ceremony with `[AUTO-APPROVED]`:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⬥ GATE 3 — Production Readiness  [AUTO-APPROVED]  ⏱ {elapsed}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Services     {N} built, all compiling
+  Tests        {N} passing, {M} coverage
+  Security     {N} findings → {M} Critical, {K} High remaining
+  Infra        {N} Dockerfiles, {M} Terraform modules
+  CI/CD        {N} workflows configured
+  SRE          {N} SLOs, {M} alerts, {K} runbooks
+
+  ✓ Auto-approved — receipts verified, artifacts exist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+4. Do NOT call AskUserQuestion. No rework loops. Proceed directly to SUSTAIN phase.
+5. If unresolved Critical findings remain, log them for the Auto Mode final summary:
+   Append to `Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md`:
+   `[Gate 3] Auto-approved with {N} unresolved Critical findings — documented as known issues`
+6. If receipt verification fails, log and proceed:
+   `⚠ Auto: Gate 3 receipt verification incomplete — proceeding with best effort`
+
+### Standard Mode — Gate 3 (non-Auto)
+
 Print the pipeline dashboard (DEFINE ✓, BUILD ✓, HARDEN ✓, SHIP ✓ complete), then:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -195,13 +232,6 @@ Print the pipeline dashboard (DEFINE ✓, BUILD ✓, HARDEN ✓, SHIP ✓ comple
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
-**Receipt verification before gate:**
-Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each:
-- Verify `artifacts` exist on disk
-- Extract `metrics` for the gate display
-- For Critical/High findings: verify the remediation chain is complete
-- If any receipt missing, artifact missing, or Critical finding lacks verification → flag before opening gate
 
 Then ask:
 ```python
