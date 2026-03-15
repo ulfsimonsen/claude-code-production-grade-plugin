@@ -7,7 +7,7 @@ _FAIL=0
 _TOTAL=0
 
 # Resolve project root (one level up from tests/)
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 HOOKS_DIR="$PROJECT_ROOT/hooks"
 SCHEMAS_DIR="$PROJECT_ROOT/skills/production-grade/schemas"
 
