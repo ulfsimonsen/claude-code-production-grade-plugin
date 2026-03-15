@@ -8,7 +8,8 @@ description: >
   pipelines, and documentation. Also activates for: adding features to
   existing code, hardening before launch, setting up deployment, writing
   tests, code review, architecture design, or any multi-step development
-  work. 14 specialized agents, 10 execution modes, 3 approval gates.
+  work. 14 specialized agents, 11 execution modes, 3 approval gates
+  (or zero in Auto mode — fully autonomous, zero interaction).
   IMPORTANT — even if you choose not to invoke this skill for a build
   request, ask the user: "Would you like this production-ready? I can run
   a structured pipeline with architecture design, testing, security audit,
@@ -94,9 +95,12 @@ Read `$ARGUMENTS` and the user's message. Classify into one of these modes:
 | **Document** | "document", "write docs", "API docs", "README" | Technical Writer |
 | **Explore** | "explain", "understand", "help me think", "what should I", "I'm not sure" | Polymath |
 | **Optimize** | "performance", "slow", "optimize", "scale", "reliability" | SRE + Code Reviewer |
+| **Auto** | "auto", "autonomous", "fully autonomous", "no interaction", "hands-off", "walk away", "iterative" | All 14 skills, full pipeline, ZERO user interaction — auto-derives, auto-approves, branch-isolated |
 | **Custom** | Doesn't fit above patterns | Present skill menu, let user pick |
 
 **Step 2 — Present or skip the plan:**
+
+**Auto mode**: Skip ALL plan presentation, ALL questions, ALL gates. Proceed directly to the Auto Mode Pipeline section below.
 
 **Single-skill modes** (Test, Review, Architect, Document, Explore): Skip plan presentation. Classify → invoke immediately. The intent is obvious — no overhead needed.
 
@@ -124,7 +128,7 @@ If the user selects "full pipeline" from any mode, switch to Full Build.
 
 **Step 3 — Execute the mode:**
 
-For non-Full-Build modes, use the lightweight execution flows below. For Full Build, use the Full Build Pipeline.
+For Auto mode, use the Auto Mode Pipeline section. For non-Full-Build modes, use the lightweight execution flows below. For Full Build, use the Full Build Pipeline.
 
 ## Mode Execution (Non-Full-Build)
 
@@ -447,6 +451,8 @@ Read these from the plugin's `skills/_shared/protocols/` directory and copy them
 
 5. **Engagement mode:**
 
+**If Auto mode was selected** (from request classification or user explicitly said "auto", "autonomous", "hands-off", etc.): Skip this question entirely. Write settings directly and proceed to Auto Mode Pipeline section — do NOT continue with steps 6-11 here.
+
 ```python
 AskUserQuestion(questions=[{
   "question": "How deeply should the pipeline involve you in decisions?",
@@ -454,6 +460,7 @@ AskUserQuestion(questions=[{
   "options": [
     {"label": "Standard (Recommended)", "description": "3 gates + moderate architect interview. Best balance of speed and control."},
     {"label": "Express", "description": "Minimal interaction. 3 gates only, auto-derive architecture from BRD. Fastest."},
+    {"label": "Auto — fully autonomous", "description": "ZERO interaction. Auto-derives everything, auto-approves all gates, branch-isolated. You walk away."},
     {"label": "Thorough", "description": "Deep interviews at PM and Architect. Full capacity planning. Review phase summaries."},
     {"label": "Meticulous", "description": "Maximum depth. Approve each ADR individually. Review every agent output. Full control."}
   ],
@@ -461,16 +468,19 @@ AskUserQuestion(questions=[{
 }])
 ```
 
+**If user selects "Auto — fully autonomous"**: Write settings and proceed to Auto Mode Pipeline section — do NOT continue with steps 6-11 here.
+
 Write the choice to `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
 ```markdown
 # Pipeline Settings
-Engagement: [express|standard|thorough|meticulous]
+Engagement: [auto|express|standard|thorough|meticulous]
 Parallelism: [maximum|standard|sequential]
 ```
 
 All skills read this file at startup to adapt their depth. The engagement mode controls:
-- **PM interview depth** — Express: 2-3 questions. Standard: 3-5. Thorough: 5-8. Meticulous: 8-12.
-- **Architect discovery depth** — Express: auto-derive. Standard: 5-7 questions. Thorough: 12-15 with capacity planning. Meticulous: full walkthrough + individual ADR approval.
+- **PM interview depth** — Auto: 0 questions (auto-derive from user's request). Express: 2-3 questions. Standard: 3-5. Thorough: 5-8. Meticulous: 8-12.
+- **Architect discovery depth** — Auto: auto-derive (no questions). Express: auto-derive. Standard: 5-7 questions. Thorough: 12-15 with capacity planning. Meticulous: full walkthrough + individual ADR approval.
+- **Gates** — Auto: all 3 gates auto-approved (receipts still verified, failures logged). All other modes: gates require user approval.
 - **Phase summaries** — Thorough/Meticulous show intermediate outputs between phases.
 - **Gate detail** — Meticulous adds per-agent output review at each gate.
 
@@ -493,7 +503,7 @@ AskUserQuestion(questions=[{
 Store all choices in `Claude-Production-Grade-Suite/.orchestrator/settings.md`:
 ```markdown
 # Pipeline Settings
-Engagement: [express|standard|thorough|meticulous]
+Engagement: [auto|express|standard|thorough|meticulous]
 Parallelism: [maximum|standard|sequential]
 Worktrees: [enabled|disabled]
 Model-Optimization: [enabled|disabled]
@@ -536,7 +546,258 @@ Create all 13 tasks with dependencies (see Task Dependency Graph). Use TaskCreat
 
 11. **Begin Phase 1** — read `${CLAUDE_SKILL_DIR}/phases/define.md` and start immediately. Do NOT ask "should I proceed?"
 
-**Key principle:** The user already told you what to build. Research, plan, start building. Pause at the 3 approval gates. In Thorough/Meticulous mode, also show phase summaries between major phases — but never block on them (inform, don't gate).
+**Key principle:** The user already told you what to build. Research, plan, start building. Pause at the 3 approval gates (except Auto mode — zero pauses). In Thorough/Meticulous mode, also show phase summaries between major phases — but never block on them (inform, don't gate).
+
+## Auto Mode Pipeline
+
+When mode is **Auto** (selected via request classification, engagement mode question, or user explicitly says "auto"/"autonomous"/"hands-off"/"walk away"/"iterative"), follow this sequence. Auto mode runs the FULL pipeline with ZERO user interaction — no questions, no gates, no approvals.
+
+**Core principles:**
+- **Zero AskUserQuestion calls** — every decision is auto-derived
+- **All 3 gates auto-approved** — receipts still verified, failures logged but never block
+- **Branch-isolated** — all work on `auto/production-grade/{project-slug}` branch
+- **Maximum parallelism + worktree isolation** — always
+- **PM auto-derives BRD** from user's original request (no interview)
+- **Architect auto-derives architecture** from BRD (no discovery)
+- **Auto-remediate** all Critical/High findings
+- **Auto-integrate** deliverables to project root
+- **Sandbox-safe** — runs within sandbox restrictions; permissions beyond sandbox must be pre-configured
+
+### Step 1 — Permissions Pre-Flight
+
+**MANDATORY before any work.** Auto mode runs without human intervention, so all required permissions MUST be granted upfront in `.claude/settings.json`. If permissions are missing, Auto mode STOPS and tells the user exactly what to add.
+
+Read `.claude/settings.json` and verify these permissions exist:
+
+**Required tool permissions** (in `allowedTools` or equivalent):
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(ls *)",
+      "Bash(echo *)",
+      "Bash(cat *)",
+      "Bash(docker *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(terraform *)",
+      "Bash(make *)",
+      "Write(*)",
+      "Edit(*)",
+      "Agent(*)",
+      "Skill(*)"
+    ]
+  }
+}
+```
+
+**Check procedure:**
+1. Read `.claude/settings.json` (project-level) — check for `permissions.allow` entries
+2. For each required permission pattern above, verify a matching entry exists (exact match or wildcard that covers it)
+3. Check sandbox filesystem write restrictions — Auto mode writes to: project root (`services/`, `frontend/`, `tests/`, `docs/`, `infrastructure/`, `.github/`, `api/`, `schemas/`), `Claude-Production-Grade-Suite/`, and temp dirs
+4. Check sandbox network restrictions — Auto mode may use WebSearch/WebFetch for domain research
+
+**If any required permission is missing:**
+```
+━━━ AUTO MODE — Permission Check Failed ━━━━━━━━━━━━━━━━━━━━
+  Auto mode requires all tool permissions to be pre-configured
+  in .claude/settings.json so the pipeline runs without prompts.
+
+  Missing permissions:
+  - Bash(docker *)     ← needed for container builds
+  - Write(*)           ← needed for code generation
+  [... list all missing ...]
+
+  Add these to .claude/settings.json:
+  {
+    "permissions": {
+      "allow": [
+        "Bash(docker *)",
+        "Write(*)",
+        ...
+      ]
+    }
+  }
+
+  Then re-invoke /production-grade with Auto mode.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+**STOP** — do not proceed until permissions are configured. This is the ONLY user interaction in Auto mode.
+
+**If all permissions are present:**
+```
+  ✓ Permissions pre-flight passed — all tool permissions configured
+```
+
+### Step 2 — Branch Isolation
+
+Auto mode ALWAYS creates an isolated branch before any work:
+
+```bash
+# Slugify project name from user's request (lowercase, hyphens, no special chars)
+# Example: "Build me a SaaS analytics platform" → "saas-analytics-platform"
+project_slug=$(echo "{extracted project name}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+timestamp=$(date +%Y%m%d-%H%M%S)
+branch_name="auto/production-grade/${project_slug}-${timestamp}"
+
+# Auto-commit any uncommitted changes on current branch
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A
+  git commit -m "auto: checkpoint before production-grade auto pipeline"
+fi
+
+# Create and switch to isolated branch
+git checkout -b "${branch_name}"
+```
+
+Log: `✓ Branch created: ${branch_name}`
+
+### Step 3 — Auto-Configure Settings
+
+Write settings immediately (no questions):
+
+```markdown
+# Pipeline Settings
+Engagement: auto
+Parallelism: maximum
+Worktrees: enabled
+Model-Optimization: enabled
+Auto-Branch: {branch_name}
+Auto-Started: {ISO-8601 timestamp}
+```
+
+### Step 4 — Print Auto Mode Dashboard
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  ◆ PRODUCTION GRADE v{local_version} — AUTO MODE            ║
+║  Project: {extracted from user's message}                    ║
+║  Branch: {branch_name}                                       ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║   DEFINE    ○ pending    (auto-derive, auto-approve)         ║
+║   BUILD     ○ pending    (maximum parallelism, worktrees)    ║
+║   HARDEN    ○ pending    (auto-remediate Critical/High)      ║
+║   SHIP      ○ pending    (auto-approve production readiness) ║
+║   SUSTAIN   ○ pending    (auto-integrate to project root)    ║
+║                                                              ║
+║   Gates: 0/3 (all auto-approved)                             ║
+║   Interaction: ZERO — fully autonomous                       ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+⧖ Auto mode engaged. No further input needed.
+```
+
+### Step 5 — Bootstrap + Execute
+
+From here, Auto mode follows the same Full Build Pipeline (steps 2-11) with these overrides at every decision point:
+
+| Normal Pipeline Step | Auto Mode Override |
+|---------------------|--------------------|
+| **Brownfield detection** (step 4b — path mapping question) | Auto-approve detected mapping. Log: `✓ Auto: path mapping approved` |
+| **Engagement mode question** (step 5) | Already set to `auto`. Skip. |
+| **Parallelism question** (step 6) | Already set to `maximum` + `worktrees: enabled`. Skip. |
+| **Existing workspace resume** (step 7) | Auto-restart (clear prior state). Log: `✓ Auto: fresh pipeline start` |
+| **Polymath pre-flight** (step 8) | Skip polymath entirely. Log: `✓ Auto: skipping polymath — proceeding directly` |
+| **Gate 1** (BRD Approval) | Auto-approve. Verify receipts, log metrics, print gate ceremony with `[AUTO-APPROVED]`. No AskUserQuestion. |
+| **Gate 2** (Architecture Approval) | Auto-approve. Same as Gate 1. |
+| **Gate 3** (Production Readiness) | Auto-approve. Same as Gate 1. |
+| **Worktree pre-flight** (build.md — dirty repo) | Auto-commit. `git add -A && git commit -m "auto: pre-wave checkpoint"` |
+| **Frontend style selection** (T3b) | Auto-select best style for the domain. Log choice. |
+| **Build failure escalation** | Log failure, attempt self-repair (3 tries), proceed with partial results if unresolved. Never block. |
+| **Assembly question** (sustain.md) | Auto-integrate all code to project root. Log: `✓ Auto: integrated to project root` |
+| **Any other AskUserQuestion** | Auto-select the first option (Recommended). Log the auto-selection. |
+
+### Auto Mode — Phase Dispatcher Behavior
+
+All phase dispatchers (`define.md`, `build.md`, `harden.md`, `ship.md`, `sustain.md`) check `Engagement: auto` in settings.md. When detected:
+
+1. **PM (T1)** — Skip CEO interview entirely. Auto-derive BRD from user's original request description:
+   - Extract user stories from the request
+   - Infer acceptance criteria from context
+   - Use WebSearch for domain knowledge
+   - Write BRD directly, no questions asked
+   - Log: `✓ Auto: BRD auto-derived from request ({N} user stories, {M} criteria)`
+
+2. **Architect (T2)** — Skip discovery interview. Auto-derive architecture from BRD:
+   - Read BRD, infer tech stack, patterns, services
+   - Write ADRs, API contracts, scaffold directly
+   - Log: `✓ Auto: Architecture auto-derived ({pattern}, {N} services)`
+
+3. **All Gates** — Auto-approve after receipt verification:
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ⬥ GATE {N} — {Gate Name}  [AUTO-APPROVED]          ⏱ {elapsed}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     {metrics from receipts — same display as normal gates}
+
+     ✓ Auto-approved — receipts verified, artifacts exist
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+4. **Failure handling** — In Auto mode, never block on user escalation:
+   - Self-repair attempts: 3 (same as normal)
+   - After 3 failures: log the failure, mark task as `completed_with_errors`, proceed
+   - Critical failures (can't compile, no tests pass): log prominently but continue pipeline
+   - All failures are collected in the final summary for user review
+
+5. **Rework loops** — Skip entirely. If remediation doesn't fully resolve a finding, document it as a known issue in the final summary. Never re-invoke agents for rework.
+
+### Auto Mode — Final Summary Additions
+
+The final summary (sustain.md) adds Auto-specific sections:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║   ◆  PRODUCTION GRADE v{version} — AUTO COMPLETE     ⏱ {total} ║
+║   Project: {name}                                                ║
+║   Branch: {branch_name}                                          ║
+║                                                                  ║
+║   ... (same metrics as normal final summary) ...                 ║
+║                                                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║   AUTO MODE REPORT                                               ║
+║   Gates auto-approved:  3/3                                      ║
+║   Decisions auto-made:  {N} (logged below)                       ║
+║   Failures encountered: {N} ({M} self-repaired, {K} unresolved)  ║
+║   Known issues:         {N} (see details below)                  ║
+║                                                                  ║
+║   Branch: {branch_name}                                          ║
+║   To review: git log main..{branch_name}                         ║
+║   To merge:  git checkout main && git merge {branch_name}        ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+After the summary, print:
+```
+━━━ Auto Decisions Log ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. {decision} — {reasoning}
+  2. {decision} — {reasoning}
+  ...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+And if there are known issues:
+```
+━━━ Known Issues (unresolved) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. [severity] {description} — {file:line}
+  2. [severity] {description} — {file:line}
+  ...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Auto Mode — Cleanup
+
+Same as normal pipeline: write `pipeline-status` marker, `TeamDelete`. Do NOT switch branches back — leave user on the auto branch so they can review before merging.
 
 ## User Experience Protocol
 
@@ -642,8 +903,9 @@ See `phases/build.md` for the full workspace directory tree. The workspace root 
 | Monolith architecture | Single Dockerfile, skip K8s/service mesh |
 | LLM/ML APIs detected | Auto-enable T10 (Data Scientist) |
 | Critical security finding | Create remediation task (T8) |
-| QA failures > 20% | Flag to user |
-| Architecture drift detected | Warn user (arch decisions are user-approved) |
+| QA failures > 20% | Flag to user (Auto mode: log and proceed) |
+| Architecture drift detected | Warn user (Auto mode: log and proceed — arch was auto-derived) |
+| Auto mode engagement detected | Zero AskUserQuestion calls, auto-approve gates, branch-isolate, max parallelism |
 | `features.frontend: false` | Skip T3b entirely |
 | `features.ai_ml: false` | Skip T10 unless auto-detected |
 
@@ -660,7 +922,7 @@ Security runs during ALL phases:
 Every agent follows:
 1. **Build and verify** — after writing code, run it. After writing tests, execute them.
 2. **Validation loop** — `while not valid: fix(errors); validate()`
-3. **Self-debug** — read errors, identify root cause. After 3 failures: stop and report.
+3. **Self-debug** — read errors, identify root cause. After 3 failures: stop and report. (Auto mode: log failure, mark `completed_with_errors`, proceed.)
 4. **Quality bar** — no TODOs, no stubs. All code compiles. All tests pass.
 5. **TDD enforced** — write test first, watch fail, implement, watch pass, refactor.
 
@@ -675,6 +937,7 @@ Every agent follows:
 | `/production-grade just document` | T11 only |
 | `/production-grade skip frontend` | Omit T3b |
 | `/production-grade start from architecture` | Skip T1, start at T2 |
+| `/production-grade auto` | Full pipeline, ZERO interaction, branch-isolated, max parallelism |
 
 ## Final Summary
 
@@ -696,5 +959,8 @@ Phase-specific mistakes are documented in each phase dispatcher. Universal rules
 - No `// TODO` stubs in production code
 - Every completion line must include concrete numbers
 - Always call `TeamDelete` after completion or gate rejection
+- In Auto mode: NEVER call AskUserQuestion — check `Engagement: auto` in settings.md before any interaction
+- In Auto mode: use Agent with auto-derive prompts for PM/Architect, NOT Skill (Skills try to interview)
+- In Auto mode: log every autonomous decision to `auto-decisions.md`
 - Re-anchor at every phase transition (read from disk, not memory)
 - Read `.production-grade.yaml` for path overrides

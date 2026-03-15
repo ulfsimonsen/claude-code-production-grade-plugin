@@ -62,28 +62,33 @@ Read `.production-grade.yaml` to determine:
 Before launching parallel agents, check if a worktree decision already exists in settings:
 
 ```python
-# First check if settings.md already has a Worktrees decision (e.g., from a prior run)
+# First check if settings.md already has a Worktrees decision (e.g., from a prior run or Auto mode)
 settings = Read("Claude-Production-Grade-Suite/.orchestrator/settings.md")
 if "Worktrees: enabled" in settings or "Worktrees: disabled" in settings:
   use_worktrees = "Worktrees: enabled" in settings
-  # Skip the question — decision already made
+  # Skip the question — decision already made (Auto mode always pre-sets this)
 else:
   # Check for clean git state (worktrees require committed state)
   result = Bash("git status --porcelain 2>/dev/null | head -5")
   if result.strip():
-    # Dirty repo — ask user
-    AskUserQuestion(questions=[{
-      "question": "Parallel agents work best with worktree isolation, but you have uncommitted changes.",
-      "header": "Worktree Isolation",
-      "options": [
-        {"label": "Auto-commit and use worktrees (Recommended)", "description": "Commit current state, isolate each agent in its own worktree"},
-        {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
-        {"label": "Chat about this", "description": "Free-form input"}
-      ],
-      "multiSelect": false
-    }])
-    # If auto-commit: git add -A && git commit -m "production-grade: pre-Wave A checkpoint"
-    # If skip: set use_worktrees = False
+    # Auto mode: auto-commit without asking
+    if "Engagement: auto" in settings:
+      Bash("git add -A && git commit -m 'auto: pre-Wave A checkpoint'")
+      use_worktrees = True
+    else:
+      # Non-auto: ask user
+      AskUserQuestion(questions=[{
+        "question": "Parallel agents work best with worktree isolation, but you have uncommitted changes.",
+        "header": "Worktree Isolation",
+        "options": [
+          {"label": "Auto-commit and use worktrees (Recommended)", "description": "Commit current state, isolate each agent in its own worktree"},
+          {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
+          {"label": "Chat about this", "description": "Free-form input"}
+        ],
+        "multiSelect": false
+      }])
+      # If auto-commit: git add -A && git commit -m "production-grade: pre-Wave A checkpoint"
+      # If skip: set use_worktrees = False
   else:
     use_worktrees = True
 ```
@@ -186,7 +191,7 @@ Read .production-grade.yaml for framework and styling preferences.
 
 The SKILL.md gives you methodology (HOW to build). The plan gives you specification (WHAT to build).
 For Phase 5 (Design & Polish), the plan may include style guidance — follow it. If the plan doesn't specify a style:
-  Express: auto-select best style for the domain, report choice, proceed.
+  Auto/Express: auto-select best style for the domain, report choice, proceed. Log to auto-decisions.md if Auto mode.
   Standard+: ask user via AskUserQuestion (Creative | Elegance | High Tech | Corporate | Custom).
 
 Write frontend to project root: frontend/
@@ -341,7 +346,7 @@ When foreground BUILD tasks complete and branches are merged:
 
 ## Failure Handling
 
-- Build failure after 3 retries → escalate to user via AskUserQuestion
+- Build failure after 3 retries → in Auto mode: log failure, mark task `completed_with_errors`, proceed. In other modes: escalate to user via AskUserQuestion.
 - Frontend fails but backend succeeds → continue backend-only pipeline
 - Background agent fails → Wave B readiness check detects missing output, falls back to inline analysis
 - Agents self-debug: read errors, fix, retry before escalating
