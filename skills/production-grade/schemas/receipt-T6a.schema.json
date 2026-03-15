@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T6a.schema.json",
+  "title": "T6a — Security STRIDE Receipt",
+  "description": "Validates the security-engineer receipt for STRIDE threat modeling.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["threats_identified"],
+  "required_artifact_patterns": ["**/security-engineer/threat-model/**"]
+}

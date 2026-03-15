@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gate2.schema.json",
+  "title": "Gate 2 — Architecture Approval",
+  "description": "Gate 2: Architecture Approval — all T1 + T2 artifacts must exist on disk",
+  "receipts_required": ["T1", "T2"]
+}

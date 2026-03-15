@@ -200,3 +200,112 @@ TeamDelete(team_name="production-grade")
 ## Pipeline Complete
 
 Print the final summary template from the orchestrator. All tasks should show as completed in TaskList.
+
+## Final Summary Template
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║   ◆  PRODUCTION GRADE v{local_version} — COMPLETE    ⏱ {total}  ║
+║   Project: {name}                                                ║
+║                                                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║   DEFINE    ✓ BRD ({N} stories, {M} criteria)                    ║
+║             ✓ Architecture ({pattern}, {N} services)             ║
+║                                                                  ║
+║   BUILD     ✓ Backend ({N} services, {M} endpoints, {K} lines)   ║
+║             ✓ Frontend ({N} page groups, {M} components)         ║
+║             ✓ Containers ({N} Dockerfiles, 1 compose)            ║
+║                                                                  ║
+║   HARDEN    ✓ Security ({N} findings → {M} Critical remaining)   ║
+║             ✓ QA ({N} tests, {M}% passing)                       ║
+║             ✓ Code Review ({N} findings → all resolved)          ║
+║                                                                  ║
+║   SHIP      ✓ Infrastructure (Terraform, {N} environments)       ║
+║             ✓ CI/CD ({provider}, {N} workflows)                  ║
+║             ✓ SRE ({N} SLOs, {M} alerts, {K} runbooks)          ║
+║                                                                  ║
+║   SUSTAIN   ✓ Documentation ({N} docs generated)                 ║
+║             ✓ Custom Skills ({N} project-specific)               ║
+║                                                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║   Agents: {N} used · Tasks: {M} completed · Errors: {K}         ║
+║   Files: {N} created · Tests: {M} passing · Vulnerabilities: {K}║
+║   Worktrees: {enabled|disabled} · Rework cycles: {N}            ║
+║                                                                  ║
+║   Cost       {N} agents · {M} total tool calls · {K} files      ║
+║              Est. ~{X}K tokens · ~${A}-${B} at current pricing   ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Cost Aggregation
+
+Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each receipt, extract:
+- `effort` (files_read, files_written, tool_calls) — sum across all agents
+- `completed_at` (ISO-8601) — compute per-wave elapsed time as `max(completed_at) - min(completed_at)`
+
+Produce:
+- Total agents used (count of unique receipt files)
+- Total tool calls (sum of all effort.tool_calls)
+- Total files processed (sum of effort.files_read + effort.files_written, deduplicated)
+- Per-wave timing from receipt timestamps
+- Total elapsed: earliest T1 completed_at to latest T13 completed_at
+- Rework cycles from `.orchestrator/rework-log.md`
+
+## Pipeline Cleanup
+
+**Immediately after printing the final summary**, write a pipeline status marker and clean up:
+
+```bash
+echo "complete" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
+```
+
+```python
+TeamDelete(team_name="production-grade")
+```
+
+This shuts down all agents and frees resources. **MANDATORY** — without it, agents remain alive indefinitely.
+
+**Known issue:** `TeamDelete` can block indefinitely if an agent is hung (GitHub #31788). If it doesn't return within ~60s, warn user and move on.
+
+**If the user rejects at any gate:**
+```bash
+echo "rejected" > Claude-Production-Grade-Suite/.orchestrator/pipeline-status
+```
+Then run `TeamDelete`. Never leave orphaned agents.
+
+## Context Bridging (Wave D)
+
+| Task | Reads From | Writes To (Project Root) | Writes To (Workspace) |
+|------|-----------|--------------------------|----------------------|
+| T11b: Writer (ops) | T9b SRE output, `infrastructure/` | `docs/ops-guide/` | `technical-writer/` |
+| T13: Assembly | All receipts, all workspace artifacts | Project root (if user approves) | `skill-maker/` (T12 staged) |
+
+## State Management
+
+On entering Wave D:
+```python
+state["current_phase"] = "SUSTAIN"
+state["current_wave"] = "D"
+state["phase_file_loaded"] = true
+state["tasks_active"] = ["T11b", "T13"]
+```
+
+On pipeline completion:
+```python
+state["tasks_active"] = []
+state["current_phase"] = "COMPLETE"
+```
+
+## Common Mistakes (SUSTAIN Phase)
+
+| Mistake | Fix |
+|---------|-----|
+| Not calling TeamDelete after completion | ALWAYS run `TeamDelete(team_name="production-grade")` |
+| T11 (docs) fully blocked on SRE | T11a (API ref) runs in Wave A. Only T11b (ops guide) needs SRE |
+| Skipping pipeline dashboard reprint | Dashboard reprints at every phase transition |
+| Missing effort tracking in receipts | Every receipt must include effort field |
+| Not writing Production-Grade Native directive | MANDATORY — write to CLAUDE.md for cross-session persistence |

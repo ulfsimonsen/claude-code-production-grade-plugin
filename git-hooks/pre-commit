@@ -1,0 +1,42 @@
+#!/bin/bash
+# Pre-commit hook: runs the plugin test suite before every commit.
+# Prevents committing broken hooks or schemas.
+#
+# Setup: git config core.hooksPath git-hooks
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+TEST_RUNNER="$REPO_ROOT/tests/run-all.sh"
+
+# Only run if test suite exists
+if [[ ! -f "$TEST_RUNNER" ]]; then
+  echo "Warning: test suite not found at tests/run-all.sh — skipping pre-commit tests"
+  exit 0
+fi
+
+# Only run if hooks or schemas were staged
+STAGED=$(git diff --cached --name-only)
+RELEVANT=false
+while IFS= read -r file; do
+  case "$file" in
+    hooks/*|skills/production-grade/schemas/*|tests/*)
+      RELEVANT=true
+      break
+      ;;
+  esac
+done <<< "$STAGED"
+
+if [[ "$RELEVANT" != "true" ]]; then
+  exit 0
+fi
+
+echo "Running plugin test suite..."
+if bash "$TEST_RUNNER"; then
+  echo "All tests passed."
+else
+  echo ""
+  echo "Tests failed — commit aborted."
+  echo "Run 'bash tests/run-all.sh' to see details, or use --no-verify to bypass."
+  exit 1
+fi

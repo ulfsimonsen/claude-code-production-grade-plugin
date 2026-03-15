@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T10.schema.json",
+  "title": "T10 — Data Scientist Receipt",
+  "description": "Validates the data-scientist receipt for AI/ML optimizations. Status may be skipped if no AI/ML detected.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["optimizations"]
+}

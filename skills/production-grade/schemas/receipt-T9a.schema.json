@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T9a.schema.json",
+  "title": "T9a — SRE SLO Receipt",
+  "description": "Validates the sre receipt for SLO definition.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["slos"],
+  "required_artifact_patterns": ["**/sre/slos.md"]
+}

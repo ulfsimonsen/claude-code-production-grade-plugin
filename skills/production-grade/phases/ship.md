@@ -180,7 +180,95 @@ After verification completes:
 
 ## Gate 3 — Production Readiness
 
-After verification, present Gate 3 using the orchestrator's gate pattern.
+Print the pipeline dashboard (DEFINE ✓, BUILD ✓, HARDEN ✓, SHIP ✓ complete), then:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⬥ GATE 3 — Production Readiness                   ⏱ {elapsed}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-On approval → read `phases/sustain.md` and begin Wave D.
-On "Fix issues first" → create additional remediation tasks (rework loop, max 2 cycles).
+  Services     {N} built, all compiling
+  Tests        {N} passing, {M} coverage
+  Security     {N} findings → {M} Critical, {K} High remaining
+  Infra        {N} Dockerfiles, {M} Terraform modules
+  CI/CD        {N} workflows configured
+  SRE          {N} SLOs, {M} alerts, {K} runbooks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Receipt verification before gate:**
+Read ALL receipts from `Claude-Production-Grade-Suite/.orchestrator/receipts/`. For each:
+- Verify `artifacts` exist on disk
+- Extract `metrics` for the gate display
+- For Critical/High findings: verify the remediation chain is complete
+- If any receipt missing, artifact missing, or Critical finding lacks verification → flag before opening gate
+
+Then ask:
+```python
+AskUserQuestion(questions=[{
+  "question": "All phases complete. [summary]. Ship it?",
+  "header": "Gate 3: Production Readiness",
+  "options": [
+    {"label": "Ship it — production ready (Recommended)", "description": "Finalize assembly and deploy"},
+    {"label": "Show full report", "description": "Display complete pipeline summary"},
+    {"label": "Rework — fix issues first", "description": "Run remediation cycle, then re-verify"},
+    {"label": "Chat about this", "description": "Free-form input about production readiness"}
+  ],
+  "multiSelect": false
+}])
+```
+
+**Rework loop (Gate 3):**
+
+If user selects "Rework — fix issues first":
+1. Track rework cycle in `Claude-Production-Grade-Suite/.orchestrator/rework-log.md`
+2. If rework count < 2: Create remediation task, re-run verification, re-present Gate 3
+3. If rework count >= 2: Escalate — "Pipeline has been through 2 remediation cycles. Ship with known issues or discuss further?"
+4. Show rework indicator: `⬥ GATE 3 — Production Readiness (Rework {N}/2)`
+
+On approval → update state and read `phases/sustain.md`.
+On "Fix issues first" → rework loop.
+
+## Wave C Task Dependencies
+
+| Task | Blocked By | Notes |
+|------|-----------|-------|
+| T8 | T5b, T6c, T6d | Remediation — needs HARDEN findings |
+| T9b | T7, T9a | SRE execution — needs infra + SLO defs (NOT remediation) |
+| T10 | T3a | Data Scientist — conditional on AI/ML (needs code only) |
+
+## Context Bridging (Wave C)
+
+| Task | Reads From | Writes To (Project Root) | Writes To (Workspace) |
+|------|-----------|--------------------------|----------------------|
+| T8: Remediation | Wave B findings (T5b, T6c, T6d) | Fixes in `services/`, `frontend/` | — |
+| T9b: SRE | T7 infra, T9a SLOs, test results | `docs/runbooks/` | `sre/chaos/`, `sre/capacity/` |
+| T10: Data Sci | Implementation code (LLM usage) | — | `data-scientist/` |
+
+## State Management
+
+On entering Wave C:
+```python
+state["current_phase"] = "SHIP"
+state["current_wave"] = "C"
+state["phase_file_loaded"] = true
+state["tasks_active"] = ["T8", "T9b", "T10"]
+```
+
+After Gate 3 approval:
+```python
+state["gates_passed"].append("G3")
+state["current_wave"] = "D"
+state["phase_file_loaded"] = false
+```
+
+## Common Mistakes (SHIP Phase)
+
+| Mistake | Fix |
+|---------|-----|
+| DevOps defining SLOs | sre is sole SLO authority |
+| DevOps writing runbooks | sre writes runbooks to docs/runbooks/ |
+| Stopping pipeline on gate rejection | Gates are self-healing — rework loop, max 2 cycles |
+| Not tracking rework cycles | Log to `.orchestrator/rework-log.md` |
+| Trusting agent metrics without receipt verification | Gate metrics come from verified receipts, not memory |
+| T12 waiting for SRE | T12 analyzes code patterns, not SRE output — launched in Wave A |

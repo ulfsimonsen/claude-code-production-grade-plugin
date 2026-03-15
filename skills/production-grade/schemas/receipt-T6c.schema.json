@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T6c.schema.json",
+  "title": "T6c — Security Audit Receipt",
+  "description": "Validates the security-engineer receipt for security audit execution.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["findings", "critical", "high"],
+  "min_values": {
+    "findings": 0,
+    "critical": 0
+  }
+}

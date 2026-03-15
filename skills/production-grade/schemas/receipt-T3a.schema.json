@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T3a.schema.json",
+  "title": "T3a — Software Engineer Receipt",
+  "description": "Validates the software-engineer receipt for backend services.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["services", "endpoints"],
+  "required_artifact_patterns": ["services/**"],
+  "min_values": {
+    "services": 1
+  }
+}

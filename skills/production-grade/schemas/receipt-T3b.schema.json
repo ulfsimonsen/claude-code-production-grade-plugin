@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T3b.schema.json",
+  "title": "T3b — Frontend Engineer Receipt",
+  "description": "Validates the frontend-engineer receipt for UI components.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["pages", "components"],
+  "required_artifact_patterns": ["frontend/**"],
+  "min_values": {
+    "pages": 1
+  }
+}

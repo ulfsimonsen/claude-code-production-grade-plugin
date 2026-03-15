@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T4a.schema.json",
+  "title": "T4a — DevOps Analysis Receipt",
+  "description": "Validates the devops receipt for containerization analysis.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["dockerfiles"],
+  "required_artifact_patterns": ["**/devops/dockerfiles/**"]
+}

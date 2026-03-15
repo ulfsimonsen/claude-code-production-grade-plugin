@@ -2,6 +2,18 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [5.9.0] — 2026-03-16
+
+### Added
+- **Hook-enforced JIT loading** — 5 new hooks (`SubagentStart`, `PreToolUse(Agent)`, `PostToolUse(Write)`, `TaskCompleted`, `PreCompact`) enforce pipeline discipline structurally. SubagentStart injects phase/wave context into every pipeline agent. PreToolUse reminds orchestrator to read phase files before dispatching. PostToolUse validates receipt JSON against schemas after every write to receipts/. TaskCompleted blocks completion without valid receipt (exit 2). PreCompact snapshots pipeline state before context compression.
+- **JSON schema gate validation** — 25 schemas (1 base, 21 per-task, 3 gate) validate required fields, metric minimums, and artifact existence. Receipt validator auto-updates `state.json` on valid writes. Task-specific schemas define `required_metrics` and `min_values` checked at write time.
+- **Test suite** — 127 tests across 7 suites validating all 5 hook scripts, 25 JSON schemas, and `hooks.json` configuration. Lightweight bash framework with `assert_eq`, `assert_contains`, `assert_json_valid`, and workspace scaffolding helpers. Each test creates an isolated temp workspace, pipes mock hook input, and asserts on exit codes, stdout JSON, stderr messages, and side effects.
+- **Pre-commit hook** — `git-hooks/pre-commit` runs the test suite automatically when `hooks/`, `skills/production-grade/schemas/`, or `tests/` files are staged. Skips silently for unrelated commits. Setup: `git config core.hooksPath git-hooks`.
+
+### Changed
+- **Lean Router SKILL.md** — slimmed from 84K to 39K bytes (~54% reduction) by moving execution details (gate ceremonies, task dependency graphs, model tier strategy, context bridging, final summary template, common mistakes, pipeline cleanup) into phase dispatcher files loaded just-in-time.
+- **Phase dispatchers enriched** — `define.md`, `build.md`, `harden.md`, `ship.md`, `sustain.md` now contain full gate ceremonies, task dependency tables, context bridging, state management, and phase-specific mistakes that were previously in SKILL.md.
+
 ## [5.8.0] — 2026-03-14
 
 ### Changed

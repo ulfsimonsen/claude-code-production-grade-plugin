@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "receipt-T12.schema.json",
+  "title": "T12 — Skill Maker Receipt",
+  "description": "Validates the skill-maker receipt for custom skill generation.",
+  "$ref": "receipt-base.schema.json",
+  "required_metrics": ["skills"],
+  "min_values": {
+    "skills": 0
+  }
+}
