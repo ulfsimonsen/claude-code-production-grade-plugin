@@ -57,7 +57,7 @@ test_skillmd_auto_in_partial_execution() {
 
 test_skillmd_auto_in_common_mistakes() {
   assert_file_contains "SKILL.md has Auto mode in common mistakes" \
-    "$SKILLS_DIR/SKILL.md" 'In Auto mode: NEVER call AskUserQuestion'
+    "$SKILLS_DIR/SKILL.md" 'In Auto mode: NEVER call Elicitation'
 }
 
 # ─── SKILL.md: Auto Mode Pipeline subsections ───
@@ -145,7 +145,7 @@ test_define_t1_auto_uses_agent_not_skill() {
 
 test_define_t1_auto_no_askuserquestion() {
   assert_file_contains "define.md T1 auto says no AskUserQuestion" \
-    "$PHASES_DIR/define.md" 'DO NOT use AskUserQuestion'
+    "$PHASES_DIR/define.md" 'DO NOT use Elicitation'
 }
 
 test_define_t2_auto_mode() {
@@ -185,7 +185,7 @@ test_define_standard_gate2_label() {
 
 test_define_auto_in_common_mistakes() {
   assert_file_contains "define.md common mistakes covers Auto mode" \
-    "$PHASES_DIR/define.md" 'Calling AskUserQuestion in Auto mode'
+    "$PHASES_DIR/define.md" 'Calling Elicitation in Auto mode'
 }
 
 test_define_auto_skill_mistake() {

@@ -117,7 +117,7 @@ test_all_hooks_type_command() {
 test_hook_event_count() {
   local count
   count=$(jq '.hooks | keys | length' "$HOOKS_CONFIG")
-  assert_eq "8 hook events defined" "8" "$count"
+  assert_eq "13 hook events defined" "13" "$count"
 }
 
 # --- Run all tests ---

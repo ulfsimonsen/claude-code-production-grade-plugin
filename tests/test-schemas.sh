@@ -175,8 +175,8 @@ test_schema_ids_match_filenames() {
 test_schema_count() {
   local count
   count=$(ls "$SCHEMAS_DIR"/*.json 2>/dev/null | wc -l | tr -d ' ')
-  # 1 base + 21 task + 3 gate = 25
-  assert_eq "25 schema files exist" "25" "$count"
+  # 1 base + 21 task + 3 gate + 1 iteration = 26
+  assert_eq "26 schema files exist" "26" "$count"
 }
 
 # --- Run all tests ---
