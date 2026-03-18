@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "iteration.schema.json",
+  "title": "Iteration History Record",
+  "description": "Validates a single iteration history file written by the Improve mode loop orchestrator.",
+  "type": "object",
+  "required": ["iteration_number", "score_percentage", "delta", "criteria_results", "changes_made", "timestamp"],
+  "properties": {
+    "iteration_number": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Iteration index. 0 is the baseline snapshot before any modifications."
+    },
+    "score_percentage": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Weighted overall score from the evaluator. Null for iteration-0 baseline."
+    },
+    "delta": {
+      "type": ["number", "null"],
+      "description": "Score change from the previous iteration (score_percentage - previous score_percentage). Null for iteration-0 baseline."
+    },
+    "criteria_results": {
+      "type": "array",
+      "description": "Score vector from the evaluator — one entry per rubric criterion.",
+      "items": {
+        "type": "object",
+        "required": ["id", "pass"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Criterion identifier, e.g. C1"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable criterion description"
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Relative weight for this criterion. Defaults to 1.0 if not specified."
+          },
+          "pass": {
+            "type": "boolean",
+            "description": "Whether this criterion passed in this iteration."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Specific evidence supporting the pass/fail result (file path, line number, test output)."
+          },
+          "method": {
+            "type": "string",
+            "enum": ["script", "llm", "llm_fallback", "bash"],
+            "description": "How the criterion was checked."
+          }
+        }
+      }
+    },
+    "changes_made": {
+      "type": "array",
+      "description": "Definition modifications applied during this iteration. Empty for iteration-0 and for the final iteration when threshold is met.",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "change"],
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "description": "The criterion ID that motivated this change."
+          },
+          "change": {
+            "type": "string",
+            "description": "Description of the modification applied to the definition file or utility scripts."
+          },
+          "file": {
+            "type": "string",
+            "description": "Path to the file that was modified."
+          }
+        }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when this iteration record was written."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional free-text notes for this iteration (errors, special conditions, manual interventions)."
+    },
+    "git_commit": {
+      "type": "string",
+      "description": "Git commit hash of the definition file at this iteration. Null if commit failed."
+    }
+  }
+}
