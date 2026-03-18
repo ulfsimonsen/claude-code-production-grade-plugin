@@ -1,5 +1,7 @@
 ---
 name: software-engineer
+effort: high
+maxTurns: 15
 description: >
   [production-grade internal] Implements backend services, APIs, and business
   logic — builds features, fixes bugs, refactors code from specs.
@@ -16,6 +18,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 !`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 

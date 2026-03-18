@@ -1,5 +1,7 @@
 ---
 name: polymath
+effort: high
+maxTurns: 5
 description: >
   [production-grade internal] Thinking partner when you're unsure what to
   build or how — explores ideas, researches options, helps decide before
@@ -16,6 +18,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config"`
 !`cat Claude-Production-Grade-Suite/polymath/context/decisions.md 2>/dev/null || echo "No prior polymath context"`
 !`cat Claude-Production-Grade-Suite/polymath/context/repo-map.md 2>/dev/null || echo "No repo map"`

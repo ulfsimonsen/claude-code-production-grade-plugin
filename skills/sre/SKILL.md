@@ -1,5 +1,7 @@
 ---
 name: sre
+effort: high
+maxTurns: 5
 description: >
   [production-grade internal] Makes systems reliable in production —
   SLOs, monitoring, alerting, chaos engineering, incident runbooks,
@@ -18,6 +20,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 !`cat Claude-Production-Grade-Suite/.orchestrator/codebase-context.md 2>/dev/null || true`
 

@@ -1,27 +1,14 @@
 # UX Protocol — Single Source of Truth
 
-**Every skill in this plugin MUST follow these 6 rules for ALL user interactions.**
+**Every skill in this plugin MUST follow these 3 rules for ALL user interactions.**
 
-## RULE 1: NEVER Ask Open-Ended Questions
+For structured input rules (forms, escape hatches, recommended options, and Auto mode behavior), see `elicitation-protocol.md`.
 
-**NEVER output text expecting the user to type.** Every user interaction MUST use `AskUserQuestion` with predefined options. Users navigate with arrow keys (up/down) and press Enter.
-
-**WRONG:** "What do you think?" / "Do you approve?" / "Any feedback?"
-**RIGHT:** Use AskUserQuestion with 2-4 options + "Chat about this" as last option.
-
-## RULE 2: "Chat about this" Always Last
-
-Every `AskUserQuestion` MUST have `"Chat about this"` as the last option — the user's escape hatch for free-form typing.
-
-## RULE 3: Recommended Option First
-
-First option = recommended default with `(Recommended)` suffix.
-
-## RULE 4: Continuous Execution
+## RULE 1: Continuous Execution
 
 Work continuously until task complete or user presses ESC. Never ask "should I continue?" — just keep going.
 
-## RULE 5: Real-Time Terminal Updates
+## RULE 2: Real-Time Terminal Updates
 
 Constantly print progress. Never go silent. Follow the visual identity protocol at `Claude-Production-Grade-Suite/.protocols/visual-identity.md` for all formatting.
 
@@ -46,11 +33,11 @@ Key rules from visual identity:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## RULE 6: Autonomy Scales with Engagement Mode
+## RULE 3: Autonomy Scales with Engagement Mode
 
 Read engagement mode from `Claude-Production-Grade-Suite/.orchestrator/settings.md`. Autonomy scales inversely with engagement level:
 
-| Mode | AskUserQuestion Behavior | Default Posture |
+| Mode | Elicitation Behavior | Default Posture |
 |------|-------------------------|-----------------|
 | **Auto** | **ZERO AskUserQuestion calls — ever.** Auto-resolve every decision. Auto-approve every gate. Log all decisions to `auto-decisions.md`. Never block on user input. If uncertain, pick the most common/sensible default and document the reasoning. | Total autonomy. The user walked away. Every decision is yours. |
 | **Express** | Zero agent questions. Auto-resolve everything — framework, style, strategy, architecture patterns. Report decisions in output with reasoning. Pipeline gates still fire. | Maximum autonomy. If in doubt, pick the best option and move. |

@@ -1,5 +1,10 @@
 ---
 name: security-engineer
+effort: high
+maxTurns: 5
+disallowedTools:
+  - Write
+  - Edit
 description: >
   [production-grade internal] Audits code for security vulnerabilities —
   OWASP top 10, auth flaws, injection, data exposure, dependency risks.
@@ -16,6 +21,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
 **Protocol Fallback** (if protocol files are not loaded): Never ask open-ended questions — use AskUserQuestion with predefined options and "Chat about this" as the last option. Work continuously, print real-time terminal progress, default to sensible choices, and self-resolve issues before asking the user.

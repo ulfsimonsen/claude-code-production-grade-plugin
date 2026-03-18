@@ -1,5 +1,7 @@
 ---
 name: skill-maker
+effort: high
+maxTurns: 5
 description: >
   [production-grade internal] Creates reusable Claude Code skills and plugins
   when you want to automate repeatable workflows into shareable tools.
@@ -18,6 +20,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 !`cat Claude-Production-Grade-Suite/.orchestrator/settings.md 2>/dev/null || echo "No settings — using Standard"`
 

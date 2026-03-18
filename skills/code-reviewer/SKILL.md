@@ -1,5 +1,11 @@
 ---
 name: code-reviewer
+effort: high
+maxTurns: 3
+disallowedTools:
+  - Write
+  - Edit
+  - Bash
 description: >
   [production-grade internal] Reviews code for quality — architecture
   conformance, anti-patterns, performance issues, maintainability.
@@ -19,6 +25,7 @@ description: >
 !`cat Claude-Production-Grade-Suite/.protocols/receipt-protocol.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/boundary-safety.md 2>/dev/null || true`
 !`cat Claude-Production-Grade-Suite/.protocols/conflict-resolution.md 2>/dev/null || true`
+!`cat Claude-Production-Grade-Suite/.protocols/elicitation-protocol.md 2>/dev/null || true`
 !`cat .production-grade.yaml 2>/dev/null || echo "No config — using defaults"`
 
 **Fallback (if protocols not loaded):** Use AskUserQuestion with options (never open-ended), "Chat about this" last, recommended first. Work continuously. Print progress constantly. Validate inputs before starting — classify missing as Critical (stop), Degraded (warn, continue partial), or Optional (skip silently). Use parallel tool calls for independent reads. Use Glob/Grep for discovery before full Read.
