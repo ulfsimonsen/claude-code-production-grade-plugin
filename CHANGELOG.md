@@ -2,6 +2,12 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [7.1.1] — 2026-03-18
+
+### Fixed
+- **plugin.json version** — Bumped from 7.0.0 to 7.1.1 (was stale after 7.1.0 changelog)
+- **settings.json network field** — Renamed `allowedHosts` → `allowedDomains` (correct Claude Code field name)
+
 ## [7.1.0] — 2026-03-18
 
 ### Added

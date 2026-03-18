@@ -51,7 +51,7 @@
       ]
     },
     "network": {
-      "allowedHosts": [
+      "allowedDomains": [
         "*",
         "github.com",
         "api.github.com",
