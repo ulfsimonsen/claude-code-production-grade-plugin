@@ -45,6 +45,35 @@ if [ -n "$CLAUDE_ENV_FILE" ] && [ -w "$CLAUDE_ENV_FILE" ]; then
   echo 'export CLAUDE_CODE_EFFORT_LEVEL=high' >> "$CLAUDE_ENV_FILE"
 fi
 
+# --- Layer 4: Cleanup-pending detection on session start ---
+# If a prior session ended mid-pipeline, a cleanup-pending marker exists.
+# Inject cleanup instructions so the orchestrator executes TeamDelete and
+# other critical steps that were missed.
+CLEANUP_PENDING_FILE="$SUITE_DIR/.orchestrator/cleanup-pending"
+if [ -f "$CLEANUP_PENDING_FILE" ]; then
+  if [ "$SOURCE" = "startup" ] || [ "$SOURCE" = "resume" ]; then
+    CLEANUP_CONTENT=$(cat "$CLEANUP_PENDING_FILE" 2>/dev/null)
+    cat <<CLEANUP
+# Pipeline Cleanup Required
+
+A prior pipeline session ended without completing cleanup. The following steps are **MANDATORY** before starting new work:
+
+1. **Run \`TeamDelete(team_name="production-grade")\`** to free any orphaned agents
+2. **Check CLAUDE.md** for the Production-Grade Native directive — write it if missing
+3. **Write pipeline analytics** to CLAUDE_PLUGIN_DATA if preferences are available
+4. **Update pipeline-status** marker from "partial" to "complete" after cleanup
+
+Prior session details:
+\`\`\`
+${CLEANUP_CONTENT}
+\`\`\`
+
+After completing cleanup, delete the marker file: \`$CLEANUP_PENDING_FILE\`
+CLEANUP
+    exit 0
+  fi
+fi
+
 # During clear or resume, check if a pipeline is actively running.
 # If so, output a short re-orientation message instead of the full guard.
 # "resume" added per Claude Code 2.1.73 — SessionStart hooks now fire once
