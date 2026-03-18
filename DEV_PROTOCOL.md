@@ -112,6 +112,25 @@ The orchestrator (`skills/production-grade/SKILL.md`) is the single entry point.
 
 **Rule: Sub-skills never invoke other sub-skills. Only the orchestrator dispatches. If skill A needs output from skill B, the orchestrator sequences them.**
 
+### Phase Dispatcher Enforcement (Defense in Depth)
+
+The orchestrator must read each phase dispatcher file before dispatching agents. Prose instructions alone are insufficient — the orchestrator can skip reads during context compaction. 6 structural layers enforce this:
+
+| Layer | Mechanism | File | Behavior |
+|-------|-----------|------|----------|
+| L1 | **Graduated Deny** | `hooks/phase-loader.sh` | PreToolUse(Agent) DENIES dispatch when `phase_file_loaded=false`. Denies twice, then falls back to allow+inject. |
+| L2 | **Critical Directives** | `phases/critical/*.txt` | 5 compact files (one per phase) with mandatory steps. Injected by L1 fallback and L3. |
+| L3 | **SubagentStart Injection** | `hooks/subagent-phase-injector.sh` | Every subagent gets critical directives regardless of orchestrator behavior. |
+| L4 | **Active Cleanup** | `hooks/pipeline-cleanup.sh`, `hooks/session-guard.sh` | Stop hook writes `cleanup-pending` marker. Next session detects and injects cleanup instructions. |
+| L5 | **State Validator** | `hooks/state-validator.sh` | PostToolUse(Write) validates state.json consistency — `last_phase_read` freshness, phase validity. Advisory warnings. |
+| L6 | **Prose Enforcement** | `SKILL.md`, phase dispatchers | Explicit language: "Agent dispatch is DENIED until phase_file_loaded=true." |
+
+**Design principle:** No single layer is reliable against an LLM orchestrator. The layers are independent — even if L1 fails, L3 ensures subagents get critical steps. Even if the session ends unexpectedly, L4 ensures cleanup runs next session.
+
+**State fields for enforcement:**
+- `phase_file_loaded` (bool) — set `false` on phase transition, `true` after reading phase file
+- `last_phase_read` (ISO-8601) — timestamp of last phase file read, validated by L5
+
 ---
 
 ## 3. Quality Standards

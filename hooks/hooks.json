@@ -103,6 +103,11 @@
             "type": "command",
             "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && exit 0; bash \"$_R/hooks/receipt-validator.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && exit 0; bash \"$_R/hooks/state-validator.sh\"",
+            "timeout": 5
           }
         ]
       },

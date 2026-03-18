@@ -51,6 +51,8 @@ When in doubt, invoke this skill. It classifies the request and runs only the re
 If you decide NOT to invoke this skill for a build/create request, you MUST still ask the user if they'd like production-grade execution. Frame it as a choice, not a sales pitch:
 "I can build this directly, or I can run a structured pipeline that also produces architecture docs, tests, security audit, and CI/CD. Which do you prefer?"
 If the user declines, proceed normally. If they accept, invoke this skill.
+
+STRUCTURAL ENFORCEMENT: The PreToolUse(Agent) hook DENIES Agent dispatch when phase_file_loaded=false. You MUST Read the phase dispatcher file (phases/{phase}.md) and set phase_file_loaded=true AND last_phase_read=<ISO-8601 timestamp> in state.json BEFORE dispatching agents. The hook blocks 2 attempts, then falls back to injecting critical directives — but reading the full phase file is always preferred.
 </IMPORTANT>
 
 ## Overview
@@ -841,7 +843,7 @@ Task dependencies, wave announcements, dynamic task generation, and worktree con
 
 ## Phase Execution
 
-Each phase loads its dispatcher file for task management and agent spawning.
+Each phase loads its dispatcher file for task management and agent spawning. **The PreToolUse(Agent) hook structurally enforces this** — Agent dispatch is DENIED until `phase_file_loaded=true` in state.json. You must Read the phase file and update state.json before any Agent() call.
 
 | Phase | Dispatcher | Tasks | Strategy |
 |-------|-----------|-------|----------|

@@ -325,6 +325,7 @@ Write("Claude-Production-Grade-Suite/.orchestrator/state.json", json.dumps({
   "current_phase": "DEFINE",
   "current_wave": null,
   "phase_file_loaded": true,
+  "last_phase_read": datetime.utcnow().isoformat() + "Z",  # Timestamp of last phase file read — validated by state-validator hook
   "gates_passed": [],
   "tasks_completed": [],
   "tasks_active": ["T1"],
@@ -348,6 +349,7 @@ state["tasks_completed"].append("T2")
 state["current_phase"] = "BUILD"
 state["current_wave"] = "A"
 state["phase_file_loaded"] = false
+state["last_phase_read"] = null  # Reset — must be set when build.md is read
 state["tasks_active"] = ["T3a", "T3b", "T4a", "T5a", "T6a", "T6b", "T9a", "T11a", "T12"]
 ```
 
