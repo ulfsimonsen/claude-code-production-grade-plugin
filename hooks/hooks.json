@@ -112,6 +112,16 @@
         ]
       },
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "_R=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$_R\" ] && exit 0; bash \"$_R/hooks/test-runner.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "ElicitationResult",
         "hooks": [
           {

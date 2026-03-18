@@ -1,0 +1,33 @@
+{
+  "description": "Maps plugin source files to their test suites for targeted auto-testing",
+  "mappings": [
+    { "pattern": "hooks/session-guard.sh",            "tests": ["test-session-guard.sh"] },
+    { "pattern": "hooks/phase-loader.sh",              "tests": ["test-phase-loader.sh"] },
+    { "pattern": "hooks/receipt-validator.sh",          "tests": ["test-receipt-validator.sh"] },
+    { "pattern": "hooks/state-validator.sh",            "tests": ["test-state-validator.sh"] },
+    { "pattern": "hooks/post-compact-guard.sh",         "tests": ["test-post-compact-guard.sh"] },
+    { "pattern": "hooks/pre-compact-snapshot.sh",       "tests": ["test-pre-compact-snapshot.sh"] },
+    { "pattern": "hooks/subagent-phase-injector.sh",    "tests": ["test-subagent-injector.sh"] },
+    { "pattern": "hooks/task-gate-validator.sh",        "tests": ["test-task-gate-validator.sh"] },
+    { "pattern": "hooks/teammate-idle-guard.sh",        "tests": ["test-teammate-idle-guard.sh"] },
+    { "pattern": "hooks/pipeline-cleanup.sh",           "tests": ["test-pipeline-cleanup.sh"] },
+    { "pattern": "hooks/stop-failure-guard.sh",         "tests": ["test-stop-failure-guard.sh"] },
+    { "pattern": "hooks/elicitation-validator.sh",      "tests": ["test-elicitation-validator.sh"] },
+    { "pattern": "hooks/elicitation-result-logger.sh",  "tests": ["test-elicitation-result-logger.sh"] },
+    { "pattern": "hooks/instructions-loaded-guard.sh",  "tests": ["test-instructions-loaded-guard.sh"] },
+    { "pattern": "hooks/worktree-create-tracker.sh",    "tests": ["test-worktree-tracker.sh"] },
+    { "pattern": "hooks/worktree-remove-tracker.sh",    "tests": ["test-worktree-tracker.sh"] },
+    { "pattern": "hooks/hooks.json",                    "tests": ["test-hooks-json.sh"] },
+    { "pattern": "skills/production-grade/schemas/*",   "tests": ["test-schemas.sh"] },
+    { "pattern": "skills/*/SKILL.md",                   "tests": ["test-frontmatter.sh"] },
+    { "pattern": "skills/production-grade/phases/critical/*", "tests": ["test-critical-directives.sh"] },
+    { "pattern": "skills/production-grade/phases/improve.md", "tests": ["test-improve-mode.sh"] },
+    { "pattern": "skills/production-grade/schemas/iteration.schema.json", "tests": ["test-improve-mode.sh"] },
+    { "pattern": "skills/production-grade/modes/auto/*", "tests": ["test-auto-mode.sh"] },
+    { "pattern": "skills/production-grade/SKILL.md",    "tests": ["test-auto-mode.sh", "test-frontmatter.sh"] },
+    { "pattern": "skills/_shared/protocols/ux-protocol.md", "tests": ["test-elicitation-protocol.sh"] },
+    { "pattern": "skills/_shared/protocols/elicitation-protocol.md", "tests": ["test-elicitation-protocol.sh"] },
+    { "pattern": ".claude/settings.json",               "tests": ["test-settings.sh"] },
+    { "pattern": "tests/framework.sh",                  "tests": ["test-framework.sh"] }
+  ]
+}

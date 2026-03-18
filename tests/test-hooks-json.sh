@@ -128,6 +128,14 @@ test_hook_event_count() {
   assert_eq "13 hook events defined" "13" "$count"
 }
 
+# --- Test runner hook in PostToolUse ---
+
+test_postToolUse_has_test_runner() {
+  local has_runner
+  has_runner=$(jq '[.hooks.PostToolUse[] | select(.matcher == "Write|Edit") | .hooks[] | select(.command | contains("test-runner.sh"))] | length' "$HOOKS_CONFIG")
+  assert_eq "PostToolUse Write|Edit has test-runner hook" "1" "$has_runner"
+}
+
 # --- Run all tests ---
 test_valid_json
 test_all_hook_events_present
@@ -142,5 +150,6 @@ test_scripts_use_plugin_root_guard
 test_all_hooks_type_command
 test_postToolUse_has_state_validator
 test_hook_event_count
+test_postToolUse_has_test_runner
 
 print_summary

@@ -2,6 +2,32 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [7.1.0] — 2026-03-18
+
+### Added
+- **Automatic targeted test execution** — PostToolUse(Write|Edit) hook runs only the relevant test subset when plugin source files are modified. Static manifest (`tests/manifest.json`) maps 28 source file patterns to test suites. Convention fast-path resolves hook→test in <1ms. Fast-path string check skips jq entirely for non-plugin files (~1ms overhead per external Write/Edit vs ~50ms without optimization).
+- **Targeted test runner** (`tests/run-targeted.sh`) — Accepts relative file paths, resolves tests via convention then manifest pattern matching, deduplicates, runs, and reports machine-parseable summary. Always exits 0 (advisory).
+- **Test runner hook** (`hooks/test-runner.sh`) — PostToolUse hook with `Write|Edit` matcher. Returns advisory context with pass/fail counts. Never blocks.
+- **6-layer defense-in-depth enforcement** — Graduated deny system in phase-loader.sh: denies Agent dispatch when phase not loaded (twice), then falls back to allow+inject critical directives to prevent deadlock. Deny counter tracked via temp files, reset on phase load.
+- **State validator hook** (`hooks/state-validator.sh`) — Validates state.json on every write: phase_file_loaded requires timestamp, tasks_active requires valid phase, COMPLETE phase has no active tasks, staleness warning >30min. Advisory only.
+- **Critical directive injection** — 5 per-phase critical directive files (`phases/critical/*.txt`) injected into every pipeline subagent by subagent-phase-injector.sh, ensuring mandatory steps reach agents regardless of orchestrator behavior.
+- **Active cleanup enforcement** — pipeline-cleanup.sh writes cleanup-pending marker with specific steps (TeamDelete, CLAUDE.md directive, plugin data persistence) when session ends mid-pipeline. session-guard.sh detects marker on startup/resume and injects mandatory cleanup instructions.
+- **13 new test suites** — session-guard, pipeline-cleanup, state-validator, critical-directives, phase-loader (rewritten), elicitation-validator, elicitation-result-logger, instructions-loaded-guard, post-compact-guard, stop-failure-guard, teammate-idle-guard, worktree-tracker, framework meta-tests. Hook test coverage: 50%→100% (16/16 hooks). Total: 24 suites, 596 assertions.
+- **Settings validation tests** (`tests/test-settings.sh`) — Validates JSON structure, sandbox config, network hosts, filesystem deny rules, allow/deny lists. 53 assertions.
+
+### Changed
+- **Test count** expanded from 184 to 596 assertions across 24 suites (was 11 suites)
+- **hooks.json** — 2 new PostToolUse entries: state-validator (Write), test-runner (Write|Edit)
+- **phase-loader.sh** — Deny-first enforcement replaces advisory-only behavior
+- **subagent-phase-injector.sh** — Now injects critical directives from phases/critical/*.txt
+- **pipeline-cleanup.sh** — Upgraded from passive logger to active cleanup executor
+- **test-schemas.sh** — Expanded from 2 task schemas (T1, T3a) to all 21 (T1–T13)
+- **Framework helpers** — `assert_file_contains`/`assert_file_not_contains` deduplicated into framework.sh
+
+### Fixed
+- **settings.json permissions** — Added Read to allow list (fixes subagent prompts), renamed allowedDomains→allowedHosts (correct field name), restored * wildcard for unrestricted WebFetch
+- **session-guard.sh** — Fixed operator precedence bug in cleanup-pending detection (&&/|| evaluated wrong)
+
 ## [7.0.0] — 2026-03-18
 
 ### Added
