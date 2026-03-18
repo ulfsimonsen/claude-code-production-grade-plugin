@@ -1,0 +1,9 @@
+HARDEN PHASE (Wave B) — MANDATORY STEPS (critical directives)
+1. Re-anchor: Read architecture, ADRs, directory listings, BUILD receipts FROM DISK
+2. Readiness check: Verify Wave A background outputs exist (test plan, threat model, checklist, Dockerfiles)
+3. Authority boundaries: security-engineer owns OWASP/STRIDE, code-reviewer is READ-ONLY
+4. Launch agents: T4b+T5b+T6c+T6d+T7 all foreground with worktree
+5. Merge-back: After all agents complete, merge worktree branches
+6. Consolidate findings: Read all security/review/QA outputs for Gate 3 preparation
+7. State: Set current_phase=SHIP, current_wave=C, phase_file_loaded=false after Wave B
+8. Handoff: Read phases/ship.md before dispatching Wave C agents

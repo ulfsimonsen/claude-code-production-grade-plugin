@@ -1,0 +1,8 @@
+SHIP PHASE (Wave C) — MANDATORY STEPS (critical directives)
+1. Re-anchor: Read security findings, code review, QA results, SRE SLOs, Wave B receipts FROM DISK
+2. Gate 3: Verify all Wave B receipts exist + findings consolidated before presenting
+3. Launch agents: T8 (remediation) + T9b (SRE execution) + T10 (data scientist)
+4. Re-verify: After T8 remediation, re-run security/QA checks on remediated code
+5. Remediation chain: T8 must address all Critical/High findings from Wave B
+6. State: Set current_phase=SUSTAIN, current_wave=D, phase_file_loaded=false after Wave C
+7. Handoff: Read phases/sustain.md before dispatching Wave D agents

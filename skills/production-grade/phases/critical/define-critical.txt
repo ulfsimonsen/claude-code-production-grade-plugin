@@ -1,0 +1,8 @@
+DEFINE PHASE — MANDATORY STEPS (critical directives)
+1. Re-anchor: Read BRD, architecture ADRs, API contracts, settings.md FROM DISK
+2. Gate 1: Verify T1 receipt exists + BRD artifacts on disk before presenting
+3. Gate 2: Verify T2 receipt exists + architecture artifacts on disk before presenting
+4. State: Set current_phase=BUILD, current_wave=A, phase_file_loaded=false after Gate 2
+5. Handoff: Read phases/build.md before dispatching Wave A agents
+6. Auto mode: Do NOT invoke PM/Architect Skills — spawn Agent with auto-derive prompt
+7. Never skip gates — even in Express mode, gates require receipt verification

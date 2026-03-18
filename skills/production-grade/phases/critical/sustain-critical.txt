@@ -1,0 +1,10 @@
+SUSTAIN PHASE (Wave D) — MANDATORY STEPS (critical directives)
+1. Re-anchor: Read ALL receipts, SRE output, infrastructure listing, docs listing FROM DISK
+2. Collect background agents: Check T12 receipt, T11a receipt from Wave A
+3. Launch agents: T11b (ops guide) + T13 (compound learning + final assembly)
+4. CLAUDE.md: Write Production-Grade Native directive (MANDATORY — enables cross-session guard)
+5. Pipeline status: Write "complete" to .orchestrator/pipeline-status
+6. CLAUDE_PLUGIN_DATA: Write preferences.json and analytics for cross-run persistence
+7. TeamDelete: Run TeamDelete(team_name="production-grade") — MANDATORY, prevents orphaned agents
+8. Workspace: Claude-Production-Grade-Suite/ persists for reference — do NOT delete
+9. If gate rejected: Write "rejected" to pipeline-status, then TeamDelete. Never leave orphaned agents.

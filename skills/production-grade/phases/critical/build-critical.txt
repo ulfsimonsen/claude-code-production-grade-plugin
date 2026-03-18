@@ -1,0 +1,9 @@
+BUILD PHASE (Wave A) — MANDATORY STEPS (critical directives)
+1. Re-anchor: Read BRD, architecture, ADRs, API contracts, receipts T1/T2 FROM DISK
+2. Worktree pre-flight: Check git status, auto-commit if dirty (Auto) or prompt user
+3. Launch agents: T3a+T3b foreground (worktree), T4a+T5a+T6a+T6b+T9a+T11a+T12 background
+4. Track agent_ids in state.json for SendMessage continuation
+5. Merge-back: After foreground agents complete, merge worktree branches to main
+6. State: Set current_phase=HARDEN, current_wave=B, phase_file_loaded=false after Wave A
+7. Handoff: Read phases/harden.md before dispatching Wave B agents
+8. Never skip worktree merge-back — orphaned branches lose work
