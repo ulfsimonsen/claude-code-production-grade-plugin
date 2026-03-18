@@ -10,7 +10,7 @@ This document is the operational counterpart to [VISION.md](VISION.md). VISION d
 
 ### What We Are
 
-A **compound intelligence system** — 14 specialized agents coordinated by a single orchestrator — that transforms Claude Code from producing raw code into delivering production-ready systems. One plugin install gives users architecture, tested code, security audit, CI/CD, and documentation.
+A **compound intelligence system** — 15 specialized agents coordinated by a single orchestrator — that transforms Claude Code from producing raw code into delivering production-ready systems. One plugin install gives users architecture, tested code, security audit, CI/CD, and documentation.
 
 ### What We Are Not
 
@@ -31,12 +31,12 @@ These are the capabilities that no adjacent plugin offers in combination. Protec
 | **Boundary safety** | 6 structural patterns for system boundary bugs, derived from real deployment. | Novel — derived from our own PingBase deployment. Not in any other system. |
 | **Constraint-driven architecture** | Architecture derived from YOUR scale, budget, team, compliance — not templates. | wshobson/agents and Shipyard use template-based architecture. We derive from first principles. |
 | **Functional completeness** | Dead Element Rule — any button/link/form that renders but does nothing is a Critical bug, not a TODO. | No frontend skill in the ecosystem enforces functional verification. They produce structure, not behavior. |
-| **Engagement modes** | Express/Standard/Thorough/Meticulous — propagated to all 14 agents, controlling decision surfacing depth. | Superpowers has a planning mode but no granular engagement control across agents. |
+| **Engagement modes** | Express/Standard/Thorough/Meticulous — propagated to all 15 agents, controlling decision surfacing depth. | Superpowers has a planning mode but no granular engagement control across agents. |
 | **Worktree isolation** | Each parallel agent runs in its own git worktree — zero file race conditions. Auto-detect dirty state, auto-commit or fallback. Merge branches back after each wave. | Superpowers uses worktrees but without auto-detection/fallback or merge-back orchestration. |
 | **Self-healing gates** | Gate rejection loops back to the relevant agent for rework (max 2 cycles), re-verifies, re-presents. Pipeline never dead-ends on rejection. | No adjacent plugin has rework loops. Gate rejection = pipeline stop everywhere else. |
 | **Cost dashboard** | Effort tracking in every receipt (files_read, files_written, tool_calls). Pre-pipeline cost estimate. Final summary aggregates across all agents. | No adjacent plugin provides cost visibility. Users fly blind on token spend. |
 
-| **Harmonization protocol** | Recurring discipline to detect and fix design conflicts across 14 skills, 8 protocols, and 11 principles. Conflict matrix, authority hierarchy, engagement mode consistency checks. | No adjacent plugin has a self-consistency mechanism. Multi-agent systems accumulate contradictions silently. |
+| **Harmonization protocol** | Recurring discipline to detect and fix design conflicts across 15 skills, 9 protocols, and 11 principles. Conflict matrix, authority hierarchy, engagement mode consistency checks. | No adjacent plugin has a self-consistency mechanism. Multi-agent systems accumulate contradictions silently. |
 
 **Rule: Any new feature must either strengthen an existing differentiator or introduce a new one. Features that merely match what others already do are low priority.**
 
@@ -65,10 +65,10 @@ skills/{skill-name}/
 
 ### Protocol Stack Is Law
 
-All 14 agents load these 8 shared protocols at startup:
+All 15 agents load these 9 shared protocols at startup:
 
 ```
-1. UX Protocol          — structured interactions, no open-ended questions
+1. UX Protocol          — structured interactions, continuous execution, autonomy by mode
 2. Input Validation     — classify external inputs (Critical/Degraded/Optional)
 3. Tool Efficiency      — dedicated tools over shell commands
 4. Visual Identity      — formatting, containers, icons, timing, progress
@@ -76,11 +76,12 @@ All 14 agents load these 8 shared protocols at startup:
 6. Freshness Protocol   — verify volatile data before implementing
 7. Receipt Protocol     — JSON proof of completion, verified at gates
 8. Boundary Safety      — 6 patterns for system boundary bugs
+9. Elicitation Protocol — structured input forms: free-form escape hatch, recommended first, never open-ended
 ```
 
 **Rules:**
-- Every new skill MUST load all 8 protocols via `!`cat` commands in its SKILL.md header.
-- New protocols are added only when a pattern is (a) universal across all agents, and (b) derived from real failure, not theory. We currently have 8. Getting to 12 would be concerning. Each protocol adds cognitive load to every agent.
+- Every new skill MUST load all 9 protocols via `!`cat` commands in its SKILL.md header.
+- New protocols are added only when a pattern is (a) universal across all agents, and (b) derived from real failure, not theory. We currently have 9. Getting to 12 would be concerning. Each protocol adds cognitive load to every agent.
 - Protocol files live in `skills/_shared/protocols/`. They are never skill-specific.
 
 ### Parallelism Architecture
@@ -200,7 +201,7 @@ This updates `~/.claude/plugins/installed_plugins.json` and creates the cache di
 ### Adding a New Skill
 
 1. Create `skills/{skill-name}/SKILL.md` with YAML frontmatter (`name`, `description`)
-2. Add all 8 protocol `!`cat` loading lines in the header
+2. Add all 9 protocol `!`cat` loading lines in the header
 3. Add Engagement Mode section reading from `settings.md`
 4. Add Progress Output section following visual identity
 5. Add Input Classification table (Critical/Degraded/Optional)
@@ -217,7 +218,7 @@ Protocols are expensive — they add to every agent's context. Gate carefully:
 2. **Applies to all agents.** If it only affects 2-3 skills, put it in those skills, not a shared protocol.
 3. **Cannot be expressed as a Common Mistakes entry.** If a 2-line table row captures it, don't write a protocol.
 4. Add the file to `skills/_shared/protocols/`
-5. Add `!`cat` loading line to ALL 14 skill SKILL.md files
+5. Add `!`cat` loading line to ALL 15 skill SKILL.md files
 6. Add to the orchestrator's protocol table
 7. Document in CHANGELOG
 
@@ -227,7 +228,7 @@ Protocols are expensive — they add to every agent's context. Gate carefully:
 
 ### Zero Open-Ended Questions
 
-Every interaction is `AskUserQuestion` with predefined options. Arrow keys + Enter. "Chat about this" always last. Recommended option always first.
+Every interaction uses `Elicitation` with predefined options. Free-form "Chat about this" escape hatch always last. Recommended option always first.
 
 This is non-negotiable. The target user is a non-technical founder or product person. They should never need to type a technical answer.
 
@@ -257,7 +258,7 @@ Multi-skill modes: 1-2 gates depending on the mode.
 
 ### Engagement Mode Propagation
 
-The user selects Express/Standard/Thorough/Meticulous once at pipeline start. This propagates to all 14 agents via `settings.md` and controls:
+The user selects Express/Standard/Thorough/Meticulous once at pipeline start. This propagates to all 15 agents via `settings.md` and controls:
 - How many decisions are surfaced
 - How deep interviews go
 - How much discovery happens
@@ -294,7 +295,7 @@ These observations come from deep research into adjacent plugins and the broader
 | **Ruflo** | Swarm intelligence, consensus mechanisms, distributed agent coordination. Enterprise positioning. | Swarm patterns are interesting for future exploration. Our current wave-based parallelism is simpler but may not scale to 20+ agents. |
 | **Shipyard** | IaC validation (Terraform, Ansible, Docker, K8s, CloudFormation). Security auditing integrated with lifecycle. | Our DevOps skill handles IaC but doesn't validate it as deeply. IaC validation is a potential enhancement area. |
 | **Plannotator** | Structured, annotated planning with review/share capabilities. | Our Solution Architect produces ADRs. Could we make architecture artifacts more shareable/reviewable? |
-| **claude-code-plugins-plus** (jeremylongshore) | 270+ plugins, 739 skills, CCPI package manager, interactive tutorials. Massive breadth. | Breadth without depth is their weakness. Our strength is depth — 14 agents that actually coordinate. Don't chase breadth. |
+| **claude-code-plugins-plus** (jeremylongshore) | 270+ plugins, 739 skills, CCPI package manager, interactive tutorials. Massive breadth. | Breadth without depth is their weakness. Our strength is depth — 15 agents that actually coordinate. Don't chase breadth. |
 
 ### What the Ecosystem Gets Wrong
 
@@ -372,10 +373,10 @@ Every feature that adds information to the pipeline has a context cost. Be aware
 
 ```
 Feature costs context:
-  +8 protocols × 14 agents         = protocol loading overhead (fixed, acceptable)
+  +9 protocols × 15 agents         = protocol loading overhead (fixed, acceptable)
   +1 rework cycle                  = ~10-30K tokens (bounded by max 2 cycles)
   +1 compound learning entry       = ~500 tokens (acceptable)
-  +1 new protocol                  = ~2K tokens × 14 agents = 28K per run (expensive — gate carefully)
+  +1 new protocol                  = ~2K tokens × 15 agents = 30K per run (expensive — gate carefully)
   +1 new phase per skill           = ~5K tokens per invocation (moderate — justify it)
 ```
 
@@ -385,7 +386,7 @@ Feature costs context:
 
 ## 8. Harmonization Protocol
 
-A system with 14 skills, 8 protocols, 5 phase dispatchers, and 11 governing principles will accumulate design conflicts through normal iteration. New features get bolted on. Principles evolve. Agent prompts drift from their SKILL.md definitions. What was coherent at v5.0 develops contradictions by v5.4.
+A system with 15 skills, 9 protocols, 5 phase dispatchers, and 11 governing principles will accumulate design conflicts through normal iteration. New features get bolted on. Principles evolve. Agent prompts drift from their SKILL.md definitions. What was coherent at v5.0 develops contradictions by v5.4.
 
 **Harmonization is not a one-time fix — it is a recurring discipline.**
 
@@ -395,7 +396,7 @@ A system with 14 skills, 8 protocols, 5 phase dispatchers, and 11 governing prin
 |---------|-------|
 | Every 3-5 patches (e.g., after v5.5, v5.8, etc.) | Full audit |
 | After any VISION.md principle change | All skills + protocols against the changed principle |
-| After adding/modifying a protocol | All 14 skills that load it |
+| After adding/modifying a protocol | All 15 skills that load it |
 | After modifying engagement mode definitions | All skills that reference engagement modes |
 | After modifying gate policy | All phase dispatchers + orchestrator |
 | Before any major version release | Full audit |
@@ -407,7 +408,7 @@ Run these checks during every harmonization pass. Each row is a potential confli
 | Check | What Conflicts | How to Detect |
 |-------|---------------|---------------|
 | **Gates vs Modes** | 3-gate limit (Principle IV) vs Meticulous mode wanting max involvement | Search for "gate" in all phase files. Verify: gates are pipeline-level (always 3), agent questions are mode-dependent (0 in Express, many in Meticulous). These are different layers. |
-| **MUST-ask vs Express** | Hardcoded AskUserQuestion calls vs Express mode's "fully autonomous" | Search for "AskUserQuestion", "MUST ask", "STOP" in all skill/phase files. Every mandatory prompt must have a mode-aware escape: in Express, auto-resolve with a sensible default and report. |
+| **MUST-ask vs Express** | Hardcoded Elicitation calls vs Express mode's "fully autonomous" | Search for "Elicitation", "MUST ask", "STOP" in all skill/phase files. Every mandatory prompt must have a mode-aware escape: in Express, auto-resolve with a sensible default and report. |
 | **Authority overlaps** | Two skills claiming the same domain (e.g., both Security and Code Reviewer doing OWASP) | Read conflict-resolution.md authority table. Grep all SKILL.md files for domain claims. No two skills should own the same concern. |
 | **Protocol vs Skill** | Protocol says "always X" but a skill says "never X" or ignores X | For each protocol rule, grep all skills for contradicting instructions. |
 | **Orchestrator prompt vs SKILL.md** | Agent() prompt in phase dispatcher says one thing, the skill's SKILL.md says another | Compare every Agent() prompt in build/harden/ship/sustain.md against the corresponding SKILL.md. The SKILL.md is the authority — the prompt should align, not contradict. |
@@ -465,7 +466,7 @@ These cannot be relaxed, regardless of feature pressure:
 
 - **No emoji.** Unicode symbols only. Monospace alignment, terminal aesthetic, cross-platform consistency.
 - **No open-ended questions.** Every user interaction is structured with predefined options.
-- **No config files.** Users don't touch configs. Preferences are asked at runtime via AskUserQuestion.
+- **No config files.** Users don't touch configs. Preferences are asked at runtime via Elicitation.
 - **No templates.** Architecture is derived from constraints, not selected from a menu.
 - **Protocols over guidelines.** If something is important enough to say, it's important enough to enforce.
 - **Real over claimed.** Numbers, not adjectives. Verified artifacts, not agent assertions. Receipts, not promises.
@@ -492,10 +493,10 @@ When implementing a change, run through these questions in order:
      YES → Strongly justify. Every interruption has a cost.
      NO → Proceed. Improvements that don't interrupt are always welcome.
 
-4. Does this change affect all 14 agents?
+4. Does this change affect all 15 agents?
    YES → Is it truly universal?
      NO → Put it in the specific skills, not a shared protocol.
-     YES → Protocol it. Update all 14 skills.
+     YES → Protocol it. Update all 15 skills.
 
 5. Can this be expressed as a Common Mistakes table entry instead of a protocol/phase?
    YES → Use the table. 2 lines beats 50 lines.
@@ -507,13 +508,13 @@ When implementing a change, run through these questions in order:
 
 Before every commit, verify:
 
-- [ ] All modified skill files still load all 8 protocols
+- [ ] All modified skill files still load all 9 protocols
 - [ ] Phase numbering is consecutive and consistent (`[1/N]` through `[N/N]`)
 - [ ] Version is bumped in all 4 locations (if version-worthy change)
 - [ ] CHANGELOG.md is updated
 - [ ] README.md reflects any user-visible changes
-- [ ] No new open-ended questions introduced (all interactions use AskUserQuestion)
-- [ ] All AskUserQuestion calls are engagement-mode-aware (Express gets auto-resolve, not a prompt)
+- [ ] No new open-ended questions introduced (all interactions use Elicitation)
+- [ ] All Elicitation calls are engagement-mode-aware (Express gets auto-resolve, not a prompt)
 - [ ] Completion summaries include concrete numbers
 - [ ] Common Mistakes tables are not duplicated across skills (put shared patterns in protocols)
 - [ ] New features are documented in the skill's SKILL.md, not just implemented
@@ -530,7 +531,7 @@ You are likely a Claude Code session implementing a change to this plugin. Here 
 2. **Read the orchestrator** (`skills/production-grade/SKILL.md`) to understand routing, modes, and gate flow.
 3. **Read the skill you're modifying** — its SKILL.md and all its phase files — before changing anything.
 4. **Read the protocols** (`skills/_shared/protocols/`) that the skill loads. Your changes must not violate them.
-5. **Changes propagate.** If you modify a protocol, it affects all 14 skills. If you modify the orchestrator's routing table, it affects what skills run for which requests. Think through the blast radius.
+5. **Changes propagate.** If you modify a protocol, it affects all 15 skills. If you modify the orchestrator's routing table, it affects what skills run for which requests. Think through the blast radius.
 6. **Version bumping is 2 files.** Bump `plugin.json` and `marketplace.json`. The CLI handles `installed_plugins.json` and cache directory.
 7. **Test by installing.** After changes, run `claude plugin marketplace update local-marketplace && claude plugin update cc-production-grade@local-marketplace`, then `/reload-plugins` and invoke the skill to verify.
 8. **The user (Quan) is non-technical.** He is a product/business person. His partner is a senior engineer. Design for both: simple interactions for the user, rigorous output for the engineer.

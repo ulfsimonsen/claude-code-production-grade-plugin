@@ -14,10 +14,9 @@ Every agent writes a JSON receipt as its LAST action before `TaskUpdate(status="
 
 ```json
 {
-  "task": "T6b",
-  "agent": "code-reviewer",
-  "phase": "HARDEN",
-  "status": "complete",
+  "task_id": "T6b",
+  "skill": "code-reviewer",
+  "status": "completed",
   "completed_at": "2026-03-14T15:42:07Z",
   "artifacts": [
     "Claude-Production-Grade-Suite/code-reviewer/review-report.md",
@@ -34,8 +33,7 @@ Every agent writes a JSON receipt as its LAST action before `TaskUpdate(status="
     "files_read": 47,
     "files_written": 6,
     "tool_calls": 83
-  },
-  "verification": "all 4 review phases executed, review-report.md written with executive summary"
+  }
 }
 ```
 
@@ -43,15 +41,13 @@ Every agent writes a JSON receipt as its LAST action before `TaskUpdate(status="
 
 | Field | Type | Rule |
 |-------|------|------|
-| `task` | string | Task ID from the orchestrator (T1, T2, T3a, etc.) |
-| `agent` | string | Skill name (product-manager, software-engineer, etc.) |
-| `phase` | string | Pipeline phase (DEFINE, BUILD, HARDEN, SHIP, SUSTAIN) |
-| `status` | string | Always `"complete"` — only write receipt on success |
+| `task_id` | string | Task ID from the orchestrator (T1, T2, T3a, etc.) |
+| `skill` | string | Skill name (product-manager, software-engineer, etc.) |
+| `status` | string | Always `"completed"` — only write receipt on success |
 | `completed_at` | string | ISO-8601 UTC timestamp of when the agent finished. Generate with `Bash('date -u +%Y-%m-%dT%H:%M:%SZ')`. Enables per-agent timing and bottleneck analysis. |
 | `artifacts` | string[] | Every file the agent created or modified. Each path MUST exist on disk at time of writing. |
 | `metrics` | object | Key-value pairs with concrete numbers. At least one metric required. No empty objects. |
 | `effort` | object | Tracking: `files_read` (int), `files_written` (int), `tool_calls` (int). Count your actual tool invocations during this task. |
-| `verification` | string | One-line summary of what the agent checked to confirm its work is correct. |
 
 ---
 
@@ -84,10 +80,9 @@ All three must exist for a Critical/High finding to be considered resolved. The 
 
 ```json
 {
-  "task": "T6a-verify",
-  "agent": "security-engineer",
-  "phase": "SHIP",
-  "status": "complete",
+  "task_id": "T6a-verify",
+  "skill": "security-engineer",
+  "status": "completed",
   "completed_at": "2026-03-14T16:08:33Z",
   "artifacts": [],
   "metrics": {
@@ -96,7 +91,11 @@ All three must exist for a Critical/High finding to be considered resolved. The 
     "original_high": 5,
     "remaining_high": 1
   },
-  "verification": "re-scanned all previously flagged files, 0 Critical remaining, 1 High accepted with justification"
+  "effort": {
+    "files_read": 12,
+    "files_written": 1,
+    "tool_calls": 24
+  }
 }
 ```
 
@@ -122,7 +121,6 @@ At every phase transition and before every gate, the orchestrator:
 | Writing receipt before work is done | Receipt is the LAST action, after all files verified |
 | Empty `artifacts` array when files were created | List every file the agent produced |
 | `"metrics": {}` | At least one concrete number in metrics |
-| `"verification": "done"` | Describe what was actually verified |
 | Skipping receipt because "it's a small task" | Every task gets a receipt, regardless of size |
 | Writing receipt but not checking artifacts exist | Verify each artifact path before writing receipt |
 | `"effort": {}` or missing effort field | Count files_read, files_written, tool_calls from your actual work |

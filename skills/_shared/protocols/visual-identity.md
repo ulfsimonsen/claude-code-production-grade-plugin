@@ -299,6 +299,7 @@ Estimate tokens from mode × engagement × project complexity:
 | Test | 15-40K | 30-80K | 60-150K | 100-250K |
 | Review | 10-30K | 20-50K | 40-100K | 80-200K |
 | Architect | 20-50K | 40-100K | 80-200K | 150-350K |
+| Improve | 20-50K | 40-100K | 80-200K | 150-300K |
 
 Show the pre-pipeline estimate after engagement mode selection:
 ```
@@ -375,6 +376,8 @@ Notice the rhythm: **heavy → light → light → heavy → light → light →
 Claude Code streams text output token-by-token. This is our only animation channel — and it's enough.
 
 When Claude prints a pipeline dashboard, the user watches it build line by line. When a wave completes and Claude prints the checkmark cascade, each `✓` appears in sequence. When the final summary renders, the double-line box draws itself before the user's eyes.
+
+With 128k output token limits (Claude Code 2.1.77+), agents can produce significantly larger streaming outputs. Design visual blocks for potentially longer streaming sequences.
 
 Design every visual block for streaming consumption:
 
