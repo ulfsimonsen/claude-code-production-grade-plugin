@@ -14,7 +14,7 @@ test_valid_json() {
 # --- All hook events present ---
 
 test_all_hook_events_present() {
-  local expected_events=("SessionStart" "PostCompact" "TeammateIdle" "SubagentStart" "TaskCompleted" "PreCompact" "PreToolUse" "PostToolUse")
+  local expected_events=("SessionStart" "PostCompact" "TeammateIdle" "SubagentStart" "TaskCompleted" "PreCompact" "PreToolUse" "PostToolUse" "StopFailure" "InstructionsLoaded" "WorktreeCreate" "WorktreeRemove" "Stop")
   for event in "${expected_events[@]}"; do
     local exists
     exists=$(jq -r --arg e "$event" '.hooks | has($e)' "$HOOKS_CONFIG")
@@ -112,6 +112,14 @@ test_all_hooks_type_command() {
   assert_eq "all hooks use type 'command'" "0" "$non_command"
 }
 
+# --- State validator in PostToolUse ---
+
+test_postToolUse_has_state_validator() {
+  local has_validator
+  has_validator=$(jq '[.hooks.PostToolUse[0].hooks[] | select(.command | contains("state-validator.sh"))] | length' "$HOOKS_CONFIG")
+  assert_eq "PostToolUse Write has state-validator hook" "1" "$has_validator"
+}
+
 # --- Hook count ---
 
 test_hook_event_count() {
@@ -132,6 +140,7 @@ test_preCompact_matcher_empty
 test_timeouts_are_reasonable
 test_scripts_use_plugin_root_guard
 test_all_hooks_type_command
+test_postToolUse_has_state_validator
 test_hook_event_count
 
 print_summary
