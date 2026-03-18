@@ -28,6 +28,8 @@
     "autoAllowBashIfSandboxed": true,
     "network": {
       "allowedHosts": [
+        "*.*",
+        "*",
         "registry.npmjs.org",
         "github.com",
         "raw.githubusercontent.com",

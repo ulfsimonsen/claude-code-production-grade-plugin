@@ -2,6 +2,36 @@
 
 All notable changes to the Production Grade Plugin.
 
+## [7.0.0] — 2026-03-18
+
+### Added
+- **Self-Improvement mode (Improve)** — 12th execution mode. Focused iteration loop on a single agent, skill, or agent+skill pair. Dedicated evaluator agent scores output against binary rubric criteria. Composite termination: TIME, THRESHOLD, MAX_ITERATIONS, MAX_EVALUATIONS. Uses SendMessage for agent continuation across iterations. Python utility scripts created opportunistically. Meta-improvement: the agent/skill DEFINITION evolves across iterations.
+- **Evaluator agent** — 15th skill. Binary rubric-based scoring of agent/skill output. Read-only (disallowedTools enforced). Extractable as standalone project.
+- **Elicitation protocol** — 9th shared protocol. All user input via MCP Elicitation (replaces AskUserQuestion). Free-form escape hatch in every form. Engagement mode scaling preserved.
+- **Agent frontmatter** — All 15 SKILL.md files gain `effort`, `maxTurns`, `disallowedTools` declarative configuration (Claude Code 2.1.78). Analysis agents structurally enforced as read-only.
+- **Persistent plugin state** — `${CLAUDE_PLUGIN_DATA}` stores user preferences and pipeline analytics across sessions. InstructionsLoaded hook loads preferences at startup.
+- **7 new hook scripts** — StopFailure (API error handling), InstructionsLoaded (preference loading), Elicitation validator/logger, WorktreeCreate/Remove trackers, pipeline cleanup on Stop. hooks.json: 8→15 entries.
+- **Cron-based monitoring** — Post-pipeline health checks (test re-runs, security scans, dependency audits). Configurable via .production-grade.yaml.
+- **SendMessage agent lifecycle** — Background agents resumable via SendMessage(to: agentId). Agent IDs tracked in state.json.
+- **3 new test suites** — test-frontmatter.sh (15 tests), test-elicitation-protocol.sh (12 tests), test-improve-mode.sh (17 tests). Total: 184 tests across 11 suites.
+
+### Changed
+- **Minimum Claude Code version** bumped to 2.1.78+ (from 2.1.76+)
+- **Execution modes** expanded from 11 to 12 (Improve mode added)
+- **Agent count** expanded from 14 to 15 (Evaluator added)
+- **Protocol count** expanded from 8 to 9 (Elicitation Protocol added)
+- **AskUserQuestion fully replaced** with MCP Elicitation across all skills, phase dispatchers, gate ceremonies
+- **UX Protocol** slimmed from 6 rules to 3 (input rules moved to Elicitation Protocol)
+- **Receipt protocol** field names aligned with JSON schemas (task_id, skill, status: completed)
+- **Runtime model param removed** from phase dispatchers — frontmatter is single source of truth
+- **DEV_PROTOCOL.md** updated for 15 agents, 9 protocols, Elicitation standard
+
+### Fixed
+- **Race conditions in state.json** — flock-based file locking added to receipt-validator.sh, worktree-create-tracker.sh, worktree-remove-tracker.sh
+- **Dead schema removed** — receipt-evaluator.schema.json was unreachable; deleted
+- **Heredoc injection risk** in 4 hook scripts documented as known Medium
+- **Stale AskUserQuestion references** in session-guard.sh, ux-protocol.md table header, SKILL.md protocol descriptions
+
 ## [6.0.0] — 2026-03-16
 
 ### Added
