@@ -90,14 +90,17 @@ if [[ -n "$ERRORS" ]]; then
     }
   }'
 else
-  # Update state.json to mark task as completed
+  # Update state.json to mark task as completed (flock prevents race conditions)
   STATE_FILE="Claude-Production-Grade-Suite/.orchestrator/state.json"
   if [[ -f "$STATE_FILE" ]]; then
-    # Add task to completed list if not already there
-    ALREADY=$(jq -r --arg tid "$TASK_ID" '.tasks_completed // [] | index($tid) // empty' "$STATE_FILE" 2>/dev/null)
-    if [[ -z "$ALREADY" ]]; then
-      jq --arg tid "$TASK_ID" '.tasks_completed = ((.tasks_completed // []) + [$tid] | unique)' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-    fi
+    (
+      flock -x 200
+      # Add task to completed list if not already there
+      ALREADY=$(jq -r --arg tid "$TASK_ID" '.tasks_completed // [] | index($tid) // empty' "$STATE_FILE" 2>/dev/null)
+      if [[ -z "$ALREADY" ]]; then
+        jq --arg tid "$TASK_ID" '.tasks_completed = ((.tasks_completed // []) + [$tid] | unique)' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+      fi
+    ) 200>"${STATE_FILE}.lock"
   fi
   exit 0
 fi

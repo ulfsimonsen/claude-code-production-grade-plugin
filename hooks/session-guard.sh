@@ -10,6 +10,10 @@
 # Sets CLAUDE_CODE_EFFORT_LEVEL=high via CLAUDE_ENV_FILE when a pipeline
 # is active — ensures Sonnet 4.6 and Opus 4.6 don't abbreviate critical
 # pipeline steps (gate verification, receipt writing, re-anchoring).
+#
+# v7.0.0: Added resume source handling (SessionStart now fires on --resume
+# via Claude Code 2.1.73+). Added CLAUDE_PLUGIN_DATA awareness to detect
+# returning users with saved preferences.
 
 SUITE_DIR="Claude-Production-Grade-Suite"
 
@@ -23,6 +27,14 @@ INPUT=$(cat)
 
 # Extract source field (startup|resume|clear|compact)
 SOURCE=$(echo "$INPUT" | grep -o '"source"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"source"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+# CLAUDE_PLUGIN_DATA awareness: detect returning user with saved preferences.
+# If preferences.json exists, the user has prior saved defaults — this informs
+# the guard message so we don't re-ask settings they already configured.
+RETURNING_USER=false
+if [ -n "$CLAUDE_PLUGIN_DATA" ] && [ -f "$CLAUDE_PLUGIN_DATA/preferences.json" ]; then
+  RETURNING_USER=true
+fi
 
 # Set high effort for production-grade projects via CLAUDE_ENV_FILE.
 # CLAUDE_ENV_FILE is only available in SessionStart hooks — it persists
@@ -89,12 +101,19 @@ ADR_COUNT=$(find "$SUITE_DIR" -name "ADR-*.md" 2>/dev/null | wc -l | tr -d ' ')
 RECEIPT_COUNT=$(find "$SUITE_DIR/.orchestrator/receipts" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
 PROTOCOL_COUNT=$(find "$SUITE_DIR/.protocols" -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
 
+# Build returning-user note for the guard message
+RETURNING_NOTE=""
+if [ "$RETURNING_USER" = "true" ]; then
+  RETURNING_NOTE="
+Note: This user has saved preferences in CLAUDE_PLUGIN_DATA/preferences.json. Their defaults (engagement mode, parallelism, worktrees) will be auto-applied when the pipeline starts — no need to re-ask about those settings."
+fi
+
 cat <<GUARD
 # Production-Grade Native Project Detected
 
 This project was built with the production-grade pipeline. The \`$SUITE_DIR/\` directory contains ${ADR_COUNT} architecture decisions, ${RECEIPT_COUNT} pipeline receipts, and ${PROTOCOL_COUNT} protocols.
-
-**IMPORTANT — Before starting work, ask the user how they'd like to proceed using AskUserQuestion:**
+${RETURNING_NOTE}
+**IMPORTANT — Before starting work, ask the user how they'd like to proceed using Elicitation:**
 
 Question: "This project was built with the production-grade pipeline. How would you like to work today?"
 Header: "Production-Grade Native Project"
