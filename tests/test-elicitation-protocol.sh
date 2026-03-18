@@ -9,34 +9,6 @@ UX_FILE="$PROTOCOLS_DIR/ux-protocol.md"
 
 begin_suite "Elicitation Protocol"
 
-# Helper: check if a file contains a string (grep-based)
-assert_file_contains() {
-  local desc="$1" file="$2" needle="$3"
-  ((_TOTAL++))
-  if grep -qF "$needle" "$file" 2>/dev/null; then
-    ((_PASS++))
-    printf "  \033[32m✓\033[0m %s\n" "$desc"
-  else
-    ((_FAIL++))
-    printf "  \033[31m✗\033[0m %s\n" "$desc"
-    printf "    '%s' not found in %s\n" "$needle" "$(basename "$file")"
-  fi
-}
-
-# Helper: check that a file does NOT contain a string
-assert_file_not_contains() {
-  local desc="$1" file="$2" needle="$3"
-  ((_TOTAL++))
-  if ! grep -qF "$needle" "$file" 2>/dev/null; then
-    ((_PASS++))
-    printf "  \033[32m✓\033[0m %s\n" "$desc"
-  else
-    ((_FAIL++))
-    printf "  \033[31m✗\033[0m %s\n" "$desc"
-    printf "    '%s' should not appear in %s\n" "$needle" "$(basename "$file")"
-  fi
-}
-
 # ─── elicitation-protocol.md exists ───
 
 test_elicitation_protocol_exists() {

@@ -88,37 +88,123 @@ test_task_schemas_have_required_metrics() {
   fi
 }
 
-# --- Specific task schema spot checks ---
-
-test_T1_schema_metrics() {
-  local schema="$SCHEMAS_DIR/receipt-T1.schema.json"
+# --- Per-task schema required_metrics validation ---
+# Helper: assert a task schema has the expected required_metrics
+assert_task_metrics() {
+  local task_id="$1" expected_sorted="$2"
+  local schema="$SCHEMAS_DIR/receipt-${task_id}.schema.json"
   local metrics
-  metrics=$(jq -r '.required_metrics | sort | join(",")' "$schema")
-  assert_eq "T1 requires user_stories, acceptance_criteria" "acceptance_criteria,user_stories" "$metrics"
+  metrics=$(jq -r '.required_metrics | sort | join(",")' "$schema" 2>/dev/null)
+  assert_eq "${task_id} requires ${expected_sorted}" "$expected_sorted" "$metrics"
 }
 
-test_T1_schema_min_values() {
-  local schema="$SCHEMAS_DIR/receipt-T1.schema.json"
-  local us_min
-  us_min=$(jq -r '.min_values.user_stories' "$schema")
-  assert_eq "T1 min user_stories is 1" "1" "$us_min"
-  local ac_min
-  ac_min=$(jq -r '.min_values.acceptance_criteria' "$schema")
-  assert_eq "T1 min acceptance_criteria is 1" "1" "$ac_min"
+# Helper: assert a task schema has a min_value for a given metric
+assert_task_min_value() {
+  local task_id="$1" metric="$2" expected="$3"
+  local schema="$SCHEMAS_DIR/receipt-${task_id}.schema.json"
+  local actual
+  actual=$(jq -r ".min_values.${metric}" "$schema" 2>/dev/null)
+  assert_eq "${task_id} min ${metric} is ${expected}" "$expected" "$actual"
 }
 
-test_T3a_schema_metrics() {
-  local schema="$SCHEMAS_DIR/receipt-T3a.schema.json"
-  local metrics
-  metrics=$(jq -r '.required_metrics | sort | join(",")' "$schema")
-  assert_eq "T3a requires endpoints, services" "endpoints,services" "$metrics"
+test_T1_schema() {
+  assert_task_metrics "T1" "acceptance_criteria,user_stories"
+  assert_task_min_value "T1" "user_stories" "1"
+  assert_task_min_value "T1" "acceptance_criteria" "1"
 }
 
-test_T3a_schema_min_services() {
-  local schema="$SCHEMAS_DIR/receipt-T3a.schema.json"
-  local min
-  min=$(jq -r '.min_values.services' "$schema")
-  assert_eq "T3a min services is 1" "1" "$min"
+test_T2_schema() {
+  assert_task_metrics "T2" "adrs,endpoints"
+  assert_task_min_value "T2" "adrs" "1"
+  assert_task_min_value "T2" "endpoints" "1"
+}
+
+test_T3a_schema() {
+  assert_task_metrics "T3a" "endpoints,services"
+  assert_task_min_value "T3a" "services" "1"
+}
+
+test_T3b_schema() {
+  assert_task_metrics "T3b" "components,pages"
+  assert_task_min_value "T3b" "pages" "1"
+}
+
+test_T4a_schema() {
+  assert_task_metrics "T4a" "dockerfiles"
+}
+
+test_T4b_schema() {
+  assert_task_metrics "T4b" "containers"
+  assert_task_min_value "T4b" "containers" "1"
+}
+
+test_T5a_schema() {
+  assert_task_metrics "T5a" "test_scenarios"
+}
+
+test_T5b_schema() {
+  assert_task_metrics "T5b" "passing,tests"
+  assert_task_min_value "T5b" "tests" "1"
+}
+
+test_T6a_schema() {
+  assert_task_metrics "T6a" "threats_identified"
+}
+
+test_T6b_schema() {
+  assert_task_metrics "T6b" "checklist_items"
+}
+
+test_T6c_schema() {
+  assert_task_metrics "T6c" "critical,findings,high"
+  assert_task_min_value "T6c" "findings" "0"
+  assert_task_min_value "T6c" "critical" "0"
+}
+
+test_T6d_schema() {
+  assert_task_metrics "T6d" "findings"
+  assert_task_min_value "T6d" "findings" "0"
+}
+
+test_T7_schema() {
+  assert_task_metrics "T7" "ci_workflows,terraform_modules"
+}
+
+test_T8_schema() {
+  assert_task_metrics "T8" "critical_fixed,high_fixed"
+  assert_task_min_value "T8" "critical_fixed" "0"
+  assert_task_min_value "T8" "high_fixed" "0"
+}
+
+test_T9a_schema() {
+  assert_task_metrics "T9a" "slos"
+}
+
+test_T9b_schema() {
+  assert_task_metrics "T9b" "alerts,runbooks,slos"
+  assert_task_min_value "T9b" "slos" "1"
+}
+
+test_T10_schema() {
+  assert_task_metrics "T10" "optimizations"
+}
+
+test_T11a_schema() {
+  assert_task_metrics "T11a" "api_docs"
+}
+
+test_T11b_schema() {
+  assert_task_metrics "T11b" "ops_docs"
+}
+
+test_T12_schema() {
+  assert_task_metrics "T12" "skills"
+  assert_task_min_value "T12" "skills" "0"
+}
+
+test_T13_schema() {
+  assert_task_metrics "T13" "files_assembled"
+  assert_task_min_value "T13" "files_assembled" "0"
 }
 
 # --- Gate schemas ---
@@ -186,10 +272,27 @@ test_base_schema_status_enum
 test_base_schema_effort_subfields
 test_task_schemas_reference_base
 test_task_schemas_have_required_metrics
-test_T1_schema_metrics
-test_T1_schema_min_values
-test_T3a_schema_metrics
-test_T3a_schema_min_services
+test_T1_schema
+test_T2_schema
+test_T3a_schema
+test_T3b_schema
+test_T4a_schema
+test_T4b_schema
+test_T5a_schema
+test_T5b_schema
+test_T6a_schema
+test_T6b_schema
+test_T6c_schema
+test_T6d_schema
+test_T7_schema
+test_T8_schema
+test_T9a_schema
+test_T9b_schema
+test_T10_schema
+test_T11a_schema
+test_T11b_schema
+test_T12_schema
+test_T13_schema
 test_gate1_schema
 test_gate2_schema
 test_gate3_schema

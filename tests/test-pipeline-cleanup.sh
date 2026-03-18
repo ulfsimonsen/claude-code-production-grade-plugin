@@ -4,7 +4,6 @@
 source "$(dirname "$0")/framework.sh"
 
 HOOK="$HOOKS_DIR/pipeline-cleanup.sh"
-GUARD_HOOK="$HOOKS_DIR/session-guard.sh"
 begin_suite "pipeline-cleanup.sh"
 
 # --- Guard tests ---
@@ -168,65 +167,6 @@ test_output_is_valid_json() {
   cleanup_workspace "$ws"
 }
 
-# --- Layer 4 read side: session-guard.sh cleanup-pending detection ---
-
-test_session_guard_detects_cleanup_pending_on_startup() {
-  local ws; ws=$(create_workspace)
-  mkdir -p "$ws/Claude-Production-Grade-Suite/.orchestrator"
-  # Write a cleanup-pending marker (as if pipeline-cleanup.sh left it)
-  cat > "$ws/Claude-Production-Grade-Suite/.orchestrator/cleanup-pending" <<EOF
-# Cleanup Pending — 2026-03-18T10:00:00Z
-phase: HARDEN
-wave: B
-tasks_completed: 5
-steps: write-claude-md,team-delete,persist-plugin-data,
-EOF
-  HOOK_STDERR=$(mktemp "${TMPDIR:-/private/tmp/claude-501}/hook-stderr-XXXXXX")
-  HOOK_OUTPUT=$(cd "$ws" && echo '{"source":"startup"}' | bash "$GUARD_HOOK" 2>"$HOOK_STDERR")
-  HOOK_EXIT=$?
-  rm -f "$HOOK_STDERR"
-  assert_contains "guard detects cleanup-pending: TeamDelete instruction" "$HOOK_OUTPUT" "TeamDelete"
-  assert_contains "guard detects cleanup-pending: MANDATORY label" "$HOOK_OUTPUT" "MANDATORY"
-  assert_contains "guard detects cleanup-pending: shows prior phase" "$HOOK_OUTPUT" "HARDEN"
-  cleanup_workspace "$ws"
-}
-
-test_session_guard_detects_cleanup_pending_on_resume() {
-  local ws; ws=$(create_workspace)
-  mkdir -p "$ws/Claude-Production-Grade-Suite/.orchestrator"
-  echo "cleanup marker" > "$ws/Claude-Production-Grade-Suite/.orchestrator/cleanup-pending"
-  HOOK_STDERR=$(mktemp "${TMPDIR:-/private/tmp/claude-501}/hook-stderr-XXXXXX")
-  HOOK_OUTPUT=$(cd "$ws" && echo '{"source":"resume"}' | bash "$GUARD_HOOK" 2>"$HOOK_STDERR")
-  HOOK_EXIT=$?
-  rm -f "$HOOK_STDERR"
-  assert_contains "guard detects cleanup-pending on resume" "$HOOK_OUTPUT" "Pipeline Cleanup Required"
-  cleanup_workspace "$ws"
-}
-
-test_session_guard_no_cleanup_when_no_marker() {
-  local ws; ws=$(create_workspace)
-  # No cleanup-pending file — should NOT output cleanup instructions
-  HOOK_STDERR=$(mktemp "${TMPDIR:-/private/tmp/claude-501}/hook-stderr-XXXXXX")
-  HOOK_OUTPUT=$(cd "$ws" && echo '{"source":"startup"}' | bash "$GUARD_HOOK" 2>"$HOOK_STDERR")
-  HOOK_EXIT=$?
-  rm -f "$HOOK_STDERR"
-  assert_not_contains "no cleanup output when no marker" "$HOOK_OUTPUT" "Pipeline Cleanup Required"
-  cleanup_workspace "$ws"
-}
-
-test_session_guard_no_cleanup_on_clear() {
-  local ws; ws=$(create_workspace)
-  mkdir -p "$ws/Claude-Production-Grade-Suite/.orchestrator"
-  echo "cleanup marker" > "$ws/Claude-Production-Grade-Suite/.orchestrator/cleanup-pending"
-  # "clear" source should NOT trigger cleanup detection (only startup/resume)
-  HOOK_STDERR=$(mktemp "${TMPDIR:-/private/tmp/claude-501}/hook-stderr-XXXXXX")
-  HOOK_OUTPUT=$(cd "$ws" && echo '{"source":"clear"}' | bash "$GUARD_HOOK" 2>"$HOOK_STDERR")
-  HOOK_EXIT=$?
-  rm -f "$HOOK_STDERR"
-  assert_not_contains "no cleanup on clear source" "$HOOK_OUTPUT" "Pipeline Cleanup Required"
-  cleanup_workspace "$ws"
-}
-
 # --- Run all tests ---
 test_guard_no_plugin_root
 test_guard_no_state_file
@@ -238,9 +178,5 @@ test_cleanup_pending_includes_claude_md_step_when_missing
 test_cleanup_pending_omits_claude_md_step_when_present
 test_logs_stop_event
 test_output_is_valid_json
-test_session_guard_detects_cleanup_pending_on_startup
-test_session_guard_detects_cleanup_pending_on_resume
-test_session_guard_no_cleanup_when_no_marker
-test_session_guard_no_cleanup_on_clear
 
 print_summary

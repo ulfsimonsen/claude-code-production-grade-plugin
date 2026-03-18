@@ -9,20 +9,6 @@ PROTOCOLS_DIR="$PROJECT_ROOT/skills/_shared/protocols"
 
 begin_suite "Auto Mode — Structural Consistency"
 
-# Helper: check if a file contains a string (grep-based, no cat)
-assert_file_contains() {
-  local desc="$1" file="$2" needle="$3"
-  ((_TOTAL++))
-  if grep -qF "$needle" "$file" 2>/dev/null; then
-    ((_PASS++))
-    printf "  \033[32m✓\033[0m %s\n" "$desc"
-  else
-    ((_FAIL++))
-    printf "  \033[31m✗\033[0m %s\n" "$desc"
-    printf "    '%s' not found in %s\n" "$needle" "$(basename "$file")"
-  fi
-}
-
 # Helper: count occurrences of a pattern in a file
 count_in_file() {
   grep -cF "$2" "$1" 2>/dev/null || echo 0

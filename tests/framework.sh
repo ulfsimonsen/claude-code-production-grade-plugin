@@ -81,6 +81,32 @@ assert_json_valid() {
   fi
 }
 
+assert_file_contains() {
+  local desc="$1" file="$2" needle="$3"
+  ((_TOTAL++))
+  if grep -qF "$needle" "$file" 2>/dev/null; then
+    ((_PASS++))
+    printf "  \033[32m✓\033[0m %s\n" "$desc"
+  else
+    ((_FAIL++))
+    printf "  \033[31m✗\033[0m %s\n" "$desc"
+    printf "    '%s' not found in %s\n" "$needle" "$(basename "$file")"
+  fi
+}
+
+assert_file_not_contains() {
+  local desc="$1" file="$2" needle="$3"
+  ((_TOTAL++))
+  if ! grep -qF "$needle" "$file" 2>/dev/null; then
+    ((_PASS++))
+    printf "  \033[32m✓\033[0m %s\n" "$desc"
+  else
+    ((_FAIL++))
+    printf "  \033[31m✗\033[0m %s\n" "$desc"
+    printf "    '%s' should not appear in %s\n" "$needle" "$(basename "$file")"
+  fi
+}
+
 assert_json_field() {
   local desc="$1" file="$2" field="$3" expected="$4"
   ((_TOTAL++))
