@@ -208,7 +208,7 @@ If `Engagement: auto` in settings.md:
   ✓ Auto-approved — receipts verified, artifacts exist
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-4. Do NOT call AskUserQuestion. No rework loops. Proceed directly to SUSTAIN phase.
+4. Do NOT call Elicitation. No rework loops. Proceed directly to SUSTAIN phase.
 5. If unresolved Critical findings remain, log them for the Auto Mode final summary:
    Append to `Claude-Production-Grade-Suite/.orchestrator/auto-decisions.md`:
    `[Gate 3] Auto-approved with {N} unresolved Critical findings — documented as known issues`
@@ -235,14 +235,14 @@ Print the pipeline dashboard (DEFINE ✓, BUILD ✓, HARDEN ✓, SHIP ✓ comple
 
 Then ask:
 ```python
-AskUserQuestion(questions=[{
+Elicitation(questions=[{
   "question": "All phases complete. [summary]. Ship it?",
   "header": "Gate 3: Production Readiness",
   "options": [
     {"label": "Ship it — production ready (Recommended)", "description": "Finalize assembly and deploy"},
     {"label": "Show full report", "description": "Display complete pipeline summary"},
     {"label": "Rework — fix issues first", "description": "Run remediation cycle, then re-verify"},
-    {"label": "Chat about this", "description": "Free-form input about production readiness"}
+    {"label": "Chat about this", "description": "Free-form text input about production readiness"}
   ],
   "multiSelect": false
 }])
@@ -291,6 +291,10 @@ state["gates_passed"].append("G3")
 state["current_wave"] = "D"
 state["phase_file_loaded"] = false
 ```
+
+## Error Handling
+
+**StopFailure hook:** If API errors occur during the SHIP phase (e.g., T8 remediation agent fails mid-execution), the StopFailure hook logs the error to `.orchestrator/error-log.md` with timestamp, task ID, and error details. Before re-running Wave C, check this file to avoid re-applying partial fixes. If T8 was partially complete, read its receipt and skip already-remediated findings.
 
 ## Common Mistakes (SHIP Phase)
 

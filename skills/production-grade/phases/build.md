@@ -59,6 +59,9 @@ Read `.production-grade.yaml` to determine:
 
 ## Worktree Pre-Flight
 
+> **v2.1.78+:** The `--worktree` flag is fixed — skills and hooks now load correctly inside worktrees. No workarounds needed.
+> **v2.1.76+:** Stale worktrees are auto-cleaned when agents exit. Remove any manual worktree cleanup logic from prior versions.
+
 Before launching parallel agents, check if a worktree decision already exists in settings:
 
 ```python
@@ -77,13 +80,13 @@ else:
       use_worktrees = True
     else:
       # Non-auto: ask user
-      AskUserQuestion(questions=[{
+      Elicitation(questions=[{
         "question": "Parallel agents work best with worktree isolation, but you have uncommitted changes.",
         "header": "Worktree Isolation",
         "options": [
           {"label": "Auto-commit and use worktrees (Recommended)", "description": "Commit current state, isolate each agent in its own worktree"},
           {"label": "Skip worktrees — run in shared directory", "description": "Agents share the working directory (risk of file conflicts)"},
-          {"label": "Chat about this", "description": "Free-form input"}
+          {"label": "Chat about this", "description": "Free-form text input"}
         ],
         "multiSelect": false
       }])
@@ -142,8 +145,7 @@ Write these plan files to Claude-Production-Grade-Suite/.orchestrator/plans/wave
    - docker-compose service entry
 
 Plans must be detailed enough that an agent can implement WITHOUT making architectural decisions. Every function gets explicit steps. No "implement business logic" — specify the logic.""",
-  subagent_type="general-purpose",
-  model="opus"  # Planner tier — always opus
+  subagent_type="general-purpose"
 )
 ```
 
@@ -171,7 +173,6 @@ Write workspace artifacts to: Claude-Production-Grade-Suite/software-engineer/
 TDD enforced: write test → watch fail → implement → watch pass → refactor.
 When complete, write a receipt JSON (including completed_at timestamp) to Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-software-engineer.json with task, agent, phase, status, completed_at, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 
@@ -192,13 +193,12 @@ Read .production-grade.yaml for framework and styling preferences.
 The SKILL.md gives you methodology (HOW to build). The plan gives you specification (WHAT to build).
 For Phase 5 (Design & Polish), the plan may include style guidance — follow it. If the plan doesn't specify a style:
   Auto/Express: auto-select best style for the domain, report choice, proceed. Log to auto-decisions.md if Auto mode.
-  Standard+: ask user via AskUserQuestion (Creative | Elegance | High Tech | Corporate | Custom).
+  Standard+: ask user via Elicitation (Creative | Elegance | High Tech | Corporate | Custom).
 
 Write frontend to project root: frontend/
 Write workspace artifacts to: Claude-Production-Grade-Suite/frontend-engineer/
 When complete, write a receipt JSON (including completed_at timestamp) to Claude-Production-Grade-Suite/.orchestrator/receipts/T3b-frontend-engineer.json with task, agent, phase, status, completed_at, artifacts, metrics, effort, verification. Then mark your task as completed.""",
   subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — omit if Model-Optimization: disabled
   isolation="worktree"  # Remove this line if use_worktrees is False
 )
 ```
@@ -220,7 +220,6 @@ Write Dockerfiles (one per service) and docker-compose.yml skeleton based on arc
 Write to Claude-Production-Grade-Suite/devops/dockerfiles/ and Claude-Production-Grade-Suite/devops/compose-draft.yml.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T4a-devops-analysis.json.""",
   subagent_type="general-purpose",
-  model="sonnet",
   run_in_background=True
 )
 
@@ -235,7 +234,6 @@ Map each user story to specific test scenarios with expected inputs/outputs.
 Write to Claude-Production-Grade-Suite/qa-engineer/test-plan.md.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T5a-qa-plan.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Analysis tier — test plan requires judgment
   run_in_background=True
 )
 
@@ -249,7 +247,6 @@ Identify threats, rank by severity, map to OWASP Top 10 categories.
 Write to Claude-Production-Grade-Suite/security-engineer/threat-model/.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6a-security-stride.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Analysis tier — threat modeling requires deep judgment
   run_in_background=True
 )
 
@@ -265,7 +262,6 @@ performance anti-patterns to watch for, test quality criteria.
 Write to Claude-Production-Grade-Suite/code-reviewer/checklist.md.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T6b-review-checklist.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Analysis tier — checklist design requires judgment
   run_in_background=True
 )
 
@@ -280,7 +276,6 @@ Define error budgets and burn-rate alert thresholds.
 Write to Claude-Production-Grade-Suite/sre/slos.md.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T9a-sre-slos.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Analysis tier — SLO design requires judgment
   run_in_background=True
 )
 
@@ -295,7 +290,6 @@ Generate developer quick-start guide from BRD user stories.
 Write to Claude-Production-Grade-Suite/technical-writer/api-reference/ and Claude-Production-Grade-Suite/technical-writer/guides/.
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T11a-techwriter-api.json.""",
   subagent_type="general-purpose",
-  model="sonnet",  # Executor tier — structured doc generation
   run_in_background=True
 )
 
@@ -311,7 +305,6 @@ Generate 3-5 project-specific skills as SKILL.md files.
 Stage skills to: Claude-Production-Grade-Suite/skill-maker/skills/ (sandbox blocks direct writes to .claude/skills/).
 Write a receipt JSON (including completed_at) to Claude-Production-Grade-Suite/.orchestrator/receipts/T12-skill-maker.json.""",
   subagent_type="general-purpose",
-  model="opus",  # Analysis tier — skill design requires deep judgment
   run_in_background=True
 )
 ```
@@ -336,7 +329,7 @@ for branch in [t3a_branch, t3b_branch]:  # collected from Agent results
 
 When foreground BUILD tasks complete and branches are merged:
 1. **Verify foreground receipts:** Read `Claude-Production-Grade-Suite/.orchestrator/receipts/T3a-*.json`, `T3b-*.json`. Verify listed artifacts exist on disk.
-2. **Check background status:** List background analysis receipts that have appeared. Log which are done and which are still running. Wave B readiness check will verify all required outputs before launching.
+2. **Check background status:** List background analysis receipts that have appeared. Log which are done and which are still running. Wave B readiness check will verify all required outputs before launching. Use `SendMessage(to: agentId)` to resume a background agent when its results are needed — agent IDs are tracked in `state.json` under `agent_ids`.
 3. **Re-anchor:** Re-read from disk before transitioning to Wave B:
    - Directory listing of `services/`, `frontend/`, `libs/shared/` (what was actually built)
    - Background analysis outputs (if available): `Claude-Production-Grade-Suite/qa-engineer/test-plan.md`, `Claude-Production-Grade-Suite/security-engineer/threat-model/`, `Claude-Production-Grade-Suite/code-reviewer/checklist.md`
@@ -346,7 +339,7 @@ When foreground BUILD tasks complete and branches are merged:
 
 ## Failure Handling
 
-- Build failure after 3 retries → in Auto mode: log failure, mark task `completed_with_errors`, proceed. In other modes: escalate to user via AskUserQuestion.
+- Build failure after 3 retries → in Auto mode: log failure, mark task `completed_with_errors`, proceed. In other modes: escalate to user via Elicitation.
 - Frontend fails but backend succeeds → continue backend-only pipeline
 - Background agent fails → Wave B readiness check detects missing output, falls back to inline analysis
 - Agents self-debug: read errors, fix, retry before escalating
@@ -428,7 +421,7 @@ Database: PostgreSQL with Prisma ORM
 
 ### Settings
 
-Enabled by default. To disable: add `Model-Optimization: disabled` to settings.md. When disabled, omit `model` from Agent calls and skip wave planners.
+Enabled by default. To disable: add `Model-Optimization: disabled` to settings.md. When disabled, skip wave planners. Model selection is controlled by frontmatter (ADR-003) — `model=` parameters are not set inline in Agent calls.
 
 ## Workspace Architecture
 
@@ -494,9 +487,9 @@ state["tasks_active"] = ["T4b", "T5b", "T6c", "T6d", "T7"]
 | Background analysis agents using worktrees | Background agents write to workspace only — no worktree, use `run_in_background=True` |
 | Running parallel code-writing agents without worktree | Use `isolation="worktree"` on foreground code-writing agents |
 | Not merging worktree branches after wave | Merge all foreground branches before next wave reads outputs |
-| All agents running on Opus | Use model tiers: opus for planners + analysis, sonnet for executors |
-| Omitting `model` when optimization enabled | Every Agent call MUST include `model` from tier table |
-| Worktree agents blocked on file operations | Fall back to shared directory if permission errors (GitHub #29110) |
-| Worktree cleanup deleting uncommitted work | Foreground agents MUST commit before returning |
+| All agents running on Opus | Model tiers are configured via frontmatter (ADR-003) — do not hardcode `model=` in Agent calls |
+| Adding `model=` to Agent calls | Frontmatter is the source of truth for model selection (v7.0.0+). Remove `model=` from all Agent calls. |
+| Worktree agents blocked on file operations | Fixed in v2.1.78 (`--worktree` flag fix). Skills and hooks now load in worktrees. |
+| Worktree cleanup deleting uncommitted work | Foreground agents MUST commit before returning. Stale worktrees auto-cleaned v2.1.76+. |
 | `✓ Analysis complete` without numbers | Every completion line MUST include concrete counts |
 | Missing wave announcements | Print Tier 2 box before and after every parallel wave |

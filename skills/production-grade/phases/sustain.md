@@ -143,7 +143,7 @@ Write the following block to the project's `CLAUDE.md` (create if it doesn't exi
 
 This project was built with the production-grade plugin. The `Claude-Production-Grade-Suite/` directory contains architecture decisions, security findings, test plans, and receipts from the build pipeline.
 
-**At the start of every session, ask the user how they'd like to work.** Use AskUserQuestion:
+**At the start of every session, ask the user how they'd like to work.** Use Elicitation:
 - Header: "Production-Grade Native Project"
 - Question: "This project was built with the production-grade pipeline. How would you like to work today?"
 - Options:
@@ -200,16 +200,16 @@ If `Engagement: auto` in settings.md:
 
 #### Standard Mode Assembly (non-Auto)
 
-1. **Integration decision** — ask user via AskUserQuestion:
+1. **Integration decision** — ask user via Elicitation:
 ```python
-AskUserQuestion(questions=[{
+Elicitation(questions=[{
   "question": "Code is ready. Integrate into your project root?",
   "header": "Assembly",
   "options": [
     {"label": "Integrate all code (Recommended)", "description": "Copy services, frontend, infra to project root"},
     {"label": "Keep in workspace only", "description": "Leave everything in Claude-Production-Grade-Suite/"},
     {"label": "Let me choose what to copy", "description": "Select which components to integrate"},
-    {"label": "Chat about this", "description": "Discuss integration strategy"}
+    {"label": "Chat about this", "description": "Free-form text input about integration strategy"}
   ],
   "multiSelect": false
 }])
@@ -290,6 +290,124 @@ Produce:
 - Per-wave timing from receipt timestamps
 - Total elapsed: earliest T1 completed_at to latest T13 completed_at
 - Rework cycles from `.orchestrator/rework-log.md`
+
+## Cron Monitoring Setup
+
+After the final summary, offer to schedule automated monitoring tasks using Elicitation. Skip in Auto mode (log the offer to auto-decisions.md instead).
+
+```python
+# Only in Standard/Thorough/Express modes
+if "Engagement: auto" not in settings:
+  Elicitation(questions=[{
+    "question": "Set up automated monitoring schedules for this project?",
+    "header": "Cron Monitoring",
+    "options": [
+      {"label": "Set up all monitoring (Recommended)", "description": "Daily test re-runs, weekly security scans, weekly dependency checks"},
+      {"label": "Choose schedules", "description": "Select which monitors to enable and customize schedules"},
+      {"label": "Skip — I'll set up monitoring manually", "description": "No cron jobs created"},
+      {"label": "Chat about this", "description": "Free-form text input about monitoring preferences"}
+    ],
+    "multiSelect": false
+  }])
+```
+
+If the user opts in, schedule these jobs using `CronCreate`:
+
+```python
+project_slug = re.sub(r"[^a-z0-9-]", "-", project_name.lower())
+
+# Daily post-pipeline test re-run
+CronCreate(
+  name=f"{project_slug}-daily-tests",
+  schedule="0 6 * * *",  # 6am daily
+  command=f"cd {project_root} && make test 2>&1 | tee Claude-Production-Grade-Suite/.orchestrator/cron-test-$(date +%Y%m%d).log"
+)
+
+# Weekly security scan
+CronCreate(
+  name=f"{project_slug}-weekly-security",
+  schedule="0 7 * * 1",  # Monday 7am
+  command=f"cd {project_root} && npm audit --audit-level=high 2>&1 | tee Claude-Production-Grade-Suite/.orchestrator/cron-security-$(date +%Y%m%d).log"
+)
+
+# Weekly dependency freshness check
+CronCreate(
+  name=f"{project_slug}-weekly-deps",
+  schedule="0 8 * * 1",  # Monday 8am
+  command=f"cd {project_root} && npm outdated 2>&1 | tee Claude-Production-Grade-Suite/.orchestrator/cron-deps-$(date +%Y%m%d).log"
+)
+```
+
+Schedules are configurable via `.production-grade.yaml`:
+```yaml
+monitoring:
+  daily_tests:
+    enabled: true
+    schedule: "0 6 * * *"
+  weekly_security:
+    enabled: true
+    schedule: "0 7 * * 1"
+  weekly_deps:
+    enabled: true
+    schedule: "0 8 * * 1"
+```
+
+## Persistent State
+
+Write user preferences and pipeline analytics to `CLAUDE_PLUGIN_DATA` for cross-run persistence.
+
+```python
+import os, json
+plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA", "~/.claude/plugin-data/production-grade")
+project_slug = re.sub(r"[^a-z0-9-]", "-", project_name.lower())
+
+# Read settings from Claude-Production-Grade-Suite/.orchestrator/settings.md
+# Extract engagement, parallelism, worktree, model preferences
+
+# Write user preferences
+prefs_path = f"{plugin_data}/preferences.json"
+existing_prefs = json.loads(Read(prefs_path) or "{}")
+prefs = {
+  **existing_prefs,
+  "last_project": project_slug,
+  "last_run": datetime.utcnow().isoformat() + "Z",
+  "engagement": settings.get("engagement", "thorough"),
+  "parallelism": settings.get("parallelism", "maximum"),
+  "worktrees": settings.get("worktrees", "enabled"),
+  "model_optimization": settings.get("model_optimization", "enabled")
+}
+Write(prefs_path, json.dumps(prefs, indent=2))
+
+# Write pipeline analytics
+analytics_path = f"{plugin_data}/analytics/{project_slug}.json"
+existing_analytics = json.loads(Read(analytics_path) or "{}")
+run_count = existing_analytics.get("run_count", 0) + 1
+
+# Compute timing from receipts
+all_receipts = Glob("Claude-Production-Grade-Suite/.orchestrator/receipts/*.json")
+timestamps = [json.loads(Read(r)).get("completed_at") for r in all_receipts if Read(r)]
+timestamps = [t for t in timestamps if t]
+total_elapsed_s = (max(timestamps) - min(timestamps)).total_seconds() if len(timestamps) >= 2 else 0
+avg_elapsed_s = (existing_analytics.get("total_elapsed_s", 0) + total_elapsed_s) / run_count
+
+analytics = {
+  **existing_analytics,
+  "run_count": run_count,
+  "last_run": datetime.utcnow().isoformat() + "Z",
+  "total_elapsed_s": existing_analytics.get("total_elapsed_s", 0) + total_elapsed_s,
+  "avg_elapsed_s": avg_elapsed_s,
+  "last_findings": {
+    "security_critical": security_critical_count,
+    "security_high": security_high_count,
+    "tests_passing": tests_passing_count
+  }
+}
+Write(analytics_path, json.dumps(analytics, indent=2))
+```
+
+Surface analytics in the final summary:
+- If `run_count > 1`: prepend `  Pipeline run #{run_count}. Average time: {avg_elapsed_m}m.` to the summary header.
+- If first run: `  First pipeline run for this project. Data recorded for future runs.`
 
 ## Pipeline Cleanup
 

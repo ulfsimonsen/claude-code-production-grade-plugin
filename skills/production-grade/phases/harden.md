@@ -253,6 +253,10 @@ state["phase_file_loaded"] = false
 state["tasks_active"] = ["T8", "T9b", "T10"]
 ```
 
+## Error Handling
+
+**StopFailure hook:** If API errors occur during the HARDEN phase (e.g., an agent fails with a non-retriable error), the StopFailure hook logs the error to `.orchestrator/error-log.md` with timestamp, task ID, and error details. Check this file when diagnosing incomplete waves.
+
 ## Common Mistakes (HARDEN Phase)
 
 | Mistake | Fix |

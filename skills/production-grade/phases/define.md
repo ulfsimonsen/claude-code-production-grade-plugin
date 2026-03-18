@@ -38,7 +38,7 @@ If `Engagement: auto` in `Claude-Production-Grade-Suite/.orchestrator/settings.m
 TaskUpdate(taskId=t1_id, status="in_progress")
 Agent(
   prompt="""You are the Product Manager operating in AUTO MODE — zero user interaction.
-Read the user's original request from the conversation context. DO NOT use AskUserQuestion. DO NOT ask any questions.
+Read the user's original request from the conversation context. DO NOT use Elicitation. DO NOT ask any questions.
 
 Auto-derive the BRD entirely from:
 1. The user's request description (extract project goals, features, constraints)
@@ -72,7 +72,7 @@ Skill(skill="production-grade:product-manager")
 
 The product-manager skill will:
 1. Research domain via WebSearch
-2. Conduct CEO interview (3-5 questions via AskUserQuestion with multiSelect)
+2. Conduct CEO interview (3-5 questions via Elicitation with multiSelect)
 3. Write BRD to `Claude-Production-Grade-Suite/product-manager/BRD/`
 4. Outputs: `brd.md`, `INDEX.md`
 
@@ -104,7 +104,7 @@ If `Engagement: auto` in settings.md:
   ✓ Auto-approved — receipts verified, artifacts exist
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-3. Do NOT call AskUserQuestion. Proceed directly to T2.
+3. Do NOT call Elicitation. Proceed directly to T2.
 4. If receipt verification fails (missing artifacts), log the failure and proceed anyway:
    `⚠ Auto: Gate 1 receipt verification incomplete — proceeding with best effort`
 
@@ -128,14 +128,14 @@ Print the pipeline dashboard (DEFINE ● active), then:
 
 Then ask:
 ```python
-AskUserQuestion(questions=[{
+Elicitation(questions=[{
   "question": "BRD complete: [X] user stories, [Y] acceptance criteria. Approve?",
   "header": "Gate 1: Requirements",
   "options": [
     {"label": "Approve — start architecture (Recommended)", "description": "BRD locked, proceed to Solution Architect"},
     {"label": "Show BRD details", "description": "Display the full BRD before deciding"},
     {"label": "I have changes", "description": "Request modifications to requirements"},
-    {"label": "Chat about this", "description": "Free-form input about the BRD"}
+    {"label": "Chat about this", "description": "Free-form text input about the BRD"}
   ],
   "multiSelect": false
 }])
@@ -164,7 +164,7 @@ If `Engagement: auto` in `Claude-Production-Grade-Suite/.orchestrator/settings.m
 TaskUpdate(taskId=t2_id, status="in_progress")
 Agent(
   prompt="""You are the Solution Architect operating in AUTO MODE — zero user interaction.
-Read the BRD from Claude-Production-Grade-Suite/product-manager/BRD/brd.md. DO NOT use AskUserQuestion. DO NOT ask any questions.
+Read the BRD from Claude-Production-Grade-Suite/product-manager/BRD/brd.md. DO NOT use Elicitation. DO NOT ask any questions.
 
 Auto-derive the complete architecture from the BRD:
 1. Infer the best architecture pattern (monolith, modular monolith, microservices) from project scale
@@ -235,7 +235,7 @@ If `Engagement: auto` in settings.md:
   ✓ Auto-approved — receipts verified, artifacts exist
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-3. Do NOT call AskUserQuestion. Proceed directly to BUILD phase.
+3. Do NOT call Elicitation. Proceed directly to BUILD phase.
 4. If receipt verification fails (missing artifacts), log the failure and proceed anyway:
    `⚠ Auto: Gate 2 receipt verification incomplete — proceeding with best effort`
 
@@ -261,14 +261,14 @@ Print the pipeline dashboard (DEFINE ✓ complete), then:
 
 Then ask:
 ```python
-AskUserQuestion(questions=[{
+Elicitation(questions=[{
   "question": "Architecture complete: [tech stack summary]. Approve to start building?",
   "header": "Gate 2: Architecture",
   "options": [
     {"label": "Approve — start building (Recommended)", "description": "Architecture locked, begin autonomous BUILD phase"},
     {"label": "Show architecture details", "description": "Walk through ADRs, diagrams, and API spec"},
     {"label": "Rework architecture", "description": "Send concerns back to Architect for revision"},
-    {"label": "Chat about this", "description": "Free-form input about the architecture"}
+    {"label": "Chat about this", "description": "Free-form text input about the architecture"}
   ],
   "multiSelect": false
 }])
@@ -277,7 +277,7 @@ AskUserQuestion(questions=[{
 **Rework loop (Gate 2):**
 
 If user selects "Rework architecture":
-1. Ask what concerns they have (AskUserQuestion with common architecture concerns + free-form)
+1. Ask what concerns they have (Elicitation with common architecture concerns + free-form)
 2. Track rework cycle: read `Claude-Production-Grade-Suite/.orchestrator/rework-log.md`, increment Gate 2 rework count
 3. If rework count < 2: Re-invoke Solution Architect with the user's concerns as additional constraints.
 4. If rework count >= 2: Escalate — "Architecture has been revised twice. Approve current state or discuss further?"
@@ -308,6 +308,8 @@ After Gate 2 approval (or auto-approval):
 4. Log decisions to `Claude-Production-Grade-Suite/.orchestrator/decisions-log.md`
 5. Read `phases/build.md` and begin BUILD phase — use freshly-read artifacts when creating agent task prompts
 
+**Agent continuation:** When background agents are spawned in BUILD and their results are needed later, use `SendMessage(to: agentId)` to resume them. Agent IDs are tracked in `state.json` under `agent_ids`.
+
 ## Failure Handling
 
 - If PM cannot gather enough requirements → in Auto mode: proceed with best effort and log. In other modes: escalate to user.
@@ -326,6 +328,7 @@ Write("Claude-Production-Grade-Suite/.orchestrator/state.json", json.dumps({
   "gates_passed": [],
   "tasks_completed": [],
   "tasks_active": ["T1"],
+  "agent_ids": {},  # Maps task IDs to agent IDs for SendMessage continuation, e.g. {"T4a": "agent-xyz"}
   "last_transition": datetime.utcnow().isoformat() + "Z"
 }))
 ```
@@ -359,5 +362,5 @@ state["tasks_active"] = ["T3a", "T3b", "T4a", "T5a", "T6a", "T6b", "T9a", "T11a"
 | Over-asking the user | Respect engagement mode depth. Auto mode = zero questions. |
 | Gate rejection stopping pipeline | Gates are self-healing — rework loop, max 2 cycles. Auto mode = no rejections possible. |
 | Not tracking rework cycles | Log to `.orchestrator/rework-log.md` |
-| Calling AskUserQuestion in Auto mode | Auto mode NEVER calls AskUserQuestion. Check settings.md first. |
+| Calling Elicitation in Auto mode | Auto mode NEVER calls Elicitation. Check settings.md first. |
 | Invoking PM/Architect Skills in Auto mode | Use Agent with auto-derive prompt, NOT Skill (Skills try to interview) |
